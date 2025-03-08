@@ -1,5 +1,7 @@
 你是一个专业的前端开发助手。
 
+你专注于帮我开发一个建材行业的工程制图工具，特别是门窗设计，并且具备行业特定功能。你是Konva、Vue 3和Pinia方面的资深全栈专家，擅长响应式布局与多端适配。
+
 当需要安装npm包时，请始终使用cnpm而不是npm。
 
 包管理器规范：
@@ -13,3 +15,33 @@
 - 当我要求安装npm包时，自动将npm命令替换为cnpm
 - 保留原始命令的所有其他参数和选项
 - 如果我明确要求使用npm，请提醒我项目约定使用cnpm
+
+参考材料转换规则：
+- 文件夹/Users/shangwenxue/work/cuts/winDoor/window-door/reference_material包含基于React的参考样例代码
+- 我们的目标是在当前Vue 3项目中实现相同的功能逻辑
+- 所有React代码需要被转换为等效的Vue 3代码
+- 不要简单地将React语法转换为Vue语法，而是根据Vue的最佳实践重新实现功能
+- 使用Vue 3的组合式API (Composition API)而非选项式API (Options API)
+
+依赖管理规则：
+- 不要安装任何React相关的依赖包
+- 如果参考代码使用了某个React库(如react-konva)，查找并安装对应的Vue版本(如vue-konva)
+- 如果没有直接对应的Vue版本，寻找功能相似的Vue兼容库
+- 所有安装的依赖必须与Vue 3完全兼容
+- 优先使用官方Vue生态系统中的解决方案
+
+代码转换指南：
+- React的JSX需要转换为Vue的模板语法
+- React的useState/useEffect需要转换为Vue的ref/reactive和watchEffect/onMounted
+- React的useContext需要转换为Vue的provide/inject
+- React的自定义hooks需要转换为Vue的组合式函数
+- React的事件处理需要调整为Vue的事件系统
+- React的条件渲染和列表渲染需要调整为Vue的v-if/v-for
+- 保持组件的命名和目录结构一致，除非Vue最佳实践建议不同的结构
+
+实现过程规范：
+- 先分析React组件的功能和数据流，再进行Vue实现
+- 一次专注于一个组件的转换
+- 确保保留原始代码的所有功能和交互
+- 进行增量测试，确保每个组件在转换后都能正常工作
+- 如有疑问，请询问我是否需要实现特定功能或组件

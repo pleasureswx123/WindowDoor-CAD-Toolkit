@@ -8,6 +8,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    Devider: typeof import('./components/WindowDoor/Devider.vue')['default']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCard: typeof import('element-plus/es')['ElCard']
     ElContainer: typeof import('element-plus/es')['ElContainer']
@@ -22,7 +23,10 @@ declare module 'vue' {
     ElSwitch: typeof import('element-plus/es')['ElSwitch']
     ElTable: typeof import('element-plus/es')['ElTable']
     ElTableColumn: typeof import('element-plus/es')['ElTableColumn']
+    Glass: typeof import('./components/WindowDoor/Glass.vue')['default']
+    Handle: typeof import('./components/WindowDoor/Handle.vue')['default']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
+    HorizontalMetric: typeof import('./components/WindowDoor/HorizontalMetric.vue')['default']
     IconAntDesignGithubFilled: typeof import('~icons/ant-design/github-filled')['default']
     IconCarbonUser: typeof import('~icons/carbon/user')['default']
     IconCommunity: typeof import('./components/icons/IconCommunity.vue')['default']
@@ -33,10 +37,18 @@ declare module 'vue' {
     IconSupport: typeof import('./components/icons/IconSupport.vue')['default']
     IconTablerSettings: typeof import('~icons/tabler/settings')['default']
     IconTooling: typeof import('./components/icons/IconTooling.vue')['default']
+    Metrics: typeof import('./components/WindowDoor/Metrics.vue')['default']
+    OpeningDirection: typeof import('./components/WindowDoor/OpeningDirection.vue')['default']
+    RootFrame: typeof import('./components/WindowDoor/RootFrame.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    Sash: typeof import('./components/WindowDoor/Sash.vue')['default']
+    Section: typeof import('./components/WindowDoor/Section.vue')['default']
+    SectionEdit: typeof import('./components/WindowDoor/SectionEdit.vue')['default']
     TestButton: typeof import('./components/TestButton.vue')['default']
     TheWelcome: typeof import('./components/TheWelcome.vue')['default']
+    VerticalMetric: typeof import('./components/WindowDoor/VerticalMetric.vue')['default']
     WelcomeItem: typeof import('./components/WelcomeItem.vue')['default']
+    WindowDoorApp: typeof import('./components/WindowDoor/WindowDoorApp.vue')['default']
   }
 }
