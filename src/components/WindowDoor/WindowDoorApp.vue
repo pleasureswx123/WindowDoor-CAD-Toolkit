@@ -1,8 +1,47 @@
 <script setup lang="ts">
 // 门窗设计工具入口组件 - 对应React版本中的App.jsx
+import { ref, onMounted } from 'vue';
 import RootFrame from './RootFrame.vue';
 import SectionEdit from './SectionEdit.vue';
 import SizeControlPanel from './SizeControlPanel.vue';
+import { useWindowDoorStore } from '@/stores/windowDoorStore';
+
+const store = useWindowDoorStore();
+
+// 检查窗户中是否存在空区域
+const hasEmptySection = () => {
+  // 递归检查节点
+  const checkSection = (section: any): boolean => {
+    // 如果当前节点是空区域，返回true
+    if (section.type === 'empty') return true;
+    
+    // 如果有子节点，递归检查
+    if (section.sections && section.sections.length > 0) {
+      for (const childSection of section.sections) {
+        if (childSection.nodeType === 'section' && checkSection(childSection)) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  };
+  
+  // 从根窗户开始检查
+  if (store.root && store.root.sections && store.root.sections[0]) {
+    return checkSection(store.root.sections[0]);
+  }
+  
+  return false;
+};
+
+// 初始化时检查空区域
+onMounted(() => {
+  // 延迟一下，确保窗户完全初始化
+  setTimeout(() => {
+    hasEmptySection(); // 只检查，不再显示引导
+  }, 500);
+});
 </script>
 
 <template>

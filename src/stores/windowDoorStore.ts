@@ -38,8 +38,25 @@ export class Section {
     this.id = generateId();
     this.width = attrs.width;
     this.height = attrs.height;
-    this.frameSize = attrs.frameSize || 50;
-    this.type = attrs.type || "none";
+    
+    // 根据窗户类型决定框架尺寸
+    if (attrs.type === "none") {
+      // 固定窗无框架
+      this.frameSize = 0;
+    } else {
+      // 其他类型使用传入的值或默认值
+      this.frameSize = attrs.frameSize !== undefined ? attrs.frameSize : 50;
+    }
+    
+    // 窗扇类型，默认为空("empty")
+    // 可选值：
+    // - "empty"：未配置的空区域，需要用户进一步配置
+    // - "none"：固定窗，不可开启
+    // - "left"：向左开启
+    // - "right"：向右开启
+    // - "tilt,left" / "tilt,right"：倾斜并开启
+    this.type = attrs.type || "empty";
+    
     this.splitDirection = null;
     this.sections = [];
   }
@@ -62,33 +79,39 @@ export class Devider {
 }
 
 export const useWindowDoorStore = defineStore('windowDoor', () => {
-  // 当前选中的部分ID
-  const selectedSectionId = ref<number | null>(null);
-  
-  // 初始窗户尺寸
-  const WINDOW_WIDTH = 800;
-  const WINDOW_HEIGHT = 500;
+  const WINDOW_WIDTH = 1000;
+  const WINDOW_HEIGHT = 2000;
   const FRAME_SIZE = 50;
-  const DEVIDER_SIZE = 50;
-  
-  // 根窗户
-  const root = ref({
+
+  // 初始化root对象，确保有默认值
+  const root = ref<any>({
     id: "root",
     width: WINDOW_WIDTH,
     height: WINDOW_HEIGHT,
     frameSize: FRAME_SIZE,
     splitDirection: null,
-    sections: [
-      new Section({
-        width: WINDOW_WIDTH - FRAME_SIZE * 2,
-        height: WINDOW_HEIGHT - FRAME_SIZE * 2,
-        frameSize: FRAME_SIZE,
-        type: "none" // 设置默认类型为右开
-      })
-    ]
+    sections: []
   });
 
-  // 当前选中的区域
+  const selectedSectionId = ref<number | null>(null);
+  const metricsUpdateCounter = ref(0);
+  
+  // 控制标注尺寸的显示状态，默认显示
+  const showMetrics = ref(true);
+  
+  // 切换标注尺寸的显示状态
+  function toggleMetricsVisibility() {
+    showMetrics.value = !showMetrics.value;
+    // 触发UI更新
+    triggerMetricsUpdate();
+  }
+  
+  // 获取当前标注尺寸的显示状态
+  function isMetricsVisible() {
+    return showMetrics.value;
+  }
+
+  // 选中的区域
   const selectedSection = computed(() => {
     if (!selectedSectionId.value) return null;
     
@@ -130,9 +153,28 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     if (!selectedSection.value) return;
     
     const section = selectedSection.value;
+    
+    // 检查区域是否已配置窗扇类型
+    if (section.type !== "empty") {
+      // 显示确认对话框或自动重置区域类型
+      if (window.confirm("该区域已配置窗扇类型，需要先移除配置才能进行分割。是否继续？")) {
+        // 保存框架尺寸，以便在分割后恢复
+        const savedFrameSize = section.frameSize || FRAME_SIZE;
+        
+        // 重置为空区域
+        section.type = "empty";
+        section.frameSize = FRAME_SIZE;
+        console.log("已重置区域为空区域，将进行分割");
+      } else {
+        // 用户取消操作
+        console.log("用户取消了分割操作");
+        return;
+      }
+    }
+    
     section.splitDirection = direction;
     
-    // 保存当前的frameSize用于新区域
+    // 保存当前的frameSize用于新区域（只有在非固定窗类型时才需要）
     const currentFrameSize = section.frameSize;
     // 保存当前的type，在特殊情况下继承给子区域
     const currentType = section.type;
@@ -142,9 +184,8 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
         new Section({
           width: section.width / 2 - DEVIDER_SIZE / 2,
           height: section.height,
-          frameSize: currentFrameSize,
-          // 默认使用固定窗
-          type: "none"
+          // 默认创建空区域，等待用户配置
+          type: "empty"
         }),
         new Devider({
           width: DEVIDER_SIZE,
@@ -153,9 +194,8 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
         new Section({
           width: section.width / 2 - DEVIDER_SIZE / 2,
           height: section.height,
-          frameSize: currentFrameSize,
-          // 默认使用固定窗
-          type: "none"
+          // 默认创建空区域，等待用户配置
+          type: "empty"
         })
       );
     } else {
@@ -163,9 +203,8 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
         new Section({
           width: section.width,
           height: section.height / 2 - DEVIDER_SIZE / 2,
-          frameSize: currentFrameSize,
-          // 默认使用固定窗
-          type: "none"
+          // 默认创建空区域，等待用户配置
+          type: "empty"
         }),
         new Devider({
           width: section.width,
@@ -174,9 +213,8 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
         new Section({
           width: section.width,
           height: section.height / 2 - DEVIDER_SIZE / 2,
-          frameSize: currentFrameSize,
-          // 默认使用固定窗
-          type: "none"
+          // 默认创建空区域，等待用户配置
+          type: "empty"
         })
       );
     }
@@ -185,9 +223,6 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     selectedSectionId.value = null;
   }
 
-  // 添加变更计数器，用于通知组件刷新
-  const metricsUpdateCounter = ref(0);
-  
   // 触发度量标注更新
   function triggerMetricsUpdate() {
     metricsUpdateCounter.value++;
@@ -330,6 +365,12 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
         return;
       }
       
+      // 固定窗不能更改框架尺寸，必须保持为0
+      if (selectedSection.value.type === "none") {
+        console.log('固定窗的框架尺寸必须为0，无法修改');
+        return;
+      }
+      
       if (newFrameSize === selectedSection.value.frameSize) {
         console.log('窗扇框架尺寸未变化，跳过更新');
         return;
@@ -337,14 +378,6 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       
       // 更新选中窗扇的框架尺寸
       selectedSection.value.frameSize = newFrameSize;
-      
-      // 保存原来的窗扇类型
-      const sectionType = selectedSection.value.type;
-      
-      // 如果类型为"none"，则不需要框架
-      if (sectionType === "none") {
-        selectedSection.value.frameSize = 0;
-      }
     }
     
     // 触发度量标注更新
@@ -523,7 +556,7 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     
     // 根据不同的模式创建不同的布局
     if (pattern === 'default' || pattern === 'single') {
-      // 单窗扇布局 - 固定窗
+      // 单窗扇布局 - 默认空区域
       root.value = {
         id: "root",
         width: WINDOW_WIDTH,
@@ -534,8 +567,7 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
           new Section({
             width: WINDOW_WIDTH - FRAME_SIZE * 2,
             height: WINDOW_HEIGHT - FRAME_SIZE * 2,
-            frameSize: FRAME_SIZE,
-            type: "none" // 固定窗
+            type: "empty" // 默认空区域，等待用户配置
           })
         ]
       };
@@ -551,8 +583,7 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
           new Section({
             width: WINDOW_WIDTH - FRAME_SIZE * 2,
             height: WINDOW_HEIGHT - FRAME_SIZE * 2,
-            frameSize: FRAME_SIZE,
-            type: "none" // 固定窗
+            type: "none" // 固定窗 - frameSize会在构造函数中自动设为0
           })
         ]
       };
@@ -568,7 +599,6 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
           new Section({
             width: WINDOW_WIDTH - FRAME_SIZE * 2,
             height: WINDOW_HEIGHT - FRAME_SIZE * 2,
-            frameSize: FRAME_SIZE,
             type: "right" // 右开窗
           })
         ]
@@ -658,8 +688,7 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
         new Section({
           width: (WINDOW_WIDTH - FRAME_SIZE * 2) / 2 - DEVIDER_SIZE / 2,
           height: WINDOW_HEIGHT - FRAME_SIZE * 2,
-          frameSize: FRAME_SIZE,
-          type: "none" // 固定窗
+          type: "none" // 固定窗 - frameSize会在构造函数中自动设为0
         }),
         new Devider({
           width: DEVIDER_SIZE,
@@ -668,8 +697,7 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
         new Section({
           width: (WINDOW_WIDTH - FRAME_SIZE * 2) / 2 - DEVIDER_SIZE / 2,
           height: WINDOW_HEIGHT - FRAME_SIZE * 2,
-          frameSize: FRAME_SIZE,
-          type: "none" // 固定窗
+          type: "none" // 固定窗 - frameSize会在构造函数中自动设为0
         })
       ];
       
@@ -683,8 +711,10 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       };
     }
     
-    // 触发度量标注更新
-    triggerMetricsUpdate();
+    // 确保store状态更新，触发度量标注计算
+    nextTick(() => {
+      triggerMetricsUpdate();
+    });
   }
 
   return {
@@ -698,6 +728,8 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     updateFrameSize,
     initializeWindowWithSections,
     metricsUpdateCounter,
-    triggerMetricsUpdate
+    triggerMetricsUpdate,
+    toggleMetricsVisibility,
+    isMetricsVisible
   };
 }); 

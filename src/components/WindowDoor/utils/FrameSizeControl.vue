@@ -26,6 +26,12 @@ const sectionFrameSize = computed(() => {
   return store.selectedSection.frameSize;
 });
 
+// 判断当前选中的窗扇是否为固定窗
+const isFixedWindow = computed(() => {
+  if (!store.selectedSection) return false;
+  return store.selectedSection.type === "none";
+});
+
 // 处理根窗户外框点击事件
 const handleRootClick = (e: any) => {
   // 设置弹出框位置
@@ -48,6 +54,11 @@ const handleRootClick = (e: any) => {
 // 处理窗扇框架点击事件
 const handleSectionClick = (e: any) => {
   if (!store.selectedSection) return;
+  
+  // 如果是固定窗，不显示调整框架厚度的弹窗
+  if (isFixedWindow.value) {
+    return;
+  }
   
   // 设置弹出框位置
   const rect = e.currentTarget.getBoundingClientRect();
@@ -154,7 +165,7 @@ const sectionTextStyle = computed(() => ({
       @mouseenter="handleRootMouseEnter"
       @mouseleave="handleRootMouseLeave"
     >
-      <v-tag v-bind="rootBadgeStyle" cornerRadius="4" />
+      <v-tag v-bind="rootBadgeStyle" :cornerRadius="4" />
       <v-text 
         :text="`窗户外框: ${rootFrameSize} mm`" 
         v-bind="rootTextStyle"
@@ -169,9 +180,9 @@ const sectionTextStyle = computed(() => ({
       @mouseenter="handleSectionMouseEnter"
       @mouseleave="handleSectionMouseLeave"
     >
-      <v-tag v-bind="sectionBadgeStyle" cornerRadius="4" />
+      <v-tag v-bind="sectionBadgeStyle" :cornerRadius="4" />
       <v-text 
-        :text="`窗扇框架: ${sectionFrameSize} mm`" 
+        :text="isFixedWindow ? '固定窗 (无框架)' : `窗扇框架: ${sectionFrameSize} mm`" 
         v-bind="sectionTextStyle"
       />
     </v-label>

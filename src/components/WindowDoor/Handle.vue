@@ -64,16 +64,18 @@ const shapeProps = computed(() => ({
   strokeWidth: 1.5,
   name: 'handle',
   listening: true, // 确保可以接收点击事件
-  opacity: 1, // 确保完全不透明
-  zIndex: 10 // 设置较高的Z轴值，确保在其他元素之上
+  opacity: 1 // 确保完全不透明
 }));
 </script>
 
 <template>
-  <v-shape
-    v-if="handlePosition"
-    v-bind="shapeProps"
-    @mouseenter="handleMouseEnter"
-    @mouseleave="handleMouseLeave"
-  />
+  <!-- 使用v-group来代替直接设置zIndex -->
+  <v-group>
+    <v-shape
+      v-if="handlePosition"
+      v-bind="shapeProps"
+      @mouseenter="handleMouseEnter"
+      @mouseleave="handleMouseLeave"
+    />
+  </v-group>
 </template> 

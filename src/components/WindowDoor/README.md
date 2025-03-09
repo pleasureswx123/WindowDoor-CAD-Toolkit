@@ -22,7 +22,7 @@ WindowDoor/
 ├── Glass.vue              # 玻璃组件
 ├── Handle.vue             # 把手组件
 ├── OpeningDirection.vue   # 开启方向组件
-├── Devider.vue            # 分隔线组件
+├── Devider.vue            # 中挺分隔线组件
 ├── Metrics.vue            # 度量组件
 ├── VerticalMetric.vue     # 垂直度量组件
 └── HorizontalMetric.vue   # 水平度量组件

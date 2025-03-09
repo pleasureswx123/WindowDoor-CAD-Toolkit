@@ -7,7 +7,7 @@ import Sash from './Sash.vue';
 import Metrics from './Metrics.vue';
 import ZoomControls from './ZoomControls.vue';
 import FrameSizeControl from './utils/FrameSizeControl.vue';
-import SectionTypeControl from './utils/SectionTypeControl.vue';
+import MetricsControl from './utils/MetricsControl.vue';
 
 const store = useWindowDoorStore();
 const containerRef = ref<HTMLDivElement | null>(null);
@@ -21,10 +21,19 @@ const stageSize = ref({
 
 // 初始化时获取容器宽度并监听窗口大小变化
 onMounted(() => {
-  updateStageDimensions();
+  // 确保root对象已正确初始化
+  if (!store.root.sections || store.root.sections.length === 0) {
+    console.log('初始化窗户布局');
+    store.initializeWindowWithSections('default');
+  }
   
-  // 监听窗口大小变化
-  window.addEventListener('resize', updateStageDimensions);
+  // 延迟更新舞台尺寸，确保DOM已经渲染
+  nextTick(() => {
+    updateStageDimensions();
+    
+    // 监听窗口大小变化
+    window.addEventListener('resize', updateStageDimensions);
+  });
   
   // 清理事件监听
   return () => {
@@ -72,26 +81,39 @@ const handleClick = (e: any) => {
 const viewConfig = computed(() => {
   const padding = 60; // 边距
   
-  // 计算宽高比例，选择最小值保持比例
-  const windowWidth = store.root.width;
-  const windowHeight = store.root.height;
+  // 确保窗户尺寸不为0，防止除以0产生NaN
+  const windowWidth = store.root?.width || 800;
+  const windowHeight = store.root?.height || 600;
   
-  const stageWidthWithPadding = stageSize.value.width - padding * 2;
-  const stageHeightWithPadding = stageSize.value.height - padding * 2;
+  // 确保舞台尺寸正确
+  const stageWidth = Math.max(100, stageSize.value?.width || 100);
+  const stageHeight = Math.max(100, stageSize.value?.height || 100);
   
-  const widthRatio = stageWidthWithPadding / windowWidth;
-  const heightRatio = stageHeightWithPadding / windowHeight;
+  const stageWidthWithPadding = stageWidth - padding * 2;
+  const stageHeightWithPadding = stageHeight - padding * 2;
   
-  const scale = Math.min(widthRatio, heightRatio);
+  // 防止除以0
+  const widthRatio = windowWidth > 0 ? stageWidthWithPadding / windowWidth : 1;
+  const heightRatio = windowHeight > 0 ? stageHeightWithPadding / windowHeight : 1;
+  
+  // 确保比例是有限数字
+  const validWidthRatio = isFinite(widthRatio) ? widthRatio : 1;
+  const validHeightRatio = isFinite(heightRatio) ? heightRatio : 1;
+  
+  const scale = Math.min(validWidthRatio, validHeightRatio);
+  
+  // 防止NaN值
+  const safeScale = isFinite(scale) && scale > 0 ? scale : 1;
   
   // 计算居中位置
-  const centeredX = (stageSize.value.width - windowWidth * scale) / 2;
-  const centeredY = (stageSize.value.height - windowHeight * scale) / 2;
+  const centeredX = (stageWidth - windowWidth * safeScale) / 2;
+  const centeredY = (stageHeight - windowHeight * safeScale) / 2;
   
+  // 确保返回的坐标是有效数字
   return {
-    scale,
-    x: centeredX,
-    y: centeredY
+    scale: safeScale,
+    x: isFinite(centeredX) ? centeredX : 0,
+    y: isFinite(centeredY) ? centeredY : 0
   };
 });
 </script>
@@ -117,8 +139,8 @@ const viewConfig = computed(() => {
         <!-- 背景 - 用于点击取消选择 -->
         <v-rect 
           :config="{
-            width: store.root.width + 300,
-            height: store.root.height + 300,
+            width: (store.root.width || 0) + 300,
+            height: (store.root.height || 0) + 300,
             x: -150,
             y: -150,
             name: 'background',
@@ -128,16 +150,17 @@ const viewConfig = computed(() => {
         
         <!-- 主区域 -->
         <Section
+          v-if="store.root.sections && store.root.sections[0]"
           :section="store.root.sections[0]"
-          :x="store.root.frameSize"
-          :y="store.root.frameSize"
+          :x="store.root.frameSize || 0"
+          :y="store.root.frameSize || 0"
         />
         
         <!-- 主框架 -->
         <Sash
-          :width="store.root.width"
-          :height="store.root.height"
-          :size="store.root.frameSize"
+          :width="store.root.width || 0"
+          :height="store.root.height || 0"
+          :size="store.root.frameSize || 0"
           :isRoot="true"
         />
         
@@ -146,7 +169,7 @@ const viewConfig = computed(() => {
         
         <!-- 框架尺寸控制 - 放在右上角 -->
         <FrameSizeControl
-          :x="store.root.width - 10"
+          :x="(store.root.width || 0) - 10"
           :y="10"
         />
       </v-layer>
@@ -155,8 +178,8 @@ const viewConfig = computed(() => {
     <!-- 添加缩放控制按钮 -->
     <ZoomControls />
     
-    <!-- 添加窗扇类型控制面板 -->
-    <SectionTypeControl />
+    <!-- 添加标注尺寸控制按钮 -->
+    <MetricsControl />
   </div>
 </template>
 
