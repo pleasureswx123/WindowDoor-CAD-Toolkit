@@ -26,6 +26,14 @@ const router = createRouter({
         title: '门窗设计工具'
       }
     },
+    {
+      path: '/icon-demo',
+      name: 'IconDemo',
+      component: () => import('../views/IconDemo.vue'),
+      meta: {
+        title: '图标系统示例'
+      }
+    },
   ],
 })
 

@@ -96,33 +96,20 @@ const childSections = computed(() => {
       :padding="section.frameSize" 
     />
     
+    <!-- 窗框 -->
+    <Sash 
+      :width="section.width" 
+      :height="section.height" 
+      :size="section.frameSize" 
+      :isRoot="false"
+    />
+    
     <!-- 开启方向 -->
     <OpeningDirection 
       :width="section.width" 
       :height="section.height" 
       :padding="section.frameSize" 
       :type="section.type" 
-    />
-    
-    <!-- 窗框 -->
-    <Sash 
-      :width="section.width" 
-      :height="section.height" 
-      :size="section.frameSize" 
-    />
-    
-    <!-- 把手 -->
-    <Handle 
-      :width="section.width" 
-      :height="section.height" 
-      :padding="section.frameSize" 
-      :type="section.type" 
-    />
-    
-    <!-- 选中高亮 -->
-    <v-rect 
-      v-if="isSelected" 
-      v-bind="highlightConfig"
     />
     
     <!-- 渲染子组件 -->
@@ -146,5 +133,19 @@ const childSections = computed(() => {
         />
       </template>
     </template>
+    
+    <!-- 选中高亮 -->
+    <v-rect 
+      v-if="isSelected" 
+      v-bind="highlightConfig"
+    />
+    
+    <!-- 把手 - 放在最后，确保在最上层显示 -->
+    <Handle 
+      :width="section.width" 
+      :height="section.height" 
+      :padding="section.frameSize" 
+      :type="section.type" 
+    />
   </v-group>
 </template> 

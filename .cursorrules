@@ -45,3 +45,14 @@
 - 确保保留原始代码的所有功能和交互
 - 进行增量测试，确保每个组件在转换后都能正常工作
 - 如有疑问，请询问我是否需要实现特定功能或组件
+
+技术栈规范：
+- 基于Konva开发图形功能，优先使用Konva API而非DOM API
+- 对于Konva组件，必须使用Konva提供的方法进行操作，如getAbsolutePosition()、getStage()等
+- 避免在Konva对象上使用DOM方法如getBoundingClientRect()
+- 页面UI组件优先使用Element Plus，保持界面风格统一
+- 充分利用@vueuse/core提供的组合式API，避免重复实现已有功能
+- 采用组件化思维开发，将功能逻辑拆分为独立、可复用的组件
+- 将可复用逻辑提取为composables，提高代码复用性
+- 使用Pinia进行状态管理，避免组件间过度耦合
+- 充分利用项目中配置的unplugin-auto-import与unplugin-vue-components，减少冗余导入

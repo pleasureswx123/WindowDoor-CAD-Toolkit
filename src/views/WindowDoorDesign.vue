@@ -8,6 +8,21 @@ import { useWindowDoorStore } from '@/stores/windowDoorStore';
 const store = useWindowDoorStore();
 const router = useRouter();
 
+// 初始化窗户尺寸
+onMounted(() => {
+  // 获取浏览器窗口尺寸，用于计算合适的初始窗户尺寸
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+  
+  // 根据浏览器尺寸调整窗户大小，确保适合屏幕
+  // 如果尚未设置过尺寸或尺寸不合适，则进行调整
+  const initialWidth = Math.min(1000, screenWidth * 0.6);
+  const initialHeight = Math.min(2000, screenHeight * 0.7);
+  
+  // 更新窗户尺寸
+  store.updateWindowSize(initialWidth, initialHeight);
+});
+
 // 页面标题
 const pageTitle = '门窗设计工具';
 </script>
