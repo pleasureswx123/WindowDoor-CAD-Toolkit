@@ -74,6 +74,9 @@ const viewTools = [
   { id: 'resetZoom', name: '重置缩放', icon: 'i-lucide-focus' },
 ];
 
+// 折叠面板控制 - 默认全部展开
+const activePanels = ref(['windowFrame', 'sectionSettings', 'deviderSettings']);
+
 // 处理工具选择
 const selectTool = (toolId: string) => {
   currentTool.value = toolId;
@@ -165,8 +168,8 @@ const handleViewTool = (toolId: string) => {
     <!-- 左侧工具面板 -->
     <div class="tools-panel">
       <div class="tools-group">
-        <div v-for="tool in tools" :key="tool.id" :class="['tool-item']"
-          @click="selectTool(tool.id)" :title="tool.name">
+        <div v-for="tool in tools" :key="tool.id" :class="['tool-item']" @click="selectTool(tool.id)"
+          :title="tool.name">
           <el-tooltip :content="tool.name" placement="right">
             <div class="tool-button">
               <icon-lucide-mouse-pointer v-if="tool.icon === 'i-lucide-mouse-pointer'" />
@@ -185,8 +188,8 @@ const handleViewTool = (toolId: string) => {
       <div class="tools-separator"></div>
 
       <div class="tools-group">
-        <div v-for="tool in viewTools" :key="tool.id" :class="['tool-item']"
-          @click="handleViewTool(tool.id)" :title="tool.name">
+        <div v-for="tool in viewTools" :key="tool.id" :class="['tool-item']" @click="handleViewTool(tool.id)"
+          :title="tool.name">
           <el-tooltip :content="tool.name" placement="right">
             <div class="tool-button">
               <icon-tabler-ruler-measure v-if="tool.icon === 'i-tabler-ruler-measure'" />
@@ -205,28 +208,49 @@ const handleViewTool = (toolId: string) => {
       <RootFrame ref="rootFrameRef" />
     </div>
 
-    <!-- 右侧属性面板 -->
+    <!-- 右侧属性面板 - 改为折叠面板 -->
     <div class="properties-panel">
-      <el-tabs type="border-card">
-        <el-tab-pane label="窗框设置">
+      <div class="panel-header">
+        <h3>属性设置</h3>
+      </div>
+      <el-collapse v-model="activePanels" class="custom-collapse">
+        <el-collapse-item name="windowFrame" class="custom-collapse-item">
+          <template #title>
+            <div class="collapse-title">
+              <icon-lucide-layout class="collapse-icon" />
+              <span>窗框设置</span>
+            </div>
+          </template>
           <div class="panel-section">
             <h4>窗户尺寸</h4>
             <SizeControlPanel />
           </div>
-        </el-tab-pane>
+        </el-collapse-item>
 
-        <el-tab-pane label="区域设置">
-          <div class="panel-section">
-            <SectionEdit />
-          </div>
-        </el-tab-pane>
-
-        <el-tab-pane label="中挺设置">
+        <el-collapse-item name="deviderSettings" class="custom-collapse-item">
+          <template #title>
+            <div class="collapse-title">
+              <icon-lucide-separator-horizontal class="collapse-icon" />
+              <span>中挺设置</span>
+            </div>
+          </template>
           <div class="panel-section">
             <el-empty description="选择一个中挺以编辑" :image-size="100" />
           </div>
-        </el-tab-pane>
-      </el-tabs>
+        </el-collapse-item>
+
+        <el-collapse-item name="sectionSettings" class="custom-collapse-item">
+          <template #title>
+            <div class="collapse-title">
+              <icon-lucide-table class="collapse-icon" />
+              <span>区域设置</span>
+            </div>
+          </template>
+          <div class="panel-section">
+            <SectionEdit />
+          </div>
+        </el-collapse-item>
+      </el-collapse>
     </div>
 
     <!-- 状态提示 -->
@@ -310,20 +334,77 @@ const handleViewTool = (toolId: string) => {
 /* 右侧属性面板 */
 .properties-panel {
   width: 300px;
-  background-color: #f5f5f5;
-  border-left: 1px solid #ddd;
+  background-color: #f9f9f9;
+  border-left: 1px solid #e8e8e8;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header {
+  padding: 16px 16px 8px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
 }
 
 .panel-section {
-  padding: 10px;
+  padding: 12px 16px;
 }
 
 .panel-section h4 {
   margin-top: 0;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   color: #333;
   font-size: 14px;
+  font-weight: 500;
+}
+
+/* 自定义折叠面板样式 */
+.custom-collapse {
+  --el-collapse-header-height: 48px;
+  --el-collapse-header-bg-color: #f9f9f9;
+  --el-collapse-header-text-color: #333;
+  --el-collapse-header-font-size: 14px;
+  border: none;
+}
+
+.custom-collapse-item {
+  border-top: none;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.custom-collapse-item:last-child {
+  border-bottom: none;
+}
+
+.collapse-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.collapse-icon {
+  color: #4a90e2;
+  font-size: 18px;
+}
+
+:deep(.el-collapse-item__header) {
+  padding: 0 16px;
+  font-weight: 500;
+}
+
+:deep(.el-collapse-item__content) {
+  padding: 0;
+}
+
+:deep(.el-collapse-item__wrap) {
+  border-bottom: none;
 }
 
 /* 状态栏 */
