@@ -31,10 +31,6 @@ export default defineConfig({
       // 自动导入 Element Plus 相关函数
       resolvers: [
         ElementPlusResolver(),
-        // 自动导入图标组件
-        IconsResolver({
-          prefix: 'Icon',
-        }),
       ],
       dts: 'src/auto-imports.d.ts',
       // 使用类型声明文件的全局声明
@@ -48,8 +44,9 @@ export default defineConfig({
         ElementPlusResolver(),
         // Iconify图标组件自动导入
         IconsResolver({
+          prefix: 'Icon',
           // 前缀，用于使用图标的时候，图标名称前缀
-          enabledCollections: ['mdi', 'carbon', 'ant-design', 'tabler', 'ep'],
+          enabledCollections: ['mdi', 'carbon', 'ant-design', 'tabler', 'ep', 'lucide'],
         }),
         VueUseComponentsResolver()
       ],

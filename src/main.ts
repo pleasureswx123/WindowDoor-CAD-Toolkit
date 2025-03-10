@@ -14,6 +14,12 @@ import 'element-plus/dist/index.css'
 // @ts-ignore 忽略zh-cn.mjs的类型声明
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 
+// 引入Bootstrap
+import 'bootstrap/dist/css/bootstrap.min.css'
+import 'bootstrap/dist/js/bootstrap.bundle.min.js'
+// 引入Bootstrap图标
+import 'bootstrap-icons/font/bootstrap-icons.css'
+
 const app = createApp(App)
 
 // 创建和使用Pinia存储
