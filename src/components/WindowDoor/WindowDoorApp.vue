@@ -4,6 +4,7 @@ import { ref, onMounted } from 'vue';
 import RootFrame from './RootFrame.vue';
 import SectionEdit from './SectionEdit.vue';
 import SizeControlPanel from './SizeControlPanel.vue';
+import DeviderEdit from './DeviderEdit.vue';
 import { useWindowDoorStore } from '@/stores/windowDoorStore';
 
 const store = useWindowDoorStore();
@@ -235,7 +236,7 @@ const handleViewTool = (toolId: string) => {
             </div>
           </template>
           <div class="panel-section">
-            <el-empty description="选择一个中挺以编辑" :image-size="100" />
+            <DeviderEdit />
           </div>
         </el-collapse-item>
 
@@ -259,8 +260,12 @@ const handleViewTool = (toolId: string) => {
         当前选中：区域 #{{ store.selectedSection.id }}
         <span v-if="store.selectedSection.type">- 类型：{{ store.selectedSection.type }}</span>
       </div>
+      <div v-else-if="store.selectedDevider" class="status-info">
+        当前选中：中挺 #{{ store.selectedDevider.id }}
+        <span>- {{ store.selectedDevider.width < store.selectedDevider.height ? '垂直中挺' : '水平中挺' }}</span>
+      </div>
       <div v-else class="status-info">
-        未选中区域 - 点击选择一个区域进行编辑
+        未选中区域 - 点击选择一个区域或中挺进行编辑
       </div>
     </div>
   </div>

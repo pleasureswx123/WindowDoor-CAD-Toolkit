@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick, watch } from 'vue';
 
 // 分隔线尺寸常量
 const DEVIDER_SIZE = 40;
@@ -21,6 +21,7 @@ export interface SectionAttrs {
 export interface DeviderAttrs {
   width: number;
   height: number;
+  thickness?: number; // 中挺厚度，默认为40
 }
 
 // 区域类
@@ -69,11 +70,13 @@ export class Devider {
   width: number;
   height: number;
   sections: any[];
+  thickness?: number; // 中挺厚度，默认为40
 
   constructor(attrs: DeviderAttrs) {
     this.id = generateId();
     this.width = attrs.width;
     this.height = attrs.height;
+    this.thickness = attrs.thickness || DEVIDER_SIZE;
     this.sections = [];
   }
 }
@@ -94,6 +97,7 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
   });
 
   const selectedSectionId = ref<number | null>(null);
+  const selectedDeviderId = ref<number | null>(null); // 添加选中中挺ID
   const metricsUpdateCounter = ref(0);
   
   // 控制标注尺寸的显示状态，默认显示
@@ -133,6 +137,44 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     }
     
     return findNested(root.value, selectedSectionId.value);
+  });
+  
+  // 选中的中挺
+  const selectedDevider = computed(() => {
+    if (!selectedDeviderId.value) return null;
+    
+    // 递归查找嵌套的中挺
+    function findNestedDevider(sec: any, id: number): any {
+      if (sec.nodeType === "devider" && sec.id === id) {
+        return sec;
+      }
+      if (!sec.sections) {
+        return null;
+      }
+      for (let i = 0; i < sec.sections.length; i++) {
+        const founded = findNestedDevider(sec.sections[i], id);
+        if (founded) {
+          return founded;
+        }
+      }
+      return null;
+    }
+    
+    return findNestedDevider(root.value, selectedDeviderId.value);
+  });
+  
+  // 当选择区域时，清除中挺选择
+  watch(selectedSectionId, (newId) => {
+    if (newId !== null) {
+      selectedDeviderId.value = null;
+    }
+  });
+  
+  // 当选择中挺时，清除区域选择
+  watch(selectedDeviderId, (newId) => {
+    if (newId !== null) {
+      selectedSectionId.value = null;
+    }
   });
 
   // 设置区域类型
@@ -717,19 +759,139 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     });
   }
 
+  // 更新中挺属性
+  function updateDeviderProps(deviderId: number, props: Partial<DeviderAttrs>) {
+    // 查找中挺函数
+    function findNestedDevider(sec: any, id: number): any {
+      if (sec.nodeType === "devider" && sec.id === id) {
+        return sec;
+      }
+      if (!sec.sections) {
+        return null;
+      }
+      for (let i = 0; i < sec.sections.length; i++) {
+        const founded = findNestedDevider(sec.sections[i], id);
+        if (founded) {
+          return founded;
+        }
+      }
+      return null;
+    }
+    
+    const devider = findNestedDevider(root.value, deviderId);
+    if (!devider) {
+      console.warn(`未找到ID为${deviderId}的中挺`);
+      return;
+    }
+    
+    console.log(`更新中挺 ${deviderId} 属性:`, props);
+    
+    // 更新属性
+    if (props.thickness !== undefined) {
+      devider.thickness = props.thickness;
+    }
+    
+    // 如果中挺是垂直的(宽度小于高度)，更新宽度
+    if (devider.width < devider.height && props.width !== undefined) {
+      const oldWidth = devider.width;
+      devider.width = props.width;
+      
+      // 调整相邻区域大小
+      adjustAdjacentSectionsForDevider(devider.id, oldWidth, props.width, 'horizontal');
+    }
+    
+    // 如果中挺是水平的(高度小于宽度)，更新高度
+    if (devider.height < devider.width && props.height !== undefined) {
+      const oldHeight = devider.height;
+      devider.height = props.height;
+      
+      // 调整相邻区域大小
+      adjustAdjacentSectionsForDevider(devider.id, oldHeight, props.height, 'vertical');
+    }
+    
+    // 触发度量标注更新
+    triggerMetricsUpdate();
+  }
+  
+  // 调整中挺相邻区域的大小
+  function adjustAdjacentSectionsForDevider(deviderId: number, oldSize: number, newSize: number, direction: 'horizontal' | 'vertical') {
+    // 查找父区域以及当前中挺在父区域中的索引
+    function findParentAndIndex(root: any, id: number): { parent: any, index: number } | null {
+      if (!root.sections || root.sections.length === 0) return null;
+      
+      for (let i = 0; i < root.sections.length; i++) {
+        if (root.sections[i].id === id) {
+          return { parent: root, index: i };
+        }
+        const result = findParentAndIndex(root.sections[i], id);
+        if (result) return result;
+      }
+      
+      return null;
+    }
+    
+    const parentInfo = findParentAndIndex(root.value, deviderId);
+    if (!parentInfo) {
+      console.warn('未找到中挺的父区域');
+      return;
+    }
+    
+    const { parent, index } = parentInfo;
+    
+    // 确保父区域有分割方向
+    if (!parent.splitDirection) {
+      console.warn('父区域没有分割方向');
+      return;
+    }
+    
+    // 中挺应该在两个区域之间
+    if (index <= 0 || index >= parent.sections.length - 1) {
+      console.warn('中挺不在两个区域之间');
+      return;
+    }
+    
+    // 获取相邻的两个区域
+    const prevSection = parent.sections[index - 1];
+    const nextSection = parent.sections[index + 1];
+    
+    // 调整大小差值
+    const sizeDiff = newSize - oldSize;
+    
+    if (direction === 'horizontal') {
+      // 水平调整 (调整左右区域的宽度)
+      prevSection.width -= sizeDiff / 2;
+      nextSection.width -= sizeDiff / 2;
+      
+      // 确保最小宽度
+      prevSection.width = Math.max(prevSection.width, 10);
+      nextSection.width = Math.max(nextSection.width, 10);
+    } else {
+      // 垂直调整 (调整上下区域的高度)
+      prevSection.height -= sizeDiff / 2;
+      nextSection.height -= sizeDiff / 2;
+      
+      // 确保最小高度
+      prevSection.height = Math.max(prevSection.height, 10);
+      nextSection.height = Math.max(nextSection.height, 10);
+    }
+  }
+
   return {
-    selectedSectionId,
     root,
+    selectedSectionId,
+    selectedDeviderId, // 导出选中中挺ID
     selectedSection,
+    selectedDevider, // 导出选中中挺
+    metricsUpdateCounter,
     setSectionType,
     splitCurrentSection,
-    updateWindowSize,
-    updateSectionSize,
-    updateFrameSize,
-    initializeWindowWithSections,
-    metricsUpdateCounter,
-    triggerMetricsUpdate,
     toggleMetricsVisibility,
-    isMetricsVisible
+    isMetricsVisible,
+    triggerMetricsUpdate,
+    updateWindowSize,
+    updateFrameSize,
+    updateSectionSize,
+    initializeWindowWithSections,
+    updateDeviderProps, // 导出更新中挺属性的方法
   };
 }); 

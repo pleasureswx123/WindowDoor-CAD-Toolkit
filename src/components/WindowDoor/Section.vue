@@ -137,7 +137,8 @@ const childSections = computed(() => {
         height: child.height,
         x: offsetX,
         y: offsetY,
-        key: child.id
+        key: child.id,
+        id: child.id
       });
     }
 
@@ -230,6 +231,7 @@ const childSections = computed(() => {
           :height="child.height"
           :x="child.x"
           :y="child.y"
+          :id="child.id"
         />
       </template>
     </template>
