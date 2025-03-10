@@ -106,6 +106,7 @@ declare module 'vue' {
     IconMdiTune: typeof import('~icons/mdi/tune')['default']
     IconMdiWindowOpen: typeof import('~icons/mdi/window-open')['default']
     IconSupport: typeof import('./components/icons/IconSupport.vue')['default']
+    IconTablerInfoCircle: typeof import('~icons/tabler/info-circle')['default']
     IconTablerRulerMeasure: typeof import('~icons/tabler/ruler-measure')['default']
     IconTablerSettings: typeof import('~icons/tabler/settings')['default']
     IconTooling: typeof import('./components/icons/IconTooling.vue')['default']
