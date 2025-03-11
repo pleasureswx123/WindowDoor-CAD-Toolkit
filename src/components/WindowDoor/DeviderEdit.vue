@@ -1,88 +1,40 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 import { useWindowDoorStore } from '@/stores/windowDoorStore';
+import { ElMessage } from 'element-plus';
 
 const store = useWindowDoorStore();
-
-// 中挺厚度限制
-const minDeviderSize = 20; // 最小20mm
-const maxDeviderSize = 100; // 最大100mm
 
 // 判断是否有中挺被选中
 const isEnabled = computed(() => !!store.selectedDevider);
 
+const splitDirection = computed(() => store.selectedDevider?.splitDirection);
 // 中挺方向
 const deviderDirection = computed(() => {
-  if (!store.selectedDevider) return '';
-  
-  return store.selectedDevider.width < store.selectedDevider.height 
-    ? '垂直中挺' 
-    : '水平中挺';
+  const temp = { 'horizontal': '水平中挺', 'vertical': '垂直中挺' }
+  return temp[splitDirection.value as keyof typeof temp] || '';
 });
-
-// 中挺厚度
-const thickness = computed({
-  get: () => store.selectedDevider?.thickness || 40,
-  set: (newThickness) => {
-    if (store.selectedDevider && isValidThickness(newThickness)) {
-      store.updateDeviderProps(store.selectedDevider.id, { thickness: newThickness });
-    }
+const temp = { 'horizontal': 'height', 'vertical': 'width' }
+const thicknessVal = computed({
+  get: () => { 
+    return store.selectedDevider?.[temp[splitDirection.value as keyof typeof temp]] || 0;
+  },
+  set: (newVal) => {
+    store.selectedDevider[temp[splitDirection.value as keyof typeof temp]] = newVal;
   }
-});
-
-// 中挺宽度 (如果是垂直中挺)
-const width = computed({
-  get: () => store.selectedDevider?.width || 40,
-  set: (newWidth) => {
-    if (store.selectedDevider && 
-        store.selectedDevider.width < store.selectedDevider.height && 
-        isValidSize(newWidth)) {
-      store.updateDeviderProps(store.selectedDevider.id, { width: newWidth });
-    }
+})
+const relativeX = computed({
+  get: () => store.selectedDevider?.x,
+  set: (newVal) => {
+    store.selectedDevider.x = newVal;
   }
-});
-
-// 中挺高度 (如果是水平中挺)
-const height = computed({
-  get: () => store.selectedDevider?.height || 40,
-  set: (newHeight) => {
-    if (store.selectedDevider && 
-        store.selectedDevider.height < store.selectedDevider.width && 
-        isValidSize(newHeight)) {
-      store.updateDeviderProps(store.selectedDevider.id, { height: newHeight });
-    }
+})
+const relativeY = computed({
+  get: () => store.selectedDevider?.y,
+  set: (newVal) => {
+    store.selectedDevider.y = newVal;
   }
-});
-
-// 中挺材质选项
-const materialOptions = [
-  { value: 'aluminum', label: '铝合金' },
-  { value: 'steel', label: '钢材' },
-  { value: 'vinyl', label: '乙烯基' },
-  { value: 'wood', label: '木质' }
-];
-
-// 当前选择的材质
-const selectedMaterial = ref('aluminum');
-
-// 验证厚度是否在有效范围内
-function isValidThickness(size: number): boolean {
-  return !isNaN(size) && size >= minDeviderSize && size <= maxDeviderSize;
-}
-
-// 验证尺寸是否在有效范围内
-function isValidSize(size: number): boolean {
-  return !isNaN(size) && size >= 10 && size <= 200;
-}
-
-// 厚度值格式化
-function formatThicknessInput(value: string): number {
-  const parsed = parseInt(value, 10);
-  if (isNaN(parsed)) return thickness.value;
-  
-  // 限制最大最小值
-  return Math.min(Math.max(parsed, minDeviderSize), maxDeviderSize);
-}
+})
 
 // 尺寸值格式化
 function formatSizeInput(value: string): number {
@@ -92,6 +44,13 @@ function formatSizeInput(value: string): number {
   // 限制最大最小值
   return Math.min(Math.max(parsed, 10), 200);
 }
+
+// 坐标值格式化
+function formatCoordinateInput(value: string): number {
+  const parsed = parseInt(value, 10);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
 </script>
 
 <template>
@@ -112,7 +71,7 @@ function formatSizeInput(value: string): number {
               <span>ID: {{ store.selectedDevider?.id }}</span>
             </div>
             <div class="info-item">
-              <icon-lucide-move-horizontal v-if="deviderDirection === '水平中挺'" class="info-icon" />
+              <icon-lucide-move-horizontal v-if="splitDirection === 'horizontal'" class="info-icon" />
               <icon-lucide-move-vertical v-else class="info-icon" />
               <span>方向: {{ deviderDirection }}</span>
             </div>
@@ -122,57 +81,64 @@ function formatSizeInput(value: string): number {
 
       <div class="settings-form">
         <el-form label-position="top">
-          <!-- 垂直中挺宽度设置 -->
-          <el-form-item v-if="deviderDirection === '垂直中挺'" label="中挺厚度 (mm)">
-            <el-input-number v-model="width" :min="10" :max="200" :step="5" controls-position="right"
-              :formatter="(val: number) => `${val}`" :parser="(val: string) => formatSizeInput(val)" size="small"
-              style="width: 100%;">
+          <el-form-item label="中挺厚度 (mm)">
+            <el-input-number 
+              v-model="thicknessVal" 
+              :min="10" 
+              :max="200" 
+              :step="5"
+              controls-position="right"
+              :formatter="(val: number) => `${val}`"
+              :parser="(val: string) => formatSizeInput(val)"
+              size="small"
+              style="width: 100%;"
+            >
               <template #suffix>
-                <el-tooltip content="中挺的水平宽度" placement="top">
+                <el-tooltip content="中挺的厚度" placement="top">
                   <icon-tabler-info-circle class="info-icon" />
                 </el-tooltip>
               </template>
             </el-input-number>
           </el-form-item>
 
-          <!-- 水平中挺高度设置 -->
-          <el-form-item v-if="deviderDirection === '水平中挺'" label="中挺厚度 (mm)">
-            <el-input-number v-model="height" :min="10" :max="200" :step="5" controls-position="right"
-              :formatter="(val: number) => `${val}`" :parser="(val: string) => formatSizeInput(val)" size="small"
-              style="width: 100%;">
-              <template #suffix>
-                <el-tooltip content="中挺的垂直高度" placement="top">
-                  <icon-tabler-info-circle class="info-icon" />
-                </el-tooltip>
-              </template>
-            </el-input-number>
-          </el-form-item>
+          <!-- 坐标设置分组 -->
+          <el-divider>坐标位置</el-divider>
+          
+          <!-- 相对坐标设置 -->
+          <div class="coordinate-controls">
+            <el-row :gutter="12">
+              <el-col :span="12">
+                <el-form-item label="X坐标 (px)">
+                  <el-input-number 
+                    v-model="relativeX" 
+                    :step="1"
+                    controls-position="right"
+                    :formatter="(val: number) => `${val}`"
+                    :parser="(val: string) => formatCoordinateInput(val)"
+                    size="small"
+                    style="width: 100%;"
+                  >
+                  </el-input-number>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="Y坐标 (px)">
+                  <el-input-number 
+                    v-model="relativeY" 
+                    :step="1"
+                    controls-position="right"
+                    :formatter="(val: number) => `${val}`"
+                    :parser="(val: string) => formatCoordinateInput(val)"
+                    size="small"
+                    style="width: 100%;"
+                  >
+                  </el-input-number>
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </div>
 
-          <!-- 中挺材质选择 -->
-          <el-form-item label="材质">
-            <el-select v-model="selectedMaterial" placeholder="选择材质" style="width: 100%;">
-              <el-option v-for="option in materialOptions" :key="option.value" :value="option.value"
-                :label="option.label" />
-            </el-select>
-          </el-form-item>
-
-          <!-- 中挺颜色选择 -->
-          <el-form-item label="颜色">
-            <el-color-picker show-alpha style="width: 100%;" />
-          </el-form-item>
         </el-form>
-      </div>
-
-      <!-- 视觉展示 -->
-      <div class="devider-preview">
-        <div class="preview-shape"
-          :class="{ 'horizontal': deviderDirection === '水平中挺', 'vertical': deviderDirection === '垂直中挺' }" :style="{ 
-            width: deviderDirection === '垂直中挺' ? `${width}px` : '100px', 
-            height: deviderDirection === '水平中挺' ? `${height}px` : '100px',
-            background: selectedMaterial === 'aluminum' ? '#D3D3D3' : 
-                        selectedMaterial === 'steel' ? '#A0A0A0' : 
-                        selectedMaterial === 'vinyl' ? '#F5F5F5' : '#8B4513'
-          }"></div>
       </div>
     </div>
   </div>
@@ -214,6 +180,24 @@ function formatSizeInput(value: string): number {
 
 .settings-form {
   margin-bottom: 16px;
+}
+
+.coordinate-controls {
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.coordinate-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  gap: 8px;
+}
+
+.button-icon {
+  margin-right: 4px;
 }
 
 .devider-preview {
@@ -262,10 +246,37 @@ function formatSizeInput(value: string): number {
   box-shadow: 0 0 0 1px #4a90e2 inset;
 }
 
+:deep(.el-divider__text) {
+  font-size: 14px;
+  font-weight: 500;
+  color: #606266;
+}
+
 /* 响应式样式 */
 @media (max-width: 576px) {
   .devider-preview {
     height: 100px;
   }
+  
+  .coordinate-actions {
+    flex-direction: column;
+  }
+}
+
+.coordinate-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0;
+  padding: 8px;
+  background-color: #f0f9ff;
+  border-radius: 4px;
+  border-left: 3px solid #409eff;
+  font-size: 13px;
+  color: #606266;
+}
+
+.hint-icon {
+  color: #409eff;
 }
 </style> 

@@ -162,6 +162,14 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     
     return findNestedDevider(root.value, selectedDeviderId.value);
   });
+
+  watch(selectedDevider, (newDevider) => {
+    console.log('selectedDevider', newDevider);
+    // 触发度量标注更新
+    setTimeout(() => {
+      triggerMetricsUpdate();
+    }, 100);
+  }, { deep: true });
   
   // 当选择区域时，清除中挺选择
   watch(selectedSectionId, (newId) => {
@@ -758,60 +766,6 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       triggerMetricsUpdate();
     });
   }
-
-  // 更新中挺属性
-  function updateDeviderProps(deviderId: number, props: Partial<DeviderAttrs>) {
-    // 查找中挺函数
-    function findNestedDevider(sec: any, id: number): any {
-      if (sec.nodeType === "devider" && sec.id === id) {
-        return sec;
-      }
-      if (!sec.sections) {
-        return null;
-      }
-      for (let i = 0; i < sec.sections.length; i++) {
-        const founded = findNestedDevider(sec.sections[i], id);
-        if (founded) {
-          return founded;
-        }
-      }
-      return null;
-    }
-    
-    const devider = findNestedDevider(root.value, deviderId);
-    if (!devider) {
-      console.warn(`未找到ID为${deviderId}的中挺`);
-      return;
-    }
-    
-    console.log(`更新中挺 ${deviderId} 属性:`, props);
-    
-    // 更新属性
-    if (props.thickness !== undefined) {
-      devider.thickness = props.thickness;
-    }
-    
-    // 如果中挺是垂直的(宽度小于高度)，更新宽度
-    if (devider.width < devider.height && props.width !== undefined) {
-      const oldWidth = devider.width;
-      devider.width = props.width;
-      
-      // 调整相邻区域大小
-      adjustAdjacentSectionsForDevider(devider.id, oldWidth, props.width, 'horizontal');
-    }
-    
-    // 如果中挺是水平的(高度小于宽度)，更新高度
-    if (devider.height < devider.width && props.height !== undefined) {
-      const oldHeight = devider.height;
-      devider.height = props.height;
-      
-      // 调整相邻区域大小
-      adjustAdjacentSectionsForDevider(devider.id, oldHeight, props.height, 'vertical');
-    }
-    
-    // 触发度量标注更新
-    triggerMetricsUpdate();
-  }
   
   // 调整中挺相邻区域的大小
   function adjustAdjacentSectionsForDevider(deviderId: number, oldSize: number, newSize: number, direction: 'horizontal' | 'vertical') {
@@ -892,6 +846,5 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     updateFrameSize,
     updateSectionSize,
     initializeWindowWithSections,
-    updateDeviderProps, // 导出更新中挺属性的方法
   };
 }); 
