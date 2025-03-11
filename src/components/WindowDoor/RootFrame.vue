@@ -32,6 +32,7 @@ onMounted(() => {
   // 确保root对象已正确初始化
   if (!store.root.sections || store.root.sections.length === 0) {
     console.log('初始化窗户布局');
+
     store.initializeWindowWithSections('default');
   }
   
@@ -246,6 +247,7 @@ const gridLines = computed(() => {
 
 // 为鼠标滚轮事件添加事件监听
 useEventListener(containerRef, 'wheel', handleWheel, { passive: false });
+
 </script>
 
 <template>

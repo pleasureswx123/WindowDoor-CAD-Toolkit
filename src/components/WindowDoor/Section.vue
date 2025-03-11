@@ -191,26 +191,26 @@ const childSections = computed(() => {
     <!-- 空区域提示 - 只在真正的空区域（没有子区域）显示 -->
     <template v-if="isEmptyWithoutChildren">
       <!-- 区域背景 -->
-      <v-rect 
+      <!-- <v-rect 
         :config="emptyAreaStyle"
-      />
+      /> -->
       
       <!-- 中心提示圆圈 -->
-      <v-circle
+      <!-- <v-circle
         :config="circleTipStyle"
-      />
+      /> -->
       
       <!-- 添加加号图标 -->
-      <v-path
+      <!-- <v-path
         :config="plusSignStyle"
-      />
+      /> -->
       
       <!-- 提示文本 -->
-      <v-text
+      <!-- <v-text
         :x="0"
         :y="props.section.height / 2 + 50"
         v-bind="emptyTextStyle"
-      />
+      /> -->
     </template>
     
     <!-- 渲染子组件 -->

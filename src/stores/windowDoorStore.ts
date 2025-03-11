@@ -275,13 +275,12 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
 
   // 触发度量标注更新
   function triggerMetricsUpdate() {
-    metricsUpdateCounter.value++;
+    metricsUpdateCounter.value += 1;
   }
   
   // 更新窗户尺寸
   function updateWindowSize(width: number, height: number) {
     console.log(`更新窗户尺寸: ${root.value.width}x${root.value.height} -> ${width}x${height}`);
-    
     // 保存旧尺寸，用于计算缩放比例
     const oldWidth = root.value.width;
     const oldHeight = root.value.height;
@@ -290,91 +289,49 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     width = Math.max(width, root.value.frameSize * 2 + 10);
     height = Math.max(height, root.value.frameSize * 2 + 10);
     
+    // 计算缩放比例
+    const widthRatio = width / oldWidth;
+    const heightRatio = height / oldHeight;
+    
     // 更新根窗户尺寸
     root.value.width = width;
     root.value.height = height;
     
-    // 计算内部区域尺寸 (减去两边的框架)
-    const innerWidth = Math.max(10, width - root.value.frameSize * 2);
-    const innerHeight = Math.max(10, height - root.value.frameSize * 2);
+    // 递归调整所有子元素的尺寸和位置
+    adjustChildrenSizesAndPositions(root.value, widthRatio, heightRatio, 0);
     
-    console.log(`计算内部区域尺寸: ${innerWidth}x${innerHeight}`);
-    
-    // 更新根区域的内部尺寸
-    if (root.value.sections[0]) {
-      // 如果有子区域，需要更新已分割区域的尺寸
-      if (root.value.sections[0].sections && root.value.sections[0].sections.length > 0) {
-        console.log('已存在子区域，需要递归调整尺寸');
-        
-        // 如果有分割，需要按比例调整所有子区域尺寸
-        if (root.value.sections[0].splitDirection === 'vertical') {
-          // 水平调整宽度
-          const widthRatio = innerWidth / root.value.sections[0].width;
-          console.log(`计算水平缩放比例: ${widthRatio}`);
-          
-          // 更新当前区域尺寸
-          root.value.sections[0].width = innerWidth;
-          root.value.sections[0].height = innerHeight;
-          
-          // 递归调整子区域
-          adjustChildrenSizes(root.value.sections[0], widthRatio, 1);
-        } 
-        else if (root.value.sections[0].splitDirection === 'horizontal') {
-          // 垂直调整高度
-          const heightRatio = innerHeight / root.value.sections[0].height;
-          console.log(`计算垂直缩放比例: ${heightRatio}`);
-          
-          // 更新当前区域尺寸
-          root.value.sections[0].width = innerWidth;
-          root.value.sections[0].height = innerHeight;
-          
-          // 递归调整子区域
-          adjustChildrenSizes(root.value.sections[0], 1, heightRatio);
-        }
-        else {
-          // 没有分割方向但有子区域的情况
-          root.value.sections[0].width = innerWidth;
-          root.value.sections[0].height = innerHeight;
-        }
-      } 
-      else {
-        // 没有子区域，直接更新尺寸
-        root.value.sections[0].width = innerWidth;
-        root.value.sections[0].height = innerHeight;
-      }
-    }
-    
-    // 通知度量标注更新
+    // 触发度量标注更新
     triggerMetricsUpdate();
   }
 
-  // 递归调整子区域尺寸
-  function adjustChildrenSizes(section: any, widthRatio: number, heightRatio: number) {
+  // 递归调整子元素尺寸和位置
+  function adjustChildrenSizesAndPositions(section: any, widthRatio: number, heightRatio: number, index: number) {
     if (!section.sections || section.sections.length === 0) {
       return;
     }
     
-    for (const child of section.sections) {
-      // 保存原来的类型
-      const originalType = child.type;
-      
-      // 按比例调整尺寸
-      if (widthRatio !== 1) {
-        child.width = Math.max(10, Math.round(child.width * widthRatio));
+    // 遍历所有子元素
+    for (let i = 0; i < section.sections.length; i++) {
+      const child = section.sections[i];
+      if (index === 0 && i === 0 && child.nodeType === 'section' && child.type === 'empty') {
+        child.width = root.value.width - root.value.frameSize * 2;
+        child.height = root.value.height - root.value.frameSize * 2;
+        child.x = 0;
+        child.y = 0;
+      } else {
+        // 调整尺寸
+        child.width = Math.round(child.width * widthRatio);
+        child.height = Math.round(child.height * heightRatio);
+        // 调整位置（如果有）
+        if (typeof child.x === 'number') {
+          child.x = Math.round(child.x * widthRatio);
+        }
+        if (typeof child.y === 'number') {
+          child.y = Math.round(child.y * heightRatio);
+        }
       }
-      if (heightRatio !== 1) {
-        child.height = Math.max(10, Math.round(child.height * heightRatio));
-      }
-      
-      // 确保类型不变
-      if (child.nodeType === 'section') {
-        child.type = originalType;
-      }
-      
-      console.log(`调整子区域 ${child.id} 尺寸: ${child.width}x${child.height}, 类型: ${child.type}`);
-      
-      // 递归处理
-      adjustChildrenSizes(child, widthRatio, heightRatio);
+      // 递归处理子元素
+      adjustChildrenSizesAndPositions(child, widthRatio, heightRatio, index + 1);
     }
   }
 
@@ -830,21 +787,101 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     }
   }
 
+  // 更新元素尺寸（包括区域和中挺）
+  function updateElementSize(elementId: number | string, sizeData: { width?: number, height?: number }) {
+    // 递归查找元素
+    function findElementAndUpdate(sec: any, id: any): boolean {
+      if (sec.id == id) {
+        // 更新找到的元素尺寸
+        if (sizeData.width !== undefined) {
+          sec.width = sizeData.width;
+        }
+        if (sizeData.height !== undefined) {
+          sec.height = sizeData.height;
+        }
+        return true;
+      }
+      
+      if (!sec.sections) {
+        return false;
+      }
+      
+      for (let i = 0; i < sec.sections.length; i++) {
+        if (findElementAndUpdate(sec.sections[i], id)) {
+          return true;
+        }
+      }
+      
+      return false;
+    }
+    
+    findElementAndUpdate(root.value, elementId);
+    
+    // 触发度量标注更新
+    triggerMetricsUpdate();
+  }
+
+  // 更新元素位置
+  function updateElementPosition(elementId: number | string, x: number, y: number) {
+    // 递归查找元素
+    function findElementAndUpdate(sec: any, id: any): boolean {
+      if (sec.id == id) {
+        // 更新找到的元素位置
+        sec.x = x;
+        sec.y = y;
+        return true;
+      }
+      
+      if (!sec.sections) {
+        return false;
+      }
+      
+      for (let i = 0; i < sec.sections.length; i++) {
+        if (findElementAndUpdate(sec.sections[i], id)) {
+          return true;
+        }
+      }
+      
+      return false;
+    }
+    
+    findElementAndUpdate(root.value, elementId);
+    
+    // 触发度量标注更新
+    triggerMetricsUpdate();
+  }
+
+  // 更新中挺位置
+  function updateDeviderPosition(deviderId: number | string, x: number, y: number) {
+    // ... existing code ...
+  }
+
+  // 更新中挺尺寸
+  function updateDeviderSize(deviderId: number | string, sizeData: { width?: number, height?: number }) {
+    // 复用updateElementSize方法
+    updateElementSize(deviderId, sizeData);
+  }
+
   return {
     root,
     selectedSectionId,
-    selectedDeviderId, // 导出选中中挺ID
+    selectedDeviderId,
     selectedSection,
-    selectedDevider, // 导出选中中挺
-    metricsUpdateCounter,
+    selectedDevider,
     setSectionType,
     splitCurrentSection,
+    updateWindowSize,
+    updateSectionSize,
+    updateDeviderPosition,
+    updateDeviderSize,
+    updateFrameSize,
+    triggerMetricsUpdate,
+    showMetrics,
     toggleMetricsVisibility,
     isMetricsVisible,
-    triggerMetricsUpdate,
-    updateWindowSize,
-    updateFrameSize,
-    updateSectionSize,
+    metricsUpdateCounter,
     initializeWindowWithSections,
+    updateElementSize,
+    updateElementPosition,
   };
 }); 

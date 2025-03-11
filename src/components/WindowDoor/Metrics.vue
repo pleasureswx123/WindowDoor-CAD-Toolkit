@@ -73,6 +73,132 @@ function calculateMetrics() {
   verticalComponents.value = [];
   horizontalComponents.value = [];
 
+  // 尝试获取Konva节点信息以获得更精确的计算
+  try {
+    // 获取所有Konva Stage实例
+    const stages = document.querySelectorAll('.konvajs-content canvas');
+    if (stages.length > 0) {
+      const nodeMap = new Map();
+      
+      // 遍历所有舞台，构建节点映射
+      for (const canvas of stages) {
+        const stage = (canvas as any)?.__vue_app__?.__instance?.parent?.parent?.ctx?.getStage?.();
+        if (!stage) continue;
+        
+        // 查找所有图层
+        const layers = stage.getLayers();
+        for (const layer of layers) {
+          // 递归查找所有节点
+          collectAllNodes(layer, nodeMap);
+        }
+      }
+      
+      // 如果找到了节点，使用Konva API计算精确的标注位置
+      if (nodeMap.size > 0) {
+        calculateWithKonvaNodes(nodeMap);
+        return; // 使用Konva计算成功，直接返回
+      }
+    }
+  } catch (error) {
+    console.warn('使用Konva API计算标注失败，回退到数据模型计算', error);
+  }
+  
+  // 如果Konva API不可用，回退到基于数据模型的计算
+  fallbackCalculateWithDataModel();
+}
+
+// 递归收集所有具有ID的Konva节点
+function collectAllNodes(container: any, nodeMap: Map<string | number, any>) {
+  // 检查当前节点是否有ID
+  const id = container.id?.();
+  if (id) {
+    nodeMap.set(id, container);
+  }
+  
+  // 递归处理子节点
+  const children = container.getChildren?.();
+  if (children && children.length) {
+    for (const child of children) {
+      collectAllNodes(child, nodeMap);
+    }
+  }
+}
+
+// 使用Konva节点计算标注
+function calculateWithKonvaNodes(nodeMap: Map<string | number, any>) {
+  console.log('使用Konva API计算标注位置');
+  
+  // 添加整个窗户的宽高标注
+  const rootNode = nodeMap.get('root');
+  if (rootNode) {
+    // 使用getClientRect获取精确的边界框
+    const rect = rootNode.getClientRect();
+    
+    // 外部宽度标注
+    horizontalComponents.value.push({
+      width: rect.width,
+      x: rect.x,
+      y: rect.y + rect.height + FRAME_METRIC_OFFSET,
+      key: 'h-full-width',
+      sectionId: 'root-width',
+      isFrameMetric: true,
+      nodeType: 'frame'
+    });
+
+    // 外部高度标注
+    verticalComponents.value.push({
+      height: rect.height,
+      x: rect.x + rect.width + FRAME_METRIC_OFFSET,
+      y: rect.y,
+      key: 'v-full-height',
+      sectionId: 'root-height',
+      isFrameMetric: true,
+      nodeType: 'frame'
+    });
+  }
+  
+  // 处理所有节点的标注
+  for (const [id, node] of nodeMap.entries()) {
+    // 跳过根节点，因为已单独处理
+    if (id === 'root') continue;
+    
+    // 获取节点类型和属性
+    const nodeType = node.attrs?.nodeType || 'unknown';
+    
+    // 获取中心点基准的精确边界
+    const rect = node.getClientRect();
+    if (!rect || typeof rect.width !== 'number' || typeof rect.height !== 'number') {
+      continue; // 跳过无效的节点
+    }
+    
+    // 垂直标注 - 放置在节点的右侧，与节点中心点对齐
+    verticalComponents.value.push({
+      height: rect.height,
+      x: rect.x + rect.width + 20, // 稍微偏移以避免重叠
+      y: rect.y,
+      key: `v-${id}`,
+      sectionId: id,
+      nodeType: nodeType,
+      centerBased: true // 标记为基于中心点的计算
+    });
+
+    // 水平标注 - 放置在节点下方，与节点中心点对齐
+    horizontalComponents.value.push({
+      width: rect.width,
+      x: rect.x,
+      y: rect.y + rect.height + 20, // 稍微偏移以避免重叠
+      key: `h-${id}`,
+      sectionId: id,
+      nodeType: nodeType,
+      centerBased: true // 标记为基于中心点的计算
+    });
+  }
+}
+
+// 回退方法：使用数据模型计算标注（原有逻辑）
+function fallbackCalculateWithDataModel() {
+  console.log('回退到使用数据模型计算标注位置');
+  
   // 添加整个窗户的宽度和高度标注
   // 外部宽度标注
   horizontalComponents.value.push({
