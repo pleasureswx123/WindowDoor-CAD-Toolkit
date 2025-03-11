@@ -98,23 +98,7 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
 
   const selectedSectionId = ref<number | null>(null);
   const selectedDeviderId = ref<number | null>(null); // 添加选中中挺ID
-  const metricsUpdateCounter = ref(0);
   
-  // 控制标注尺寸的显示状态，默认显示
-  const showMetrics = ref(true);
-  
-  // 切换标注尺寸的显示状态
-  function toggleMetricsVisibility() {
-    showMetrics.value = !showMetrics.value;
-    // 触发UI更新
-    triggerMetricsUpdate();
-  }
-  
-  // 获取当前标注尺寸的显示状态
-  function isMetricsVisible() {
-    return showMetrics.value;
-  }
-
   // 选中的区域
   const selectedSection = computed(() => {
     if (!selectedSectionId.value) return null;
@@ -165,10 +149,6 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
 
   watch(selectedDevider, (newDevider) => {
     console.log('selectedDevider', newDevider);
-    // 触发度量标注更新
-    setTimeout(() => {
-      triggerMetricsUpdate();
-    }, 100);
   }, { deep: true });
   
   // 当选择区域时，清除中挺选择
@@ -187,14 +167,19 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
 
   // 设置区域类型
   function setSectionType(type: string) {
-    if (!selectedSection.value) return;
-    
-    selectedSection.value.type = type;
-    
-    if (type === "none") {
-      selectedSection.value.frameSize = 0;
-    } else {
-      selectedSection.value.frameSize = selectedSection.value.frameSize || 50;
+    if (selectedSection.value) {
+      // 为选中的区域设置新的类型
+      selectedSection.value.type = type;
+      console.log(`设置区域 ${selectedSection.value.id} 的类型为 ${type}`);
+      
+      // 根据类型调整框架尺寸
+      if (type === 'none') {
+        // 固定窗没有框架
+        selectedSection.value.frameSize = 0;
+      } else {
+        // 其他类型使用默认框架尺寸
+        selectedSection.value.frameSize = 50;
+      }
     }
   }
 
@@ -273,11 +258,6 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     selectedSectionId.value = null;
   }
 
-  // 触发度量标注更新
-  function triggerMetricsUpdate() {
-    metricsUpdateCounter.value += 1;
-  }
-  
   // 更新窗户尺寸
   function updateWindowSize(width: number, height: number) {
     console.log(`更新窗户尺寸: ${root.value.width}x${root.value.height} -> ${width}x${height}`);
@@ -299,9 +279,6 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     
     // 递归调整所有子元素的尺寸和位置
     adjustChildrenSizesAndPositions(root.value, widthRatio, heightRatio, 0);
-    
-    // 触发度量标注更新
-    triggerMetricsUpdate();
   }
 
   // 递归调整子元素尺寸和位置
@@ -386,9 +363,6 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       // 更新选中窗扇的框架尺寸
       selectedSection.value.frameSize = newFrameSize;
     }
-    
-    // 触发度量标注更新
-    triggerMetricsUpdate();
   }
 
   // 更新指定区域的尺寸
@@ -480,7 +454,6 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
         root.value.height = height + frameSize * 2;
       }
       console.log('更新了根窗户尺寸');
-      triggerMetricsUpdate();
       return;
     }
     
@@ -502,8 +475,7 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     // 查找父区域
     const parentInfo = findParentAndIndex(root.value, sectionId);
     if (!parentInfo) {
-      console.warn('未找到父区域，将直接触发度量更新');
-      triggerMetricsUpdate();
+      console.warn('未找到父区域');
       return;
     }
     
@@ -550,10 +522,6 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
         }
       }
     }
-    
-    // 无论如何都触发度量标注更新
-    console.log('触发度量标注更新');
-    triggerMetricsUpdate();
   }
 
   // 初始化窗户布局，创建预设的窗扇和分隔条
@@ -717,11 +685,6 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
         sections: [mainSection]
       };
     }
-    
-    // 确保store状态更新，触发度量标注计算
-    nextTick(() => {
-      triggerMetricsUpdate();
-    });
   }
   
   // 调整中挺相邻区域的大小
@@ -816,9 +779,6 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     }
     
     findElementAndUpdate(root.value, elementId);
-    
-    // 触发度量标注更新
-    triggerMetricsUpdate();
   }
 
   // 更新元素位置
@@ -846,9 +806,6 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     }
     
     findElementAndUpdate(root.value, elementId);
-    
-    // 触发度量标注更新
-    triggerMetricsUpdate();
   }
 
   // 更新中挺位置
@@ -862,7 +819,14 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     updateElementSize(deviderId, sizeData);
   }
 
+  const scale = ref(1);
+  const updateScale = (newScale: number) => {
+    scale.value = newScale;
+  };
+
   return {
+    scale,
+    updateScale,
     root,
     selectedSectionId,
     selectedDeviderId,
@@ -875,12 +839,8 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     updateDeviderPosition,
     updateDeviderSize,
     updateFrameSize,
-    triggerMetricsUpdate,
-    showMetrics,
-    toggleMetricsVisibility,
-    isMetricsVisible,
-    metricsUpdateCounter,
     initializeWindowWithSections,
+    adjustAdjacentSectionsForDevider,
     updateElementSize,
     updateElementPosition,
   };

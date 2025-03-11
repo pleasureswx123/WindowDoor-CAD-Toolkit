@@ -68,7 +68,6 @@ const tools = [
 
 // 视图控制工具
 const viewTools = [
-  { id: 'toggleMetrics', name: '标尺', icon: 'i-tabler-ruler-measure', active: true },
   { id: 'toggleGrid', name: '网格', icon: 'i-mdi-grid', active: false },
   { id: 'zoomIn', name: '放大', icon: 'ep:zoom-in' },
   { id: 'zoomOut', name: '缩小', icon: 'ep:zoom-out' },
@@ -123,14 +122,6 @@ const selectTool = (toolId: string) => {
 // 处理视图工具操作
 const handleViewTool = (toolId: string) => {
   switch (toolId) {
-    case 'toggleMetrics':
-      store.toggleMetricsVisibility();
-      // 更新激活状态
-      const metricsToolIndex = viewTools.findIndex(t => t.id === 'toggleMetrics');
-      if (metricsToolIndex >= 0) {
-        viewTools[metricsToolIndex].active = store.isMetricsVisible();
-      }
-      break;
     case 'toggleGrid':
       // 切换网格显示状态
       const gridToolIndex = viewTools.findIndex(t => t.id === 'toggleGrid');
@@ -193,8 +184,7 @@ const handleViewTool = (toolId: string) => {
           :title="tool.name">
           <el-tooltip :content="tool.name" placement="right">
             <div class="tool-button">
-              <icon-tabler-ruler-measure v-if="tool.icon === 'i-tabler-ruler-measure'" />
-              <icon-mdi-grid v-else-if="tool.icon === 'i-mdi-grid'" />
+              <icon-mdi-grid v-if="tool.icon === 'i-mdi-grid'" />
               <icon-ep:zoom-in v-else-if="tool.icon === 'ep:zoom-in'" />
               <icon-ep:zoom-out v-else-if="tool.icon === 'ep:zoom-out'" />
               <icon-lucide-focus v-else-if="tool.icon === 'i-lucide-focus'" />
@@ -255,7 +245,7 @@ const handleViewTool = (toolId: string) => {
     </div>
 
     <!-- 状态提示 -->
-    <div class="status-bar">
+    <div class="status-bar d-flex">
       <div v-if="store.selectedSection" class="status-info">
         当前选中：区域 #{{ store.selectedSection.id }}
         <span v-if="store.selectedSection.type">- 类型：{{ store.selectedSection.type }}</span>
@@ -267,6 +257,9 @@ const handleViewTool = (toolId: string) => {
       <div v-else class="status-info">
         未选中区域 - 点击选择一个区域或中挺进行编辑
       </div>
+
+      <!-- 缩放指示器 -->
+      <div class="zoom-indicator ms-auto">{{ Math.round(store.scale * 100) }}%</div>
     </div>
   </div>
 </template>

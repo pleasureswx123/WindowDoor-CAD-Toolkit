@@ -248,15 +248,10 @@ const dialogStyle = computed(() => {
           :controls="false"
           :formatter="(val: number) => `${val}`"
           :parser="formatInput"
-          :class="{ 'is-error': !isValidValue }"
-        >
-          <template #suffix>
-            <span class="unit">{{ props.unit }}</span>
-          </template>
-        </el-input-number>
+        />
         
         <app-button
-          size="small" 
+          size="small"
           @click="increment"
           :disabled="inputValue >= props.max"
           circle
@@ -264,67 +259,56 @@ const dialogStyle = computed(() => {
         />
       </div>
       
-      <div class="step-adjustment">
-        <span class="step-label">步长: {{ currentStep }} {{ props.unit }}</span>
+      <div class="step-controls">
+        <div class="step-label">步长: {{ currentStep }}</div>
         <div class="step-buttons">
-          <el-button-group size="small">
-            <app-button
-              size="small" 
-              :disabled="currentStep <= Math.min(...stepOptions)" 
-              @click="adjustStep(-1)"
-              icon="ep:zoom-out"
-            />
-            <app-button
-              size="small" 
-              :disabled="currentStep >= Math.max(...stepOptions)"
-              @click="adjustStep(1)"
-              icon="ep:zoom-in"
-            />
-          </el-button-group>
+          <app-button 
+            size="small" 
+            @click="() => adjustStep(-1)"
+            :disabled="currentStep === stepOptions[0]"
+          >
+            <el-icon><ep:arrow-left /></el-icon>
+          </app-button>
+          <app-button 
+            size="small" 
+            @click="() => adjustStep(1)"
+            :disabled="currentStep === stepOptions[stepOptions.length-1]"
+          >
+            <el-icon><ep:arrow-right /></el-icon>
+          </app-button>
         </div>
       </div>
       
-      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-      
-      <div class="button-container">
-        <app-button
-          size="small" 
-          @click="handleCancel"
-        >
-          取消
-        </app-button>
-        <app-button
-          type="primary" 
-          size="small" 
-          @click="handleSubmit"
-          :disabled="!isValidValue"
-        >
-          确定
-        </app-button>
+      <div v-if="errorMessage" class="error-message">
+        {{ errorMessage }}
       </div>
     </div>
+    
+    <template #footer>
+      <div class="dialog-footer">
+        <app-button @click="handleCancel">取消</app-button>
+        <app-button type="primary" @click="handleSubmit" :disabled="!isValidValue">确定</app-button>
+      </div>
+    </template>
   </el-dialog>
 </template>
 
 <style scoped>
 .dialog-title {
   font-size: 16px;
-  font-weight: bold;
-  color: #303133;
+  font-weight: 500;
 }
 
 .popup-input-content {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 12px;
+  gap: 16px;
+  padding: 10px 0;
 }
 
 .current-value {
-  width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 4px;
   font-size: 14px;
   color: #606266;
@@ -333,8 +317,8 @@ const dialogStyle = computed(() => {
 .change-indicator {
   display: flex;
   align-items: center;
-  gap: 2px;
-  font-size: 12px;
+  gap: 4px;
+  font-size: 13px;
 }
 
 .change-indicator.positive {
@@ -348,64 +332,39 @@ const dialogStyle = computed(() => {
 .input-with-buttons {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-
-.step-adjustment {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
-  color: #606266;
-}
-
-.step-label {
-  margin-right: 10px;
-}
-
-.adjust-button {
-  min-width: 32px;
-  height: 32px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.unit {
-  margin-left: 5px;
-  font-size: 14px;
-  color: #666;
-}
-
-.error-message {
-  color: #f56c6c;
-  font-size: 12px;
-  margin: 0;
-}
-
-.button-container {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  margin-top: 10px;
+  gap: 10px;
 }
 
 :deep(.el-input-number) {
   flex: 1;
-  margin: 0 8px;
 }
 
-:deep(.el-input-number.is-error .el-input__wrapper) {
-  border-color: #f56c6c;
-  box-shadow: 0 0 0 1px #f56c6c inset;
+:deep(.el-input-number__decrease),
+:deep(.el-input-number__increase) {
+  display: none;
 }
 
-/* 优化dialog位置和样式 */
-:deep(.el-dialog) {
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.step-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #606266;
+}
+
+.step-buttons {
+  display: flex;
+  gap: 5px;
+}
+
+.error-message {
+  color: #f56c6c;
+  font-size: 13px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 </style> 

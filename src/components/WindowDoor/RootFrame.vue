@@ -4,9 +4,6 @@ import { ref, onMounted, computed, watch, nextTick } from 'vue';
 import { useWindowDoorStore } from '@/stores/windowDoorStore';
 import Section from './Section.vue';
 import Sash from './Sash.vue';
-import Metrics from './Metrics.vue';
-import FrameSizeControl from './utils/FrameSizeControl.vue';
-import MetricsControl from './utils/MetricsControl.vue';
 import { useEventListener } from '@vueuse/core';
 
 const store = useWindowDoorStore();
@@ -20,12 +17,16 @@ const stageSize = ref({
 });
 
 // 添加缩放和平移状态
-const scale = ref(1);
+const scale = ref(store.scale);
 const position = ref({ x: 0, y: 0 });
 const lastMousePosition = ref({ x: 0, y: 0 });
 const isDragging = ref(false);
 // 控制网格显示
 const showGrid = ref(false);
+
+watch(scale, (newScale) => {
+  store.updateScale(newScale);
+});
 
 // 初始化时获取容器宽度并监听窗口大小变化
 onMounted(() => {
@@ -317,15 +318,6 @@ useEventListener(containerRef, 'wheel', handleWheel, { passive: false });
           :size="store.root.frameSize || 0"
           :isRoot="true"
         />
-        
-        <!-- 度量标注 -->
-        <Metrics />
-        
-        <!-- 框架尺寸控制 - 放在右上角 -->
-        <FrameSizeControl
-          :x="(store.root.width || 0) - 10"
-          :y="10"
-        />
       </v-layer>
     </v-stage>
     
@@ -335,8 +327,6 @@ useEventListener(containerRef, 'wheel', handleWheel, { passive: false });
       <div class="center-line vertical"></div>
     </div>
     
-    <!-- 缩放指示器 -->
-    <div class="zoom-indicator">{{ Math.round(scale * 100) }}%</div>
   </div>
 </template>
 

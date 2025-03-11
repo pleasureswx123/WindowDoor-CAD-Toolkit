@@ -61,25 +61,10 @@ const glassConfig = computed(() => {
   
   return config;
 });
-
-// 空区域提示文本配置
-const emptyTextConfig = computed(() => ({
-  x: props.width / 2 - props.padding,
-  y: props.height / 2 - props.padding,
-  text: '未配置',
-  fontSize: 14,
-  fontStyle: 'italic',
-  fill: '#999999',
-  align: 'center',
-  width: props.width - props.padding * 2
-}));
 </script>
 
 <template>
   <v-group name="glass-group">
     <v-rect v-bind="glassConfig" name="glass" />
-    
-    <!-- 空区域提示文本 - 已移到Section中集中显示 -->
-    <!-- <v-text v-if="isEmpty" v-bind="emptyTextConfig" /> -->
   </v-group>
 </template> 
