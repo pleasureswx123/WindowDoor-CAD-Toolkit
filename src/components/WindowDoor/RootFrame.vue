@@ -320,13 +320,6 @@ useEventListener(containerRef, 'wheel', handleWheel, { passive: false });
         />
       </v-layer>
     </v-stage>
-    
-    <!-- 中心点十字线（帮助用户定位中心） -->
-    <div v-if="scale < 0.3" class="center-indicator">
-      <div class="center-line horizontal"></div>
-      <div class="center-line vertical"></div>
-    </div>
-    
   </div>
 </template>
 
