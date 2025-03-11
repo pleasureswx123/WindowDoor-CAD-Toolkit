@@ -260,7 +260,11 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
 
   // 更新窗户尺寸
   function updateWindowSize(width: number, height: number) {
+    if (width === root.value.width && height === root.value.height) { 
+      return;
+    }
     console.log(`更新窗户尺寸: ${root.value.width}x${root.value.height} -> ${width}x${height}`);
+
     // 保存旧尺寸，用于计算缩放比例
     const oldWidth = root.value.width;
     const oldHeight = root.value.height;
@@ -365,164 +369,6 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     }
   }
 
-  // 更新指定区域的尺寸
-  function updateSectionSize(sectionId: number | string, width?: number, height?: number) {
-    console.log(`开始更新区域尺寸: ${sectionId}, width: ${width}, height: ${height}`);
-    
-    // 处理特殊的根框架尺寸调整
-    if (sectionId === 'root-width' && width !== undefined) {
-      // 调整整个窗户宽度
-      updateWindowSize(width, root.value.height);
-      return;
-    } else if (sectionId === 'root-height' && height !== undefined) {
-      // 调整整个窗户高度
-      updateWindowSize(root.value.width, height);
-      return;
-    } else if (sectionId === 'frame-size' && width !== undefined) {
-      // 处理根框架尺寸更新
-      updateFrameSize(width, 'root');
-      return;
-    } else if (sectionId === 'section-frame-size' && width !== undefined && selectedSection.value) {
-      // 处理窗扇框架尺寸更新
-      updateFrameSize(width, 'section');
-      return;
-    }
-    
-    // 确保sectionId是数字类型
-    if (typeof sectionId !== 'number') return;
-    
-    // 递归查找嵌套的区域
-    function findNested(sec: any, id: number): any {
-      if (sec.id === id) {
-        return sec;
-      }
-      if (!sec.sections) {
-        return null;
-      }
-      for (let i = 0; i < sec.sections.length; i++) {
-        const founded = findNested(sec.sections[i], id);
-        if (founded) {
-          return founded;
-        }
-      }
-      return null;
-    }
-
-    // 查找指定区域
-    const section = findNested(root.value, sectionId);
-    
-    if (!section) {
-      console.warn(`未找到ID为${sectionId}的区域`);
-      return;
-    }
-    
-    console.log(`找到区域:`, section.nodeType, section.id);
-    
-    // 保存原尺寸
-    const oldWidth = section.width;
-    const oldHeight = section.height;
-    
-    // 更新尺寸
-    let hasChanged = false;
-    
-    if (width !== undefined && width !== oldWidth) {
-      section.width = width;
-      hasChanged = true;
-      console.log(`宽度已更新: ${oldWidth} -> ${width}`);
-    }
-    
-    if (height !== undefined && height !== oldHeight) {
-      section.height = height;
-      hasChanged = true;
-      console.log(`高度已更新: ${oldHeight} -> ${height}`);
-    }
-    
-    // 如果没有变化，无需继续处理
-    if (!hasChanged) {
-      console.log('没有实际尺寸变化，跳过后续处理');
-      return;
-    }
-    
-    // 如果是根窗户的直接子区域，需要更新根窗户尺寸
-    if (section.id === root.value.sections[0].id) {
-      // 调整根窗户的尺寸
-      const frameSize = root.value.frameSize;
-      if (width !== undefined) {
-        root.value.width = width + frameSize * 2;
-      }
-      if (height !== undefined) {
-        root.value.height = height + frameSize * 2;
-      }
-      console.log('更新了根窗户尺寸');
-      return;
-    }
-    
-    // 查找父区域以及当前区域在父区域中的索引
-    function findParentAndIndex(root: any, id: number): { parent: any, index: number } | null {
-      if (!root.sections || root.sections.length === 0) return null;
-      
-      for (let i = 0; i < root.sections.length; i++) {
-        if (root.sections[i].id === id) {
-          return { parent: root, index: i };
-        }
-        const result = findParentAndIndex(root.sections[i], id);
-        if (result) return result;
-      }
-      
-      return null;
-    }
-    
-    // 查找父区域
-    const parentInfo = findParentAndIndex(root.value, sectionId);
-    if (!parentInfo) {
-      console.warn('未找到父区域');
-      return;
-    }
-    
-    const { parent, index } = parentInfo;
-    console.log(`找到父区域: ${parent.nodeType || 'root'}, 索引: ${index}, 分割方向: ${parent.splitDirection}`);
-    
-    // 根据父区域的分割方向调整相邻区域
-    if (parent.splitDirection === 'vertical' && width !== undefined) {
-      // 垂直分割的情况，调整水平相邻区域
-      // 检查右边是否有分隔线和相邻区域
-      if (index + 2 < parent.sections.length) {
-        // 调整右侧区域的宽度
-        const rightSection = parent.sections[index + 2];
-        const widthDiff = width - oldWidth;
-        rightSection.width -= widthDiff;
-        console.log(`调整了右侧区域 ${rightSection.id} 的宽度: ${rightSection.width + widthDiff} -> ${rightSection.width}`);
-      }
-    } else if (parent.splitDirection === 'horizontal' && height !== undefined) {
-      // 水平分割的情况，调整垂直相邻区域
-      // 检查下边是否有分隔线和相邻区域
-      if (index + 2 < parent.sections.length) {
-        // 调整下方区域的高度
-        const bottomSection = parent.sections[index + 2];
-        const heightDiff = height - oldHeight;
-        bottomSection.height -= heightDiff;
-        console.log(`调整了下方区域 ${bottomSection.id} 的高度: ${bottomSection.height + heightDiff} -> ${bottomSection.height}`);
-      }
-    }
-    
-    // 更新分隔条尺寸
-    if (section.nodeType === 'devider') {
-      console.log('检测到分隔条调整，确保更新相关区域');
-      
-      // 针对分隔条的特殊处理，确保相邻区域正确更新
-      if (width !== undefined && parent.splitDirection === 'vertical') {
-        // 检查是否需要调整前后区域的宽度和位置
-        if (index > 0 && index + 1 < parent.sections.length) {
-          console.log('更新垂直分隔条相邻区域');
-        }
-      } else if (height !== undefined && parent.splitDirection === 'horizontal') {
-        // 检查是否需要调整上下区域的高度和位置
-        if (index > 0 && index + 1 < parent.sections.length) {
-          console.log('更新水平分隔条相邻区域');
-        }
-      }
-    }
-  }
 
   // 初始化窗户布局，创建预设的窗扇和分隔条
   function initializeWindowWithSections(pattern: string = 'default') {
@@ -687,69 +533,6 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     }
   }
   
-  // 调整中挺相邻区域的大小
-  function adjustAdjacentSectionsForDevider(deviderId: number, oldSize: number, newSize: number, direction: 'horizontal' | 'vertical') {
-    // 查找父区域以及当前中挺在父区域中的索引
-    function findParentAndIndex(root: any, id: number): { parent: any, index: number } | null {
-      if (!root.sections || root.sections.length === 0) return null;
-      
-      for (let i = 0; i < root.sections.length; i++) {
-        if (root.sections[i].id === id) {
-          return { parent: root, index: i };
-        }
-        const result = findParentAndIndex(root.sections[i], id);
-        if (result) return result;
-      }
-      
-      return null;
-    }
-    
-    const parentInfo = findParentAndIndex(root.value, deviderId);
-    if (!parentInfo) {
-      console.warn('未找到中挺的父区域');
-      return;
-    }
-    
-    const { parent, index } = parentInfo;
-    
-    // 确保父区域有分割方向
-    if (!parent.splitDirection) {
-      console.warn('父区域没有分割方向');
-      return;
-    }
-    
-    // 中挺应该在两个区域之间
-    if (index <= 0 || index >= parent.sections.length - 1) {
-      console.warn('中挺不在两个区域之间');
-      return;
-    }
-    
-    // 获取相邻的两个区域
-    const prevSection = parent.sections[index - 1];
-    const nextSection = parent.sections[index + 1];
-    
-    // 调整大小差值
-    const sizeDiff = newSize - oldSize;
-    
-    if (direction === 'horizontal') {
-      // 水平调整 (调整左右区域的宽度)
-      prevSection.width -= sizeDiff / 2;
-      nextSection.width -= sizeDiff / 2;
-      
-      // 确保最小宽度
-      prevSection.width = Math.max(prevSection.width, 10);
-      nextSection.width = Math.max(nextSection.width, 10);
-    } else {
-      // 垂直调整 (调整上下区域的高度)
-      prevSection.height -= sizeDiff / 2;
-      nextSection.height -= sizeDiff / 2;
-      
-      // 确保最小高度
-      prevSection.height = Math.max(prevSection.height, 10);
-      nextSection.height = Math.max(nextSection.height, 10);
-    }
-  }
-
   // 更新元素尺寸（包括区域和中挺）
   function updateElementSize(elementId: number | string, sizeData: { width?: number, height?: number }) {
     // 递归查找元素
@@ -813,12 +596,6 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     // ... existing code ...
   }
 
-  // 更新中挺尺寸
-  function updateDeviderSize(deviderId: number | string, sizeData: { width?: number, height?: number }) {
-    // 复用updateElementSize方法
-    updateElementSize(deviderId, sizeData);
-  }
-
   const scale = ref(1);
   const updateScale = (newScale: number) => {
     scale.value = newScale;
@@ -835,12 +612,9 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     setSectionType,
     splitCurrentSection,
     updateWindowSize,
-    updateSectionSize,
     updateDeviderPosition,
-    updateDeviderSize,
     updateFrameSize,
     initializeWindowWithSections,
-    adjustAdjacentSectionsForDevider,
     updateElementSize,
     updateElementPosition,
   };

@@ -124,7 +124,6 @@ declare module 'vue' {
     Metrics: typeof import('./components/WindowDoor/Metrics.vue')['default']
     MetricsControl: typeof import('./components/WindowDoor/utils/MetricsControl.vue')['default']
     OpeningDirection: typeof import('./components/WindowDoor/OpeningDirection.vue')['default']
-    PopupInput: typeof import('./components/WindowDoor/utils/PopupInput.vue')['default']
     RootFrame: typeof import('./components/WindowDoor/RootFrame.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
