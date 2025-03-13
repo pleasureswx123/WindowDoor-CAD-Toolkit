@@ -49,8 +49,11 @@ const selectTool = (toolId: string) => {
   
   // 如果选择了钢笔工具，激活钢笔模式
   if (toolId === 'penTool') {
+    console.log('激活钢笔工具 - 点击前状态:', store.isPenToolActive);
     store.togglePenTool(true);
+    console.log('激活钢笔工具 - 点击后状态:', store.isPenToolActive);
   } else {
+    console.log('停用钢笔工具');
     store.togglePenTool(false);
   }
   

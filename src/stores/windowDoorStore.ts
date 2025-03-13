@@ -268,10 +268,14 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     // 保存当前的type，在特殊情况下继承给子区域
     const currentType = section.type;
     
+    // 默认使用均等分割(50/50)
+    // 以后将根据实际需要（如钢笔工具计算的位置）来调整这个比例
+    let splitPosition = 50; // 百分比位置，默认50%
+    
     if (direction === "vertical") {
       // 创建中挺及左右区域
       const leftSection = new Section({
-        width: section.width / 2 - DEVIDER_SIZE / 2,
+        width: Math.round(section.width * (splitPosition / 100)) - DEVIDER_SIZE / 2,
         height: section.height,
         type: "empty",
         parentSection: section, // 记录父区域引用
@@ -283,13 +287,13 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
         width: DEVIDER_SIZE,
         height: section.height,
         parentSection: section, // 记录父区域引用
-        position: 50, // 默认居中位置
+        position: splitPosition, // 默认位置
         x: leftSection.width,
         y: 0
       });
       
       const rightSection = new Section({
-        width: section.width / 2 - DEVIDER_SIZE / 2,
+        width: section.width - leftSection.width - DEVIDER_SIZE,
         height: section.height,
         type: "empty",
         parentSection: section, // 记录父区域引用
@@ -303,7 +307,7 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       // 创建中挺及上下区域
       const topSection = new Section({
         width: section.width,
-        height: section.height / 2 - DEVIDER_SIZE / 2,
+        height: Math.round(section.height * (splitPosition / 100)) - DEVIDER_SIZE / 2,
         type: "empty",
         parentSection: section, // 记录父区域引用
         x: 0,
@@ -314,14 +318,14 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
         width: section.width,
         height: DEVIDER_SIZE,
         parentSection: section, // 记录父区域引用
-        position: 50, // 默认居中位置
+        position: splitPosition, // 默认位置
         x: 0,
         y: topSection.height
       });
       
       const bottomSection = new Section({
         width: section.width,
-        height: section.height / 2 - DEVIDER_SIZE / 2,
+        height: section.height - topSection.height - DEVIDER_SIZE,
         type: "empty",
         parentSection: section, // 记录父区域引用
         x: 0,
@@ -752,10 +756,16 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
   function updateDeviderPosition(deviderId: number, newPosition: number) {
     // 查找中挺及其父容器
     const result = findDeviderAndParent(root.value, deviderId);
-    if (!result) return;
+    if (!result) {
+      console.error(`找不到中挺及其父容器，ID: ${deviderId}`);
+      return;
+    }
     
     const { devider, parent, index } = result;
-    if (!parent || !parent.sections) return;
+    if (!parent || !parent.sections) {
+      console.error(`中挺父容器无效，ID: ${deviderId}`);
+      return;
+    }
     
     // 确保位置在有效范围内(10%-90%)
     newPosition = Math.max(10, Math.min(90, newPosition));
@@ -769,11 +779,21 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     devider.position = newPosition;
     
     // 如果索引无效，无法更新相邻区域
-    if (index <= 0 || index >= parent.sections.length - 1) return;
+    if (index <= 0 || index >= parent.sections.length - 1) {
+      console.error(`中挺索引无效，无法更新相邻区域: index=${index}, length=${parent.sections.length}`);
+      return;
+    }
     
     // 获取相邻区域
     const prevSection = parent.sections[index - 1] as Section;
     const nextSection = parent.sections[index + 1] as Section;
+    
+    if (!prevSection || !nextSection) {
+      console.error('中挺相邻区域无效');
+      return;
+    }
+    
+    console.log(`相邻区域: 前(${index-1})=${prevSection.width}x${prevSection.height}, 后(${index+1})=${nextSection.width}x${nextSection.height}`);
     
     if (devider.direction === 'vertical') {
       // 垂直中挺：调整左右区域宽度
@@ -789,6 +809,8 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       // 更新中挺和nextSection的x坐标
       devider.x = prevSection.x + prevSection.width;
       nextSection.x = devider.x + devider.width;
+      
+      console.log(`垂直中挺更新: 中挺位置=${devider.x}, 左区域宽度=${prevSection.width}, 右区域宽度=${nextSection.width}`);
     } else {
       // 水平中挺：调整上下区域高度
       const totalHeight = prevSection.height + nextSection.height;
@@ -803,6 +825,8 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       // 更新中挺和nextSection的y坐标
       devider.y = prevSection.y + prevSection.height;
       nextSection.y = devider.y + devider.height;
+      
+      console.log(`水平中挺更新: 中挺位置=${devider.y}, 上区域高度=${prevSection.height}, 下区域高度=${nextSection.height}`);
     }
     
     // 递归更新相邻区域内的所有子元素
@@ -889,16 +913,22 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
   
   // 激活/停用钢笔工具
   function togglePenTool(active: boolean) {
+    console.log('togglePenTool 状态变更:', active, '当前状态:', isPenToolActive.value);
     isPenToolActive.value = active;
+    console.log('新状态设置后:', isPenToolActive.value);
+    
     if (!active) {
+      console.log('钢笔工具停用，重置状态');
       resetPenToolState();
     } else {
       penToolMode.value = 'idle';
+      console.log('钢笔工具已激活，模式设置为idle');
     }
   }
   
   // 重置钢笔工具状态
   function resetPenToolState() {
+    console.log('重置钢笔工具状态，当前模式:', penToolMode.value);
     penToolMode.value = 'idle';
     penStartPoint.value = null;
     penEndPoint.value = null;
@@ -943,45 +973,70 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       return { ...point, isSnapping: false, snapPercentage: null };
     }
     
-    // 计算区域边界
-    const left = section.x;
-    const right = section.x + section.width;
-    const top = section.y;
-    const bottom = section.y + section.height;
+    // 获取窗框宽度
+    const frameSize = root.value.frameSize;
     
-    let snapPoint = { ...point };
+    // 计算区域边界，考虑窗框宽度偏移
+    const left = section.x + frameSize;
+    const right = left + section.width;
+    const top = section.y + frameSize; // 添加frameSize偏移
+    const bottom = top + section.height;
+    
+    let snappedPoint = { ...point };
     let isSnapping = false;
-    let snapPercentage = null;
+    let snapPerc = null;
     
+    // 首先约束到正确的方向
     if (penDirection.value === 'vertical') {
-      // 垂直中挺 - 检查X方向吸附
-      const snapX = calculateSnapValue(point.x, left, right);
+      // 垂直中挺 - Y坐标固定为起点Y
+      snappedPoint.y = penStartPoint.value.y;
       
-      if (snapX !== null) {
-        // 计算吸附位置
-        snapPoint.x = left + (right - left) * (snapX / 100);
-        isSnapping = true;
-        snapPercentage = snapX;
+      // 检查X方向吸附
+      const snapPercents = getSnapPercentages();
+      const relX = (point.x - left) / (right - left) * 100; // 相对百分比位置
+      
+      // 寻找最近的吸附百分比
+      let minDistance = 5; // 5%的吸附阈值
+      for (const percent of snapPercents) {
+        const distance = Math.abs(relX - percent);
+        if (distance < minDistance) {
+          minDistance = distance;
+          snapPerc = percent;
+          isSnapping = true;
+          
+          // 计算吸附后的X坐标
+          snappedPoint.x = left + (right - left) * (percent / 100);
+        }
       }
-      
-      // 垂直中挺Y坐标固定为起点Y坐标
-      snapPoint.y = penStartPoint.value.y;
     } else {
-      // 水平中挺 - 检查Y方向吸附
-      const snapY = calculateSnapValue(point.y, top, bottom);
+      // 水平中挺 - X坐标固定为起点X
+      snappedPoint.x = penStartPoint.value.x;
       
-      if (snapY !== null) {
-        // 计算吸附位置
-        snapPoint.y = top + (bottom - top) * (snapY / 100);
-        isSnapping = true;
-        snapPercentage = snapY;
+      // 检查Y方向吸附
+      const snapPercents = getSnapPercentages();
+      const relY = (point.y - top) / (bottom - top) * 100; // 相对百分比位置
+      
+      // 寻找最近的吸附百分比
+      let minDistance = 5; // 5%的吸附阈值
+      for (const percent of snapPercents) {
+        const distance = Math.abs(relY - percent);
+        if (distance < minDistance) {
+          minDistance = distance;
+          snapPerc = percent;
+          isSnapping = true;
+          
+          // 计算吸附后的Y坐标
+          snappedPoint.y = top + (bottom - top) * (percent / 100);
+        }
       }
-      
-      // 水平中挺X坐标固定为起点X坐标
-      snapPoint.x = penStartPoint.value.x;
     }
     
-    return { ...snapPoint, isSnapping, snapPercentage };
+    return { 
+      x: snappedPoint.x, 
+      y: snappedPoint.y, 
+      isSnapping, 
+      snapPercentage: snapPerc 
+    };
   }
   
   // 根据点查找区域
@@ -991,11 +1046,14 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       // 如果不是区域，直接返回null
       if (section.nodeType !== 'section') return null;
       
-      // 计算区域边界
-      const left = section.x;
-      const right = section.x + section.width;
-      const top = section.y;
-      const bottom = section.y + section.height;
+      // 获取窗框宽度
+      const frameSize = root.value.frameSize;
+      
+      // 计算区域边界（对于子节点，不需要再次添加偏移，因为它们的坐标已经包含了偏移）
+      let left = section.x;
+      let right = section.x + section.width;
+      let top = section.y;
+      let bottom = section.y + section.height;
       
       // 检查点是否在区域内
       if (point.x >= left && point.x <= right && 
@@ -1027,10 +1085,18 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
   
   // 计算中挺创建信息
   function calculateDeviderInfo(startPoint: {x: number, y: number}, endPoint: {x: number, y: number}) {
-    // 确定中挺方向
+    // 确定中挺方向（重要：这里的方向是指创建的中挺的方向，不是绘制线条的方向）
+    // dx > dy 说明水平移动距离大，应该绘制水平线条，但这表示创建垂直中挺
+    // dy > dx 说明垂直移动距离大，应该绘制垂直线条，但这表示创建水平中挺
     const dx = Math.abs(endPoint.x - startPoint.x);
     const dy = Math.abs(endPoint.y - startPoint.y);
-    const direction = dx > dy ? 'vertical' : 'horizontal';
+    
+    // 重要修复：确保方向与penDirection保持一致
+    // 钢笔工具中：horizontal = 水平线 = 创建水平中挺
+    //           vertical = 垂直线 = 创建垂直中挺
+    const direction = penDirection.value || (dx > dy ? 'horizontal' : 'vertical');
+    
+    console.log("计算中挺信息 - 绘制方向:", direction, "dx:", dx, "dy:", dy);
     
     // 计算中点
     const midPoint = {
@@ -1046,10 +1112,10 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     let position = 50; // 默认位置
     
     if (direction === 'vertical') {
-      // 垂直中挺 - 计算X方向位置百分比
+      // 垂直线(垂直中挺) - 计算X方向位置百分比
       position = ((midPoint.x - section.x) / section.width) * 100;
     } else {
-      // 水平中挺 - 计算Y方向位置百分比
+      // 水平线(水平中挺) - 计算Y方向位置百分比
       position = ((midPoint.y - section.y) / section.height) * 100;
     }
     
@@ -1063,47 +1129,142 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     };
   }
   
-  // 通过钢笔工具创建中挺
+  /**
+   * 使用钢笔工具创建分隔线
+   * @returns 
+   */
   function createDeviderWithPenTool() {
-    if (!penStartPoint.value || !penEndPoint.value) return null;
-    
-    // 计算中挺信息
-    const deviderInfo = calculateDeviderInfo(
-      penStartPoint.value,
-      penEndPoint.value
-    );
-    
-    if (!deviderInfo) {
-      console.warn('无法创建中挺：未找到有效区域或位置');
-      return null;
+    try {
+      console.log('创建分隔线 - 起点:', penStartPoint.value, '终点:', penEndPoint.value, '方向:', penDirection.value);
+
+      if (!penStartPoint.value || !penEndPoint.value || !penDirection.value) {
+        console.error('创建分隔线失败：没有起点、终点或方向数据');
+        return false;
+      }
+
+      // 获取指定位置的区域
+      const start = penStartPoint.value;
+      const end = penEndPoint.value;
+      
+      // 约束终点确保水平或垂直
+      let constrainedEnd = { ...end };
+      if (penDirection.value === 'vertical') {
+        // 垂直中挺 - 固定X坐标
+        constrainedEnd.x = start.x;
+      } else {
+        // 水平中挺 - 固定Y坐标
+        constrainedEnd.y = start.y;
+      }
+
+      // 计算中点以确定所在区域
+      const midX = (start.x + constrainedEnd.x) / 2;
+      const midY = (start.y + constrainedEnd.y) / 2;
+
+      // 根据中点寻找所在区域
+      const targetSection = findSectionByPoint({x: midX, y: midY});
+      if (!targetSection) {
+        console.error('创建分隔线失败：找不到目标区域');
+        return false;
+      }
+
+      console.log('找到目标区域:', targetSection, '位置:', targetSection.x, targetSection.y, '尺寸:', targetSection.width, targetSection.height);
+
+      // 获取窗框宽度
+      const frameSize = root.value.frameSize;
+
+      // 基于约束后的终点计算位置百分比
+      let position = 50;
+
+      if (penDirection.value === 'vertical') {
+        // 垂直中挺 - 计算X位置百分比
+        // 计算参考坐标（添加窗框宽度偏移）
+        const referenceX = targetSection.x + frameSize;
+        position = ((constrainedEnd.x - referenceX) / targetSection.width) * 100;
+        // 计算中挺的中心X坐标，确保与预览线一致
+        const axisX = referenceX + (targetSection.width * (position / 100));
+        console.log('垂直中挺位置计算:', axisX, referenceX, targetSection.width, '结果:', position);
+      } else {
+        // 水平中挺 - 计算Y位置百分比
+        // 计算参考坐标（添加窗框高度偏移）
+        const referenceY = targetSection.y + frameSize;
+        position = ((constrainedEnd.y - referenceY) / targetSection.height) * 100;
+        // 计算中挺的中心Y坐标，确保与预览线一致
+        const axisY = referenceY + (targetSection.height * (position / 100));
+        console.log('水平中挺位置计算:', axisY, referenceY, targetSection.height, '结果:', position);
+      }
+
+      // 限制在有效范围内 (10%-90%)
+      position = Math.max(10, Math.min(90, position));
+
+      console.log(`计算位置百分比: ${position}%`);
+
+      // 选中目标区域并保存目标区域ID
+      const targetSectionId = targetSection.id;
+      selectedSectionId.value = targetSectionId;
+      console.log('选中目标区域ID:', targetSectionId);
+      
+      // 执行分割
+      // 注意这里需要使用正确的参数格式，splitCurrentSection接受一个方向字符串而非对象
+      const direction = penDirection.value === 'vertical' ? 'vertical' : 'horizontal';
+      splitCurrentSection(direction);
+      
+      // 分割后直接通过目标区域ID获取更新后的区域，而不是通过selectedSection
+      // 递归查找分割后更新的区域
+      function findSectionById(node: any, id: number): any {
+        if (node.id === id) {
+          return node;
+        }
+        
+        if (!node.sections) {
+          return null;
+        }
+        
+        for (const child of node.sections) {
+          const found = findSectionById(child, id);
+          if (found) {
+            return found;
+          }
+        }
+        
+        return null;
+      }
+      
+      // 从根节点查找目标区域
+      const updatedSection = findSectionById(root.value, targetSectionId);
+      
+      if (!updatedSection || !updatedSection.sections) {
+        console.error("创建中挺失败：无法获取更新后的区域", targetSectionId);
+        return false;
+      }
+      
+      console.log("找到更新后的区域:", updatedSection);
+      
+      // 查找新创建的中挺
+      const newDevider = updatedSection.sections.find((item: any) => 
+        item.nodeType === 'devider'
+      );
+      
+      if (!newDevider) {
+        console.error("创建中挺失败：无法找到新创建的中挺");
+        return false;
+      }
+      
+      // 更新中挺位置 - 使用我们之前计算的position确保与预览一致
+      console.log(`设置中挺位置：${position}%`);
+      updateDeviderPosition(newDevider.id, position);
+      
+      // 选中新创建的中挺
+      selectedDeviderId.value = newDevider.id;
+
+      // 重置钢笔工具状态
+      resetPenToolState();
+
+      console.log('创建分隔线成功!');
+      return true;
+    } catch (error) {
+      console.error('创建分隔线时发生错误:', error);
+      return false;
     }
-    
-    // 解构信息
-    const { section, direction, position } = deviderInfo;
-    
-    // 选中目标区域
-    selectedSectionId.value = section.id;
-    
-    // 分割区域
-    splitCurrentSection(direction === 'vertical' ? 'vertical' : 'horizontal');
-    
-    // 找到新创建的中挺
-    const updatedSection = selectedSection.value;
-    if (!updatedSection || !updatedSection.sections) return null;
-    
-    const newDevider = updatedSection.sections.find(item => 
-      item.nodeType === 'devider'
-    );
-    
-    if (!newDevider) return null;
-    
-    // 更新中挺位置
-    updateDeviderPosition(newDevider.id, position);
-    
-    // 选中新创建的中挺
-    selectedDeviderId.value = newDevider.id;
-    
-    return newDevider.id;
   }
 
   return {

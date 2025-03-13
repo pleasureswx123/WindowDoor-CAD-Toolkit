@@ -50,7 +50,7 @@ const containerClass = computed(() => {
 const stageConfig = computed(() => ({
   width: stageSize.value.width,
   height: stageSize.value.height,
-  draggable: draggable
+  draggable: !store.isPenToolActive && draggable.value
 }));
 
 // 框架尺寸
@@ -154,21 +154,23 @@ function handleKeyDown(e: KeyboardEvent) {
   
   // Shift键 - 切换绘制方向
   if (e.key === 'Shift' && store.penToolMode === 'drawing' && store.penStartPoint && store.penEndPoint) {
-    // 切换方向
-    store.penDirection = store.penDirection === 'vertical' 
-      ? 'horizontal' 
-      : 'vertical';
+    // 切换方向（水平 <-> 垂直）
+    const newDirection = store.penDirection === 'vertical' ? 'horizontal' : 'vertical';
+    console.log(`切换绘制方向: ${store.penDirection} -> ${newDirection}`);
+    store.penDirection = newDirection;
     
-    // 更新终点坐标
+    // 更新终点坐标以匹配新方向
     if (store.penDirection === 'vertical') {
-      store.penEndPoint = {
-        x: store.penEndPoint.x,
-        y: store.penStartPoint.y
-      };
-    } else {
+      // 垂直线，固定X坐标
       store.penEndPoint = {
         x: store.penStartPoint.x,
         y: store.penEndPoint.y
+      };
+    } else {
+      // 水平线，固定Y坐标
+      store.penEndPoint = {
+        x: store.penEndPoint.x,
+        y: store.penStartPoint.y
       };
     }
   }
@@ -176,8 +178,11 @@ function handleKeyDown(e: KeyboardEvent) {
 
 // 原有的handleClick函数修改为分发处理逻辑
 function handleClick(e: any) {
+  console.log("舞台点击事件", store.isPenToolActive ? "钢笔工具激活" : "钢笔工具未激活");
+  
   // 如果钢笔工具激活，优先处理钢笔工具交互
   if (store.isPenToolActive) {
+    console.log("转发到钢笔工具处理函数");
     handlePenToolClick(e);
     return;
   }
@@ -187,6 +192,7 @@ function handleClick(e: any) {
   
   // 如果已经被子组件处理了，就不再处理
   if (e.cancelBubble) {
+    console.log("事件已被取消冒泡");
     return;
   }
   
@@ -194,6 +200,8 @@ function handleClick(e: any) {
   // 检查名称是否包含"section"
   const targetName = target.name && target.name();
   const isSection = targetName && targetName.indexOf('section') >= 0;
+  
+  console.log("点击目标:", targetName, isSection ? "是区域" : "不是区域");
   
   if (!isSection) {
     store.selectedSectionId = null;
@@ -205,9 +213,23 @@ function handlePenToolClick(e: any) {
   // 阻止事件冒泡
   e.cancelBubble = true;
   
+  console.log("钢笔工具点击", store.penToolMode, "钢笔工具激活状态:", store.isPenToolActive);
+  
   // 获取舞台和点击位置
   const stage = e.target.getStage();
+  if (!stage) {
+    console.error("无法获取舞台对象");
+    return;
+  }
+  
   const pointerPos = stage.getPointerPosition();
+  
+  if (!pointerPos) {
+    console.error("无法获取鼠标位置");
+    return;
+  }
+  
+  console.log("原始点击位置:", pointerPos);
   
   // 转换坐标，考虑缩放和平移
   const transformedPoint = {
@@ -215,18 +237,40 @@ function handlePenToolClick(e: any) {
     y: (pointerPos.y - position.value.y) / scale.value
   };
   
+  console.log("转换后位置:", transformedPoint, "缩放:", scale.value, "平移:", position.value);
+  
+  // 判断点击位置是否在有效区域内
+  const validSection = store.findSectionByPoint(transformedPoint);
+  if (!validSection) {
+    console.warn("点击位置不在有效区域内");
+    // 继续处理，但记录警告
+  }
+  
   // 根据当前模式处理
   if (store.penToolMode === 'idle') {
     // 设置起点
     store.penStartPoint = transformedPoint;
     store.penToolMode = 'drawing';
+    console.log("起点设置成功:", transformedPoint);
   } else if (store.penToolMode === 'drawing') {
-    // 设置终点并准备确认
-    store.penEndPoint = transformedPoint;
+    // 设置终点并准备确认 - 使用约束后的终点
+    let constrainedEnd = { ...transformedPoint };
+    if (store.penDirection === 'vertical' && store.penStartPoint) {
+      // 垂直中挺 - 固定X坐标
+      constrainedEnd.x = store.penStartPoint.x;
+    } else if (store.penDirection === 'horizontal' && store.penStartPoint) {
+      // 水平中挺 - 固定Y坐标
+      constrainedEnd.y = store.penStartPoint.y;
+    }
+    
+    store.penEndPoint = constrainedEnd;
     store.penToolMode = 'confirming';
+    console.log("终点设置成功:", constrainedEnd);
   } else if (store.penToolMode === 'confirming') {
     // 确认创建
-    store.createDeviderWithPenTool();
+    console.log("创建中挺");
+    const result = store.createDeviderWithPenTool();
+    console.log("创建结果:", result);
     // 重置状态，准备下一次绘制
     store.resetPenToolState();
   }
@@ -238,7 +282,12 @@ function handleMouseMove(e: any) {
   
   // 获取舞台和鼠标位置
   const stage = e.target.getStage();
+  if (!stage) return;
+  
   const pointerPos = stage.getPointerPosition();
+  if (!pointerPos) return;
+  
+  console.log("鼠标移动：", pointerPos);
   
   // 转换坐标
   const transformedPoint = {
@@ -251,27 +300,22 @@ function handleMouseMove(e: any) {
     const dx = Math.abs(transformedPoint.x - store.penStartPoint.x);
     const dy = Math.abs(transformedPoint.y - store.penStartPoint.y);
     
-    // 根据移动方向确定是垂直还是水平中挺
-    store.penDirection = dx > dy ? 'vertical' : 'horizontal';
+    // 如果移动距离太小，不确定方向
+    if (dx < 5 && dy < 5) return;
+    
+    // 根据移动方向确定中挺类型
+    // 水平移动距离大 -> 水平中挺 (横线) -> 创建水平分割
+    // 垂直移动距离大 -> 垂直中挺 (竖线) -> 创建垂直分割
+    store.penDirection = dx > dy ? 'horizontal' : 'vertical';
+    console.log("确定绘制方向:", store.penDirection, "水平距离:", dx, "垂直距离:", dy);
   }
   
-  // 使用预览组件的吸附功能更新
-  if (penToolPreviewRef.value) {
-    penToolPreviewRef.value.updatePreviewWithSnapping(transformedPoint);
-  } else {
-    // 降级处理 - 简单的方向约束
-    if (store.penDirection === 'vertical') {
-      store.penEndPoint = {
-        x: transformedPoint.x,
-        y: store.penStartPoint.y
-      };
-    } else if (store.penDirection === 'horizontal') {
-      store.penEndPoint = {
-        x: store.penStartPoint.x,
-        y: transformedPoint.y
-      };
-    }
-  }
+  // 更新终点坐标
+  store.penEndPoint = transformedPoint;
+  
+  // 检查终点是否有效（是否在某个区域内）
+  const validSection = store.findSectionByPoint(transformedPoint);
+  console.log("终点有效性:", validSection ? "有效" : "无效");
 }
 
 // 处理鼠标滚轮缩放
@@ -402,9 +446,9 @@ useEventListener(containerRef, 'wheel', handleWheel, { passive: false });
     <v-stage
       ref="stageRef"
       :config="{
-        width: stageSize.value.width,
-        height: stageSize.value.height,
-        draggable: draggable
+        width: stageSize.width,
+        height: stageSize.height,
+        draggable: store.isPenToolActive ? false : draggable
       }"
       @wheel="handleWheel"
       @click="handleClick"
@@ -415,7 +459,8 @@ useEventListener(containerRef, 'wheel', handleWheel, { passive: false });
           scaleX: scale,
           scaleY: scale,
           x: position.x,
-          y: position.y
+          y: position.y,
+          listening: true
         }"
       >
         <!-- 背景 - 用于点击取消选择 -->
@@ -426,7 +471,14 @@ useEventListener(containerRef, 'wheel', handleWheel, { passive: false });
             x: -150,
             y: -150,
             name: 'background',
-            fill: '#f8f8f8'
+            fill: '#f8f8f8',
+            listening: true
+          }"
+          @click="(e: any) => {
+            if (store.isPenToolActive) {
+              console.log('背景接收到点击，转发到钢笔工具');
+              handlePenToolClick(e);
+            }
           }"
         />
         
