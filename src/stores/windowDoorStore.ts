@@ -15,6 +15,9 @@ export interface SectionAttrs {
   height: number;
   frameSize?: number;
   type?: string;
+  parentSection?: Section | null;
+  x?: number;
+  y?: number;
 }
 
 // 分隔线类型接口
@@ -22,6 +25,10 @@ export interface DeviderAttrs {
   width: number;
   height: number;
   thickness?: number; // 中挺厚度，默认为40
+  parentSection?: Section | null; // 父区域引用
+  position?: number; // 中挺在父容器中的相对位置(百分比)
+  x?: number;
+  y?: number;
 }
 
 // 区域类
@@ -34,6 +41,9 @@ export class Section {
   type: string;
   splitDirection: string | null;
   sections: Array<Section | Devider>;
+  parentSection: Section | null = null; // 记录父区域引用
+  x: number = 0; // 在父容器中的X坐标
+  y: number = 0; // 在父容器中的Y坐标
 
   constructor(attrs: SectionAttrs) {
     this.id = generateId();
@@ -60,6 +70,9 @@ export class Section {
     
     this.splitDirection = null;
     this.sections = [];
+    this.parentSection = attrs.parentSection || null;
+    this.x = attrs.x || 0;
+    this.y = attrs.y || 0;
   }
 }
 
@@ -79,15 +92,32 @@ export class Devider {
   id: number;
   width: number;
   height: number;
-  sections: any[];
-  thickness?: number; // 中挺厚度，默认为40
+  parentSection: Section | null = null; // 记录父区域引用
+  thickness: number; // 中挺厚度
+  position: number; // 中挺在父容器中的相对位置(百分比)
+  x: number = 0; // 在父容器中的x坐标
+  y: number = 0; // 在父容器中的y坐标
+  sections: any[] = [];
 
   constructor(attrs: DeviderAttrs) {
     this.id = generateId();
     this.width = attrs.width;
     this.height = attrs.height;
     this.thickness = attrs.thickness || DEVIDER_SIZE;
-    this.sections = [];
+    this.parentSection = attrs.parentSection || null;
+    this.position = attrs.position || 50; // 默认在中间位置
+    this.x = attrs.x || 0;
+    this.y = attrs.y || 0;
+  }
+  
+  // 获取中挺方向
+  get direction(): 'vertical' | 'horizontal' {
+    return this.width < this.height ? 'vertical' : 'horizontal';
+  }
+  
+  // 获取实际厚度
+  get actualThickness(): number {
+    return this.direction === 'vertical' ? this.width : this.height;
   }
 }
 
@@ -225,43 +255,67 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     const currentType = section.type;
     
     if (direction === "vertical") {
-      section.sections.push(
-        new Section({
-          width: section.width / 2 - DEVIDER_SIZE / 2,
-          height: section.height,
-          // 默认创建空区域，等待用户配置
-          type: "empty"
-        }),
-        new Devider({ // 中挺
-          width: DEVIDER_SIZE,
-          height: section.height,
-        }),
-        new Section({
-          width: section.width / 2 - DEVIDER_SIZE / 2,
-          height: section.height,
-          // 默认创建空区域，等待用户配置
-          type: "empty"
-        })
-      );
+      // 创建中挺及左右区域
+      const leftSection = new Section({
+        width: section.width / 2 - DEVIDER_SIZE / 2,
+        height: section.height,
+        type: "empty",
+        parentSection: section, // 记录父区域引用
+        x: 0,
+        y: 0
+      });
+      
+      const devider = new Devider({
+        width: DEVIDER_SIZE,
+        height: section.height,
+        parentSection: section, // 记录父区域引用
+        position: 50, // 默认居中位置
+        x: leftSection.width,
+        y: 0
+      });
+      
+      const rightSection = new Section({
+        width: section.width / 2 - DEVIDER_SIZE / 2,
+        height: section.height,
+        type: "empty",
+        parentSection: section, // 记录父区域引用
+        x: leftSection.width + DEVIDER_SIZE,
+        y: 0
+      });
+      
+      // 添加到父区域
+      section.sections = [leftSection, devider, rightSection];
     } else {
-      section.sections.push(
-        new Section({
-          width: section.width,
-          height: section.height / 2 - DEVIDER_SIZE / 2,
-          // 默认创建空区域，等待用户配置
-          type: "empty"
-        }),
-        new Devider({ // 中挺
-          width: section.width,
-          height: DEVIDER_SIZE,
-        }),
-        new Section({
-          width: section.width,
-          height: section.height / 2 - DEVIDER_SIZE / 2,
-          // 默认创建空区域，等待用户配置
-          type: "empty"
-        })
-      );
+      // 创建中挺及上下区域
+      const topSection = new Section({
+        width: section.width,
+        height: section.height / 2 - DEVIDER_SIZE / 2,
+        type: "empty",
+        parentSection: section, // 记录父区域引用
+        x: 0,
+        y: 0
+      });
+      
+      const devider = new Devider({
+        width: section.width,
+        height: DEVIDER_SIZE,
+        parentSection: section, // 记录父区域引用
+        position: 50, // 默认居中位置
+        x: 0,
+        y: topSection.height
+      });
+      
+      const bottomSection = new Section({
+        width: section.width,
+        height: section.height / 2 - DEVIDER_SIZE / 2,
+        type: "empty",
+        parentSection: section, // 记录父区域引用
+        x: 0,
+        y: topSection.height + DEVIDER_SIZE
+      });
+      
+      // 添加到父区域
+      section.sections = [topSection, devider, bottomSection];
     }
     
     // 清除选择
@@ -601,9 +655,183 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     findElementAndUpdate(root.value, elementId);
   }
 
-  // 更新中挺位置
-  function updateDeviderPosition(deviderId: number | string, x: number, y: number) {
-    // ... existing code ...
+  // 查找中挺及其父区域和索引位置
+  function findDeviderAndParent(section: any, deviderId: number): {devider: Devider, parent: Section, index: number} | null {
+    if (!section || !section.sections) return null;
+    
+    // 在当前层级查找
+    for (let i = 0; i < section.sections.length; i++) {
+      const child = section.sections[i];
+      if (child.nodeType === 'devider' && child.id === deviderId) {
+        return { devider: child, parent: section, index: i };
+      }
+    }
+    
+    // 递归查找子区域
+    for (let i = 0; i < section.sections.length; i++) {
+      const child = section.sections[i];
+      if (child.nodeType === 'section') {
+        const result = findDeviderAndParent(child, deviderId);
+        if (result) return result;
+      }
+    }
+    
+    return null;
+  }
+
+  // 更新区域内子元素的布局
+  function updateChildrenLayout(section: Section) {
+    if (!section.sections || section.sections.length === 0) return;
+    
+    // 计算子元素位置和尺寸
+    if (section.splitDirection === 'vertical') {
+      // 水平排列的子元素
+      let offsetX = 0;
+      for (const child of section.sections) {
+        child.x = offsetX;
+        child.y = 0; // 保持Y坐标不变
+        
+        // 更新偏移量
+        offsetX += child.width;
+      }
+    } else {
+      // 垂直排列的子元素
+      let offsetY = 0;
+      for (const child of section.sections) {
+        child.x = 0; // 保持X坐标不变
+        child.y = offsetY;
+        
+        // 更新偏移量
+        offsetY += child.height;
+      }
+    }
+    
+    // 递归更新各子区域的内部布局
+    for (const child of section.sections) {
+      if (child.nodeType === 'section') {
+        updateChildrenLayout(child as Section);
+      }
+    }
+  }
+
+  // 缩放比例
+  const scale = ref(1);
+
+  // 更新中挺位置 - 同步更新相邻区域
+  function updateDeviderPosition(deviderId: number, newPosition: number) {
+    // 查找中挺及其父容器
+    const result = findDeviderAndParent(root.value, deviderId);
+    if (!result) return;
+    
+    const { devider, parent, index } = result;
+    if (!parent || !parent.sections) return;
+    
+    // 确保位置在有效范围内(10%-90%)
+    newPosition = Math.max(10, Math.min(90, newPosition));
+    
+    console.log(`更新中挺 #${deviderId} 位置: ${devider.position}% -> ${newPosition}%`);
+    
+    // 保存原位置百分比
+    const oldPosition = devider.position;
+    
+    // 更新中挺位置
+    devider.position = newPosition;
+    
+    // 如果索引无效，无法更新相邻区域
+    if (index <= 0 || index >= parent.sections.length - 1) return;
+    
+    // 获取相邻区域
+    const prevSection = parent.sections[index - 1] as Section;
+    const nextSection = parent.sections[index + 1] as Section;
+    
+    if (devider.direction === 'vertical') {
+      // 垂直中挺：调整左右区域宽度
+      const totalWidth = prevSection.width + nextSection.width;
+      
+      // 计算新的宽度分配
+      prevSection.width = Math.round(totalWidth * newPosition / 100);
+      nextSection.width = totalWidth - prevSection.width;
+      
+      // 更新nextSection的位置
+      nextSection.x = prevSection.x + prevSection.width + devider.width;
+    } else {
+      // 水平中挺：调整上下区域高度
+      const totalHeight = prevSection.height + nextSection.height;
+      
+      // 计算新的高度分配
+      prevSection.height = Math.round(totalHeight * newPosition / 100);
+      nextSection.height = totalHeight - prevSection.height;
+      
+      // 更新nextSection的位置
+      nextSection.y = prevSection.y + prevSection.height + devider.height;
+    }
+    
+    // 更新子区域的内部布局
+    updateChildrenLayout(prevSection);
+    updateChildrenLayout(nextSection);
+  }
+
+  // 更新中挺厚度 - 同步更新相邻区域
+  function updateDeviderThickness(deviderId: number, newThickness: number) {
+    // 查找中挺及其父容器
+    const result = findDeviderAndParent(root.value, deviderId);
+    if (!result) return;
+    
+    const { devider, parent, index } = result;
+    if (!parent || !parent.sections) return;
+    
+    // 限制厚度范围(30-100)
+    newThickness = Math.max(30, Math.min(100, newThickness));
+    
+    // 获取原厚度
+    const oldThickness = devider.direction === 'vertical' ? devider.width : devider.height;
+    
+    console.log(`更新中挺 #${deviderId} 厚度: ${oldThickness} -> ${newThickness}`);
+    
+    // 计算厚度差值
+    const thicknessDiff = newThickness - oldThickness;
+    
+    // 更新中挺厚度
+    if (devider.direction === 'vertical') {
+      devider.width = newThickness;
+    } else {
+      devider.height = newThickness;
+    }
+    
+    // 如果索引无效，无法更新相邻区域
+    if (index <= 0 || index >= parent.sections.length - 1) return;
+    
+    // 获取相邻区域
+    const prevSection = parent.sections[index - 1] as Section;
+    const nextSection = parent.sections[index + 1] as Section;
+    
+    if (devider.direction === 'vertical') {
+      // 垂直中挺：根据位置比例调整左右区域宽度
+      const reductionFromPrev = Math.round(thicknessDiff * (devider.position / 100));
+      const reductionFromNext = thicknessDiff - reductionFromPrev;
+      
+      // 更新宽度
+      prevSection.width = Math.max(50, prevSection.width - reductionFromPrev);
+      nextSection.width = Math.max(50, nextSection.width - reductionFromNext);
+      
+      // 更新nextSection的位置
+      nextSection.x = prevSection.x + prevSection.width + devider.width;
+    } else {
+      // 水平中挺：根据位置比例调整上下区域高度
+      const reductionFromPrev = Math.round(thicknessDiff * (devider.position / 100));
+      const reductionFromNext = thicknessDiff - reductionFromPrev;
+      
+      // 更新高度
+      prevSection.height = Math.max(50, prevSection.height - reductionFromPrev);
+      nextSection.height = Math.max(50, nextSection.height - reductionFromNext);
+      
+      // 更新nextSection的位置
+      nextSection.y = prevSection.y + prevSection.height + devider.height;
+    }
+    
+    // 更新子区域的内部布局
+    updateChildrenLayout(prevSection);
+    updateChildrenLayout(nextSection);
   }
 
   const stageDraggable = ref(true);
@@ -615,10 +843,12 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     selectedDeviderId,
     selectedSection,
     selectedDevider,
+    scale,
     setSectionType,
     splitCurrentSection,
     updateWindowSize,
     updateDeviderPosition,
+    updateDeviderThickness,
     updateFrameSize,
     initializeWindowWithSections,
     updateElementSize,

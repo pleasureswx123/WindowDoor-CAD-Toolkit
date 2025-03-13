@@ -4,7 +4,7 @@ import { ref, onMounted } from 'vue';
 import RootFrame from './RootFrame.vue';
 import SectionEdit from './SectionEdit.vue';
 import SizeControlPanel from './SizeControlPanel.vue';
-import DeviderEdit from './DeviderEdit.vue';
+import DeviderAdjustPanel from './DeviderAdjustPanel.vue';
 import { useWindowDoorStore } from '@/stores/windowDoorStore';
 
 const store = useWindowDoorStore();
@@ -191,7 +191,7 @@ const handleViewTool = (toolId: string) => {
             </div>
           </template>
           <div class="panel-section">
-            <DeviderEdit />
+            <DeviderAdjustPanel />
           </div>
         </el-collapse-item>
 
