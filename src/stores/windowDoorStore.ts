@@ -767,15 +767,13 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       return;
     }
     
-    // 确保位置在有效范围内(10%-90%)
+    // 确保新位置在有效范围内 (10%-90%)
     newPosition = Math.max(10, Math.min(90, newPosition));
     
+    // 打印更新信息
     console.log(`更新中挺 #${deviderId} 位置: ${devider.position}% -> ${newPosition}%`);
     
-    // 保存原位置百分比
-    const oldPosition = devider.position;
-    
-    // 更新中挺位置
+    // 保存新的相对位置
     devider.position = newPosition;
     
     // 如果索引无效，无法更新相邻区域
@@ -784,12 +782,12 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       return;
     }
     
-    // 获取相邻区域
+    // 前后相邻的区域
     const prevSection = parent.sections[index - 1] as Section;
     const nextSection = parent.sections[index + 1] as Section;
     
     if (!prevSection || !nextSection) {
-      console.error('中挺相邻区域无效');
+      console.error(`中挺相邻的区域未找到 (prev: ${!!prevSection}, next: ${!!nextSection})`);
       return;
     }
     
@@ -799,8 +797,9 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       // 垂直中挺：调整左右区域宽度
       const totalWidth = prevSection.width + nextSection.width;
       
-      // 计算新的宽度分配
-      prevSection.width = Math.round(totalWidth * newPosition / 100);
+      // 计算新的宽度分配 - 考虑newPosition是基于父节点的百分比
+      const prevWidthPercent = newPosition;
+      prevSection.width = Math.round(totalWidth * prevWidthPercent / 100);
       nextSection.width = totalWidth - prevSection.width;
       
       // 更新中挺的实际宽度 - 保持不变
@@ -810,13 +809,14 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       devider.x = prevSection.x + prevSection.width;
       nextSection.x = devider.x + devider.width;
       
-      console.log(`垂直中挺更新: 中挺位置=${devider.x}, 左区域宽度=${prevSection.width}, 右区域宽度=${nextSection.width}`);
+      console.log(`垂直中挺更新: 位置百分比=${newPosition.toFixed(2)}%, 中挺x坐标=${devider.x}, 左区域宽度=${prevSection.width}, 右区域宽度=${nextSection.width}`);
     } else {
       // 水平中挺：调整上下区域高度
       const totalHeight = prevSection.height + nextSection.height;
       
-      // 计算新的高度分配
-      prevSection.height = Math.round(totalHeight * newPosition / 100);
+      // 计算新的高度分配 - 考虑newPosition是基于父节点的百分比
+      const prevHeightPercent = newPosition;
+      prevSection.height = Math.round(totalHeight * prevHeightPercent / 100);
       nextSection.height = totalHeight - prevSection.height;
       
       // 更新中挺的实际高度 - 保持不变
@@ -826,7 +826,7 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       devider.y = prevSection.y + prevSection.height;
       nextSection.y = devider.y + devider.height;
       
-      console.log(`水平中挺更新: 中挺位置=${devider.y}, 上区域高度=${prevSection.height}, 下区域高度=${nextSection.height}`);
+      console.log(`水平中挺更新: 位置百分比=${newPosition.toFixed(2)}%, 中挺y坐标=${devider.y}, 上区域高度=${prevSection.height}, 下区域高度=${nextSection.height}`);
     }
     
     // 递归更新相邻区域内的所有子元素
@@ -1267,6 +1267,10 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     }
   }
 
+  // 拖动时的临时状态
+  const dragStartPos = ref<{x: number, y: number} | null>(null);
+  const dragParentSection = ref<Section | null>(null);
+  
   return {
     stageDraggable,
     root,
@@ -1299,6 +1303,13 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     calculateDeviderInfo,
     createDeviderWithPenTool,
     getSnapPercentages,
-    applySnapping
+    applySnapping,
+    
+    // 拖动相关状态
+    dragStartPos,
+    dragParentSection,
+    
+    // 方法
+    findDeviderAndParent
   };
 }); 
