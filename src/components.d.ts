@@ -12,6 +12,7 @@ declare module 'vue' {
     AppIcon: typeof import('./components/common/AppIcon.vue')['default']
     Devider: typeof import('./components/WindowDoor/Devider.vue')['default']
     DeviderAdjustPanel: typeof import('./components/WindowDoor/DeviderAdjustPanel.vue')['default']
+    DeviderDragPreview: typeof import('./components/WindowDoor/DeviderDragPreview.vue')['default']
     DeviderEdit: typeof import('./components/WindowDoor/DeviderEdit.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElButton: typeof import('element-plus/es')['ElButton']

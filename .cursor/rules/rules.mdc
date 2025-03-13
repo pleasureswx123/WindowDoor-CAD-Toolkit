@@ -4,62 +4,20 @@ globs:
 alwaysApply: true
 ---
 # =====================================================================
-# CAD门窗效果图编辑器项目 - Vue + Vue-Konva技术规范
-# 版本：v3.2.0
-# 目标：实现高性能门窗CAD系统，解决组件联动、尺寸同步、标注动态更新问题
+# CAD门窗效果图编辑器项目 - Vue + vue-konva配置规则）
+# 版本：v3.1.0
+# 目标：解决组件联动、尺寸同步、标注动态更新问题
 # =====================================================================
 
-## 1. 项目概述
+你是一个专业的前端开发助手。
 
-你是一个专业的前端开发助手，精通Vue 3生态系统和Konva图形引擎。你将协助开发一个建材行业的工程制图工具，特别专注于门窗设计系统，具备行业特定功能和交互体验。
+你专注于帮我开发一个建材行业的工程制图工具，特别是门窗设计，并且具备行业特定功能。你是vue-konva、Konva、Vue 3和Pinia方面的资深全栈专家，擅长响应式布局与多端适配。
 
-### 1.1 技术栈与版本
+当需要安装npm包时，请始终使用cnpm而不是npm。
 
-```json
-{
-  "dependencies": {
-    "vue": "^3.5.13",
-    "konva": "^9.3.18",
-    "vue-konva": "^3.2.0",
-    "pinia": "^3.0.1",
-    "typescript": "~5.7.3",
-    "@vueuse/core": "^10.7.0",
-    "@iconify/vue": "^4.1.1",
-    "element-plus": "^2.4.0"
-  }
-}
-```
 
-### 1.2 项目结构规范
+# 概念层级结构 https://konvajs.org/docs/overview.html
 
-```
-window-door/
-├── src/
-│   ├── assets/            # 静态资源
-│   ├── components/        # 公共UI组件
-│   ├── composables/       # 组合式函数
-│   ├── constants/         # 常量定义
-│   ├── layouts/           # 布局组件
-│   ├── modules/           # 功能模块
-│   │   ├── designer/      # 设计器核心
-│   │   ├── window/        # 窗户组件
-│   │   ├── door/          # 门组件
-│   │   └── annotation/    # 标注组件
-│   ├── shapes/            # Konva图形组件
-│   ├── stores/            # Pinia状态管理
-│   ├── styles/            # 全局样式
-│   ├── types/             # TypeScript类型定义
-│   ├── utils/             # 工具函数
-│   ├── App.vue            # 根组件
-│   └── main.ts            # 入口文件
-└── reference_material/    # 参考材料(React实现)
-```
-
-## 2. Konva架构基础
-
-### 2.1 核心层级结构
-
-```
               Stage
                 |
          +------+------+
@@ -77,416 +35,1094 @@ Shape   Group    Shape
            +
            |
          Shape
-```
 
-### 2.2 Vue-Konva组件映射
-
-| Konva类 | Vue-Konva组件 | 必要属性 | 常用事件 |
-|---------|--------------|---------|---------|
-| Stage | `<v-stage>` | `:config="{width, height}"` | `@click`, `@wheel` |
-| Layer | `<v-layer>` | - | `@mousedown`, `@dragend` |
-| Group | `<v-group>` | `:config="{x, y}"` | `@dragmove` |
-| Rect | `<v-rect>` | `:config="{x, y, width, height, fill}"` | `@click`, `@dragend` |
-| Circle | `<v-circle>` | `:config="{x, y, radius, fill}"` | `@click`, `@dragmove` |
-| Line | `<v-line>` | `:config="{points, stroke, strokeWidth}"` | `@click`, `@dragmove` |
-| Text | `<v-text>` | `:config="{x, y, text, fontSize}"` | `@click`, `@dblclick` |
-| Image | `<v-image>` | `:config="{x, y, image, width, height}"` | `@click` |
-| Arrow | `<v-arrow>` | `:config="{points, fill, stroke}"` | `@dragmove` |
-| Transformer | `<v-transformer>` | `:config="{rotateEnabled, resizeEnabled}"` | `@transformend` |
-
-## 3. 核心开发规范
-
-### 3.1 前端架构规范
-
-1. **Vue组件开发**
-   - 统一使用Composition API，采用`<script setup>`语法
-   - 所有组件状态必须使用响应式API (ref, reactive, computed)
-   - 组件名称使用PascalCase，文件名与组件名保持一致
-   - 组件参数校验必须使用defineProps和defineEmits
-   - 复杂组件使用逻辑与UI分离的结构
-
-2. **状态管理规范**
-   - 使用Pinia管理全局状态，按功能模块拆分store
-   - 组件内部状态使用ref/reactive管理
-   - 组件间通信优先使用props/emits，复杂场景使用Pinia
-   - Store定义使用组合式API风格
-   - Konva节点引用使用Map结构存储，避免循环引用
-
-3. **性能优化规范**
-   - 使用computed处理派生数据，避免重复计算
-   - 使用watchEffect/watch监听变化并触发副作用
-   - 使用v-memo优化大列表渲染
-   - 使用v-once渲染静态内容
-   - 避免深层组件嵌套
-
-### 3.2 Vue-Konva开发规范
-
-1. **基础规则**
-   - Konva节点必须通过vue-konva组件创建，禁止直接操作DOM
-   - 所有图形配置必须使用响应式数据
-   - 禁止直接修改Konva实例属性，应通过Vue配置更新
-   - 组件间尺寸同步必须通过props与响应式机制实现
-   - 所有交互必须使用Konva事件而非DOM事件
-
-2. **性能优化**
-   - 使用layer.batchDraw()替代draw()
-   - 对静态或复杂形状开启缓存: `:config="{cache: true, cacheEnabled: true}"`
-   - 减少舞台上的节点数量，合并静态元素
-   - 使用v-if而非visible属性控制大量节点显示
-   - 为不需交互的元素设置`listening: false`
-
-3. **内存管理**
-   - 组件卸载时销毁Konva实例: `onUnmounted(() => node.destroy())`
-   - 组件卸载时移除事件监听器
-   - 组件卸载时从Pinia store中移除节点引用
-   - 图片加载使用资源池管理
-
-4. **错误预防**
-   - Konva元素必须包裹在v-layer内
-   - 避免直接通过stage.find()查找元素，使用ref获取
-   - 变形操作后必须更新原始配置
-
-## 4. 门窗设计系统核心规范
-
-### 4.1 组件设计模式
-
-1. **父子组件关系**
-   - 父组件负责尺寸分配与布局计算
-   - 子组件通过props接收尺寸参数
-   - 子组件尺寸变更通过emit通知父组件
-   - 使用provide/inject传递深层配置
-
-2. **图形组合模式**
-   - 基础图形: 线条、矩形、圆形
-   - 组合图形: 窗框、窗扇、窗格、门框、门扇
-   - 功能组件: 标注、尺寸线、控制点
-
-3. **响应式数据流**
-   - 主尺寸数据在顶层组件或store中管理
-   - 派生尺寸通过computed计算
-   - 使用watchEffect监听尺寸变化并触发更新
-   - 使用nextTick处理尺寸变更后的DOM操作
-
-### 4.2 标注系统
-
-1. **标注组件设计**
-   - 与目标组件解耦，使用props绑定坐标点
-   - 使用computed动态计算标注位置和文本
-   - 支持不同单位系统(mm/cm/inch)转换
-   - 样式通过props或主题系统控制
-
-2. **尺寸线实现**
-   - 使用v-arrow组件绘制箭头线
-   - 线端点绑定到目标组件的关键点
-   - 支持自动避让和最佳位置计算
-   - 与图形变换同步更新
-
-### 4.3 交互系统
-
-1. **选择系统**
-   - 单击选择元素
-   - 配合Shift多选
-   - 区域框选
-   - 高亮显示选中状态
-
-2. **变换系统**
-   - 使用v-transformer实现缩放和旋转
-   - 拖拽边缘实现调整尺寸
-   - 拖拽角点实现等比缩放
-   - 约束变换确保工程尺寸合理
-
-3. **拖拽系统**
-   - 元素拖拽使用draggable属性
-   - 使用dragBoundFunc限制移动范围
-   - 拖拽结束后更新store中的位置
-   - 支持对齐辅助线和吸附功能
-
-## 5. 工程样例
-
-### 5.1 基础窗框组件
-
+# vue-konva Basic Intro 使用示例代码
 ```vue
-<script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useWindowStore } from '@/stores/window';
+<template>
+  <div>
+    <v-stage
+      ref="stage"
+      :config="configKonva"
+      @dragstart="handleDragstart"
+      @dragend="handleDragend"
+    >
+      <v-layer ref="layer">
+        <v-star
+          v-for="item in list"
+          :key="item.id"
+          :config="{
+            x: item.x,
+            y: item.y,
+            rotation: item.rotation,
+            id: item.id,
+            numPoints: 5,
+            innerRadius: 30,
+            outerRadius: 50, fill: '#89b717',
+            opacity: 0.8,
+            draggable: true,
+            scaleX: dragItemId === item.id ? item.scale * 1.2 : item.scale,
+            scaleY: dragItemId === item.id ? item.scale * 1.2 : item.scale,
+            shadowColor: 'black',
+            shadowBlur: 10,
+            shadowOffsetX: dragItemId === item.id ? 15 : 5,
+            shadowOffsetY: dragItemId === item.id ? 15 : 5,
+            shadowOpacity: 0.6
+          }"
+        ></v-star>
+      </v-layer>
+    </v-stage>
+  </div>
+</template>
 
-const props = defineProps({
-  width: { type: Number, required: true },
-  height: { type: Number, required: true },
-  x: { type: Number, default: 0 },
-  y: { type: Number, default: 0 },
-  borderWidth: { type: Number, default: 5 },
-  borderColor: { type: String, default: '#333333' }
-});
-
-const emit = defineEmits(['update:width', 'update:height', 'update:x', 'update:y']);
-
-const windowStore = useWindowStore();
-const windowFrameRef = ref(null);
-
-const frameConfig = computed(() => ({
-  x: props.x,
-  y: props.y,
-  width: props.width,
-  height: props.height,
-  stroke: props.borderColor,
-  strokeWidth: props.borderWidth,
-  cornerRadius: 2,
-  draggable: true
-}));
-
-onMounted(() => {
-  if (windowFrameRef.value) {
-    windowStore.registerNode('windowFrame', windowFrameRef.value);
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+export default {
+  data() {
+    return {
+      list: [],
+      dragItemId: null,
+      configKonva: {
+        width: width,
+        height: height
+      }
+    };
+  },
+  methods: {
+    handleDragstart(e) {
+      // save drag element:
+      this.dragItemId = e.target.id();
+      // move current element to the top:
+      const item = this.list.find(i => i.id === this.dragItemId);
+      const index = this.list.indexOf(item);
+      this.list.splice(index, 1);
+      this.list.push(item);
+    },
+    handleDragend(e) {
+      this.dragItemId = null;
+    }
+  },
+  mounted() {
+    for (let n = 0; n < 30; n++) {
+      this.list.push({
+        id: Math.round(Math.random() * 10000).toString(),
+        x: Math.random() * width,
+        y: Math.random() * height,
+        rotation: Math.random() * 180,
+        scale: Math.random()
+      });
+    }
   }
-});
-
-onUnmounted(() => {
-  windowStore.unregisterNode('windowFrame');
-});
-
-const handleDragMove = () => {
-  if (!windowFrameRef.value) return;
-  
-  const pos = windowFrameRef.value.getPosition();
-  emit('update:x', pos.x);
-  emit('update:y', pos.y);
-  windowStore.updatePosition('windowFrame', pos);
-};
-
-const handleTransform = (e) => {
-  if (!windowFrameRef.value) return;
-  
-  // 更新变形后的尺寸
-  const node = windowFrameRef.value;
-  const scaleX = node.scaleX();
-  const scaleY = node.scaleY();
-  
-  // 重置比例并更新尺寸
-  const newWidth = Math.round(node.width() * scaleX);
-  const newHeight = Math.round(node.height() * scaleY);
-  
-  emit('update:width', newWidth);
-  emit('update:height', newHeight);
-  
-  // 重置比例
-  node.scaleX(1);
-  node.scaleY(1);
-  
-  // 更新store
-  windowStore.resizeWindow(newWidth, newHeight);
 };
 </script>
 
-<template>
-  <v-group>
-    <v-rect
-      ref="windowFrameRef"
-      :config="frameConfig"
-      @dragmove="handleDragMove"
-      @transformend="handleTransform"
-    />
-    <slot></slot>
-  </v-group>
-</template>
+<style>
+body {
+  margin: 0;
+  padding: 0;
+}
+</style>
 ```
 
-### 5.2 Pinia状态管理
+# vue-konva Basic shape 使用示例代码
+```vue
+<template>
+  <div>
+    <v-stage ref="stage" :config="stageSize">
+      <v-layer>
+      <v-text :config="{text: 'Some text on canvas', fontSize: 15}"/>
+      <v-rect :config="{
+          x: 20,
+          y: 50,
+          width: 100,
+          height: 100,
+          fill: 'red',
+          shadowBlur: 10
+        }"
+      />
+      <v-circle :config="{
+          x: 200,
+          y: 100,
+          radius: 50,
+          fill: 'green'
+        }"
+      />
+      <v-line :config="{
+        x: 20,
+        y: 200,
+        points: [0, 0, 100, 0, 100, 100],
+        tension: 0.5,
+        closed: true,
+        stroke: 'black',
+        fillLinearGradientStartPoint: { x: -50, y: -50 },
+        fillLinearGradientEndPoint: { x: 50, y: 50 },
+        fillLinearGradientColorStops: [0, 'red', 1, 'yellow']
+      }"/>
+      </v-layer>
+      <v-layer ref="dragLayer"></v-layer>
+    </v-stage>
+  </div>
+</template>
 
-```js
-// stores/window.js
-import { defineStore } from 'pinia';
-import { ref, reactive } from 'vue';
-
-export const useWindowStore = defineStore('window', () => {
-  // 节点引用管理
-  const nodes = reactive(new Map());
-  
-  // 窗户尺寸状态
-  const windowDimensions = reactive({
-    width: 800,
-    height: 600,
-    x: 50,
-    y: 50
-  });
-  
-  // 选中状态
-  const selectedNodeId = ref(null);
-  const isTransforming = ref(false);
-  
-  // 注册节点引用
-  function registerNode(id, node) {
-    if (node && !node.isDestroyed()) {
-      nodes.set(id, node);
-    }
-  }
-  
-  // 注销节点引用
-  function unregisterNode(id) {
-    if (nodes.has(id)) {
-      nodes.delete(id);
-    }
-  }
-  
-  // 更新位置
-  function updatePosition(id, pos) {
-    const node = nodes.get(id);
-    if (node && node.getStage()) {
-      node.position(pos);
-      // 使用批量绘制提高性能
-      node.getLayer()?.batchDraw();
-      
-      // 更新状态
-      if (id === 'windowFrame') {
-        windowDimensions.x = pos.x;
-        windowDimensions.y = pos.y;
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+let vm = {};
+export default {
+  data() {
+    return {
+      stageSize: {
+        width: width,
+        height: height
       }
+    };
+  }
+};
+</script>
+```
+
+# vue-konva Custom shape 使用示例代码
+```vue
+<template>
+    <v-stage ref="stage" :config="stageSize">
+      <v-layer>
+        <v-shape :config="{
+        width: 260,
+        height: 170,
+        sceneFunc: function (context, shape) {
+          const width = shape.width();
+          const height = shape.height();
+          context.beginPath();
+          context.moveTo(0, 0);
+          context.lineTo(width - 40, height - 90);
+          context.quadraticCurveTo(width - 110, height - 70, width, height);
+          context.closePath();
+
+          // (!) Konva specific method, it is very important
+          context.fillStrokeShape(shape);
+        },
+        fill: '#00D2FF',
+        stroke: 'black',
+        strokeWidth: 4
+      }"/>
+    </v-layer>
+  </v-stage>
+</template>
+
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+export default {
+  data() {
+    return {
+      stageSize: {
+        width: width,
+        height: height
+      }
+    };
+  }
+};
+</script>
+```
+
+# vue-konva Events 使用示例代码
+```vue
+<template>
+<v-stage ref="stage" :config="stageSize">
+      <v-layer ref="layer">
+        <v-regular-polygon
+          @mousemove="handleMouseMove"
+          @mouseout="handleMouseOut"
+          :config="{
+            x: 80,
+            y: 120,
+            sides: 3,
+            radius: 80,
+            fill: '#00D2FF',
+            stroke: 'black',
+            strokeWidth: 4
+          }"
+        />
+        <v-text ref="text" :config="{
+          x: 10,
+          y: 10,
+          fontFamily: 'Calibri',
+          fontSize: 24,
+          text: text,
+          fill: 'black'
+        }" />
+      </v-layer>
+    </v-stage>
+</template>
+
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+export default {
+  data() {
+    return {
+      stageSize: {
+        width: width,
+        height: height
+      },
+      text: ''
+    };
+  },
+  methods: {
+    writeMessage(message) {
+      this.text = message;
+    },
+    handleMouseOut(event) {
+      this.writeMessage('Mouseout triangle');
+    },
+    handleMouseMove(event) {
+      const mousePos = this.$refs.stage.getNode().getPointerPosition();
+      const x = mousePos.x - 190;
+      const y = mousePos.y - 40;
+      this.writeMessage('x: ' + x + ', y: ' + y);
     }
   }
-  
-  // 调整窗户尺寸
-  function resizeWindow(width, height) {
-    windowDimensions.width = width;
-    windowDimensions.height = height;
-    
-    // 触发整个图层重绘
-    const mainFrame = nodes.get('windowFrame');
-    if (mainFrame) {
-      mainFrame.width(width);
-      mainFrame.height(height);
-      mainFrame.getLayer()?.batchDraw();
+};
+</script>
+```
+
+# vue-konva Images 使用示例代码
+```vue
+<template>
+  <v-stage ref="stage" :config="stageSize">
+    <v-layer ref="layer">
+      <v-image :config="{
+            image: image
+          }"/>
+    </v-layer>
+  </v-stage>
+</template>
+
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+export default {
+  data() {
+    return {
+      stageSize: {
+        width: width,
+        height: height
+      },
+      image: null
+    };
+  },
+  created() {
+    const image = new window.Image();
+    image.src = "https://konvajs.org/assets/yoda.jpg";
+    image.onload = () => {
+      // set image only when it is loaded
+      this.image = image;
+    };
+  }
+};
+</script>
+```
+
+# vue-konva Filters 使用示例代码
+```vue
+<template>
+<v-stage ref="stage" :config="stageSize">
+      <v-layer ref="layer">
+        <v-rect
+          ref="rect"
+          @mousemove="handleMouseMove"
+          :config="{
+            filters: filters,
+            noise: 1,
+            x: 10,
+            y: 10,
+            width: 50,
+            height: 50,
+            fill: color,
+            shadowBlur: 10
+          }"
+        />
+      </v-layer>
+    </v-stage>
+</template>
+
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+import Konva from 'konva';
+
+export default {
+  data() {
+    return {
+      stageSize: {
+        width: width,
+        height: height
+      },
+      color: 'green',
+      filters: [Konva.Filters.Noise]
+    };
+  },
+  methods: {
+    handleMouseMove() {
+      this.color = Konva.Util.getRandomColor();
+      // recache
+      const rectNode = this.$refs.rect.getNode();
+      // may need to redraw layer manually
+      rectNode.cache();
+    }
+  },
+  mounted() {
+    const rectNode = this.$refs.rect.getNode();
+    rectNode.cache();
+  },
+};
+</script>
+
+```
+
+# vue-konva Save/Load 使用示例代码
+```vue
+<template>
+  <div>
+    Click on canvas to create a cirlce.
+    <a href=".">Reload the page</a>. Circles should stay here.
+    <v-stage ref="stage"
+      :config="stageSize"
+      @click="handleClick"
+    >
+      <v-layer ref="layer">
+        <v-circle
+          v-for="item in list"
+          :key="item.id"
+          :config="item"></v-circle>
+      </v-layer>
+      <v-layer ref="dragLayer"></v-layer>
+    </v-stage>
+  </div>
+</template>
+
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+export default {
+  data() {
+    return {
+      list: [{ x: 100, y: 100, radius: 50, fill: 'blue' }],
+      stageSize: {
+        width: width,
+        height: height
+      }
+    };
+  },
+  methods: {
+    handleClick(evt) {
+      const stage = evt.target.getStage();
+      const pos = stage.getPointerPosition();
+      this.list.push({
+        radius: 50,
+        fill: 'red',
+        ...pos
+      });
+
+      this.save();
+    },
+
+    load() {
+      const data = localStorage.getItem('storage');
+      if (data) this.list = JSON.parse(data);
+    },
+
+    save() {
+      localStorage.setItem('storage', JSON.stringify(this.list));
+    }
+  },
+  mounted() {
+    this.load();
+  }
+};
+</script>
+```
+
+# vue-konva Drag and Drop 使用示例代码
+```vue
+<template>
+<v-stage ref="stage" :config="stageSize">
+      <v-layer ref="layer">
+        <v-text
+          @dragstart="handleDragStart"
+          @dragend="handleDragEnd"
+          :config="{
+            text: 'Draggable Text',
+            x: 50,
+            y: 50,
+            draggable: true,
+            fill: isDragging ? 'green' : 'black'
+          }"
+        />
+      </v-layer>
+    </v-stage>
+</template>
+
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+export default {
+  data() {
+    return {
+      stageSize: {
+        width: width,
+        height: height
+      },
+      isDragging: false
+    };
+  },
+  methods: {
+    handleDragStart() {
+      this.isDragging = true;
+    },
+    handleDragEnd() {
+      this.isDragging = false;
     }
   }
-  
-  // 选择节点
-  function selectNode(id) {
-    selectedNodeId.value = id;
-    
-    // 可以在这里添加选中效果逻辑
-    nodes.forEach((node, nodeId) => {
-      // 为选中节点添加高亮效果
-      if (nodeId === id) {
-        node.stroke('#0096FF');
-        node.strokeWidth(2);
+};
+</script>
+```
+
+# vue-konva Transformer 使用示例代码
+```vue
+<template>
+  <v-stage
+    ref="stage"
+    :config="stageSize"
+    @mousedown="handleStageMouseDown"
+    @touchstart="handleStageMouseDown"
+  >
+    <v-layer ref="layer">
+      <v-rect
+        v-for="item in rectangles"
+        :key="item.id"
+        :config="item"
+        @transformend="handleTransformEnd"
+      />
+      <v-transformer ref="transformer" />
+    </v-layer>
+  </v-stage>
+</template>
+
+<script>
+import Konva from 'konva';
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+export default {
+  data() {
+    return {
+      stageSize: {
+        width: width,
+        height: height,
+      },
+      rectangles: [
+        {
+          rotation: 0,
+          x: 10,
+          y: 10,
+          width: 100,
+          height: 100,
+          scaleX: 1,
+          scaleY: 1,
+          fill: 'red',
+          name: 'rect1',
+          draggable: true,
+        },
+        {
+          rotation: 0,
+          x: 150,
+          y: 150,
+          width: 100,
+          height: 100,
+          scaleX: 1,
+          scaleY: 1,
+          fill: 'green',
+          name: 'rect2',
+          draggable: true,
+        },
+      ],
+      selectedShapeName: '',
+    };
+  },
+  methods: {
+    handleTransformEnd(e) {
+      // shape is transformed, let us save new attrs back to the node
+      // find element in our state
+      const rect = this.rectangles.find(
+        (r) => r.name === this.selectedShapeName
+      );
+      // update the state
+      rect.x = e.target.x();
+      rect.y = e.target.y();
+      rect.rotation = e.target.rotation();
+      rect.scaleX = e.target.scaleX();
+      rect.scaleY = e.target.scaleY();
+
+      // change fill
+      rect.fill = Konva.Util.getRandomColor();
+    },
+    handleStageMouseDown(e) {
+      // clicked on stage - clear selection
+      if (e.target === e.target.getStage()) {
+        this.selectedShapeName = '';
+        this.updateTransformer();
+        return;
+      }
+
+      // clicked on transformer - do nothing
+      const clickedOnTransformer =
+        e.target.getParent().className === 'Transformer';
+      if (clickedOnTransformer) {
+        return;
+      }
+
+      // find clicked rect by its name
+      const name = e.target.name();
+      const rect = this.rectangles.find((r) => r.name === name);
+      if (rect) {
+        this.selectedShapeName = name;
       } else {
-        // 重置其他节点的样式
-        const isFrame = nodeId.includes('Frame');
-        node.stroke(isFrame ? '#333333' : 'black');
-        node.strokeWidth(isFrame ? 5 : 1);
+        this.selectedShapeName = '';
       }
-    });
-    
-    // 重绘所有图层
-    const anyNode = nodes.values().next().value;
-    if (anyNode) {
-      const stage = anyNode.getStage();
-      stage?.batchDraw();
-    }
-  }
-  
-  return {
-    nodes,
-    windowDimensions,
-    selectedNodeId,
-    isTransforming,
-    registerNode,
-    unregisterNode,
-    updatePosition,
-    resizeWindow,
-    selectNode
-  };
-});
-```
+      this.updateTransformer();
+    },
+    updateTransformer() {
+      // here we need to manually attach or detach Transformer node
+      const transformerNode = this.$refs.transformer.getNode();
+      const stage = transformerNode.getStage();
+      const { selectedShapeName } = this;
 
-### 5.3 标注组件
+      const selectedNode = stage.findOne('.' + selectedShapeName);
+      // do nothing if selected node is already attached
+      if (selectedNode === transformerNode.node()) {
+        return;
+      }
 
-```vue
-<script setup>
-import { ref, computed } from 'vue';
-
-const props = defineProps({
-  startX: { type: Number, required: true },
-  startY: { type: Number, required: true },
-  endX: { type: Number, required: true },
-  endY: { type: Number, required: true },
-  text: { type: String, default: '' },
-  offset: { type: Number, default: 10 },
-  unit: { type: String, default: 'mm' },
-  scale: { type: Number, default: 1 }, // 像素到实际单位的比例
-  color: { type: String, default: '#666' }
-});
-
-// 计算箭头点位
-const arrowPoints = computed(() => [
-  props.startX, props.startY, 
-  props.endX, props.endY
-]);
-
-// 计算文本位置 (居中)
-const textPosition = computed(() => ({
-  x: (props.startX + props.endX) / 2,
-  y: (props.startY + props.endY) / 2 - props.offset
-}));
-
-// 计算尺寸值
-const dimensionText = computed(() => {
-  if (props.text) return props.text;
-  
-  const dx = props.endX - props.startX;
-  const dy = props.endY - props.startY;
-  const distance = Math.sqrt(dx * dx + dy * dy);
-  
-  // 应用比例尺转换
-  const realValue = distance * props.scale;
-  return `${Math.round(realValue)}${props.unit}`;
-});
-
-const arrowConfig = ref({
-  stroke: props.color,
-  fill: props.color,
-  strokeWidth: 1,
-  pointerLength: 5,
-  pointerWidth: 5
-});
-
-const textConfig = computed(() => ({
-  ...textPosition.value,
-  text: dimensionText.value,
-  fontSize: 12,
-  fontFamily: 'Arial',
-  fill: props.color,
-  padding: 2,
-  align: 'center'
-}));
+      if (selectedNode) {
+        // attach to another node
+        transformerNode.nodes([selectedNode]);
+      } else {
+        // remove transformer
+        transformerNode.nodes([]);
+      }
+    },
+  },
+};
 </script>
 
-<template>
-  <v-group>
-    <v-arrow :config="{ ...arrowConfig, points: arrowPoints }" />
-    <v-text :config="textConfig" />
-  </v-group>
-</template>
 ```
 
-## 6. 依赖与工具管理
+# vue-konva Simple Animations 使用示例代码
+```vue
+<template>
+  <v-stage ref="stage" :config="stageSize">
+    <v-layer ref="layer">
+      <v-rect
+        ref="rect"
+        @dragstart="changeSize"
+        @dragend="changeSize"
+        :config="{
+            width: 50,
+            height: 50,
+            fill: 'green',
+            draggable: true
+          }"
+      />
+      <v-regular-polygon
+        ref="hexagon"
+        :config="{
+          x: 200,
+          y: 200,
+          sides: 6,
+          radius: 20,
+          fill: 'red',
+          stroke: 'black',
+          strokeWidth: 4
+        }"
+      />
+    </v-layer>
+  </v-stage>
+</template>
 
-### 6.1 包管理器规范
+<script>
+import Konva from "konva";
+const width = window.innerWidth;
+const height = window.innerHeight;
 
-- 使用cnpm install而不是npm install
-- 使用cnpm i作为简写
-- 对于全局安装，使用cnpm install -g
-- 对于开发依赖，使用cnpm install --save-dev或cnpm i -D
-- 对于依赖更新，使用cnpm update
+export default {
+  data() {
+    return {
+      stageSize: {
+        width: width,
+        height: height
+      }
+    };
+  },
+  methods: {
+    changeSize(e) {
+      // to() is a method of `Konva.Node` instances
+      e.target.to({
+        scaleX: Math.random() + 0.8,
+        scaleY: Math.random() + 0.8,
+        duration: 0.2
+      });
+    }
+  },
+  mounted() {
+    const vm = this;
+    const amplitude = 100;
+    const period = 5000;
+    // in ms
+    const centerX = vm.$refs.stage.getNode().getWidth() / 2;
 
-### 6.2 推荐开发工具
+    const hexagon = this.$refs.hexagon.getNode();
 
-- VS Code + Volar扩展
-- Vue DevTools
-- Chrome DevTools性能分析工具
-- Konva Inspector浏览器扩展
+    // example of Konva.Animation
+    const anim = new Konva.Animation(function(frame) {
+      hexagon.setX(
+        amplitude * Math.sin((frame.time * 2 * Math.PI) / period) + centerX
+      );
+    }, hexagon.getLayer());
 
-### 6.3 API文档快速访问
+    anim.start();
+  }
+};
+</script>
+```
 
+# vue-konva Cache 使用示例代码
+```vue
+<template>
+  <div>
+    <v-stage ref="stage" :config="stageConfig">
+      <v-layer ref="layer">
+        <v-group ref="group">
+          <v-star
+            v-for="item in list"
+            :key="item.id"
+            :config="{
+            x: item.x,
+            y: item.y,
+            rotation: item.rotation,
+            id: item.id,
+            numPoints: 5,
+            innerRadius: 30,
+            outerRadius: 50, fill: '#89b717',
+            opacity: 0.8,
+            shadowColor: 'black',
+            shadowBlur: 10,
+            shadowOpacity: 0.6,
+            scaleX: item.scale,
+            scaleY: item.scale,
+          }"
+          />
+        </v-group>
+      </v-layer>
+    </v-stage>
+    <div class="cache">
+      <input type="checkbox" @change="handleCacheChange"> cache shapes
+    </div>
+  </div>
+</template>
+
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+export default {
+  data() {
+    return {
+      list: [],
+      dragItemId: null,
+      stageConfig: {
+        width: width,
+        height: height,
+        draggable: true
+      }
+    };
+  },
+  methods: {
+    handleCacheChange(e) {
+      const shouldCache = e.target.checked;
+      if (shouldCache) {
+        this.$refs.group.getNode().cache();
+      } else {
+        this.$refs.group.getNode().clearCache();
+      }
+    }
+  },
+  mounted() {
+    for (let n = 0; n < 300; n++) {
+      this.list.push({
+        id: Math.round(Math.random() * 10000).toString(),
+        x: Math.random() * width,
+        y: Math.random() * height,
+        rotation: Math.random() * 180,
+        scale: Math.random()
+      });
+    }
+  }
+};
+</script>
+
+<style>
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.cache {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+</style>
+```
+
+# vue-konva Changing zIndex 使用示例代码
+```vue
+<template>
+  <div>
+    <v-stage ref="stage" :config="configKonva">
+      <v-layer ref="layer">
+        <v-circle
+          v-for="item in items"
+          :key="item.id"
+          :config="item"
+          @dragstart="handleDragstart"
+          @dragend="handleDragend"
+        ></v-circle>
+      </v-layer>
+    </v-stage>
+  </div>
+</template>
+
+<script>
+import Konva from "konva";
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+function generateItems() {
+  const items = [];
+  for (let i = 0; i < 10; i++) {
+    items.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      radius: 50,
+      id: "node-" + i,
+      fill: Konva.Util.getRandomColor(),
+      draggable: true,
+    });
+  }
+  return items;
+}
+
+export default {
+  data() {
+    return {
+      items: [],
+      dragItemId: null,
+      configKonva: {
+        width: width,
+        height: height,
+      },
+    };
+  },
+  methods: {
+    handleDragstart(e) {
+      // save drag element:
+      this.dragItemId = e.target.id();
+      // move current element to the top, by rearranging the items array:
+      const item = this.items.find((i) => i.id === this.dragItemId);
+      const index = this.items.indexOf(item);
+      this.items.splice(index, 1);
+      this.items.push(item);
+    },
+    handleDragend(e) {
+      this.dragItemId = null;
+    },
+  },
+  mounted() {
+    this.items = generateItems();
+  },
+};
+</script>
+
+<style>
+body {
+  margin: 0;
+  padding: 0;
+}
+</style>
+```
+
+## 参考资料
+
+```json
+{
+  "rules": [
+    {
+      "description": "项目主要使用 Vue 3、Vue-Konva、Konva 和 Pinia 技术栈进行开发。",
+      "keywords": ["vue3", "vue-konva", "konva", "pinia", "canvas", "2d graphics", "图形", "动画", "交互"],
+      "libraries": ["vue-konva", "konva", "vue", "pinia"],
+      "frameworks": ["vue3"],
+      "purpose": "构建基于 Canvas 的 2D 图形应用，包含复杂的形状、动画和用户交互。",
+      "best_practices": [
+        "优先使用 Vue-Konva 组件来操作 Konva 场景。",
+        "利用 Pinia 进行状态管理，尤其是在组件之间共享和同步 Konva 场景状态时。",
+        "参考 Konva 和 Vue-Konva 官方文档和示例进行开发。",
+        "代码结构清晰，组件化，易于维护和扩展。"
+      ],
+      "related_resources": [
+        {
+          "name": "Konva 官网",
+          "url": "https://konvajs.org/"
+        },
+        {
+          "name": "Konva GitHub 仓库",
+          "url": "https://github.com/konvajs/konva"
+        },
+        {
+          "name": "Konva API 文档",
+          "url": "https://konvajs.org/api/"
+        },
+        {
+          "name": "vue-konva GitHub 仓库",
+          "url": "https://github.com/konvajs/vue-konva"
+        },
+        {
+          "name": "vue-konva 示例",
+          "url": "https://github.com/konvajs/vue-konva/blob/master/README.md"
+        },
+        {
+          "name": "components Stage",
+          "url": "https://github.com/konvajs/vue-konva/blob/master/src/components/Stage.ts"
+        },
+        {
+          "name": "components KonvaNode",
+          "url": "https://github.com/konvajs/vue-konva/blob/master/src/components/KonvaNode.ts"
+        },
+        {
+          "name": "vue-konva tests",
+          "url": "https://github.com/konvajs/vue-konva/blob/master/tests/index.test.ts"
+        },
+        {
+          "name": "vue-konva mocking",
+          "url": "https://github.com/konvajs/vue-konva/blob/master/tests/mocking.ts"
+        },
+        {
+          "name": "konva docs",
+          "url": "https://konvajs.org/docs/overview.html"
+        },
+        {
+          "name": "Konva.Stage",
+          "url": "https://konvajs.org/api/Konva.Stage.html"
+        },
+        {
+          "name": "Konva.Layer",
+          "url": "https://konvajs.org/api/Konva.Layer.html"
+        },
+        {
+          "name": "Konva.Group",
+          "url": "https://konvajs.org/api/Konva.Group.html"
+        },
+        {
+          "name": "Konva.Shape",
+          "url": "https://konvajs.org/api/Konva.Shape.html"
+        },
+        {
+          "name": "Konva.Line",
+          "url": "https://konvajs.org/api/Konva.Line.html"
+        },
+        {
+          "name": "Konva.Rect",
+          "url": "https://konvajs.org/api/Konva.Rect.html"
+        },
+        {
+          "name": "Konva.Circle",
+          "url": "https://konvajs.org/api/Konva.Circle.html"
+        },
+        {
+          "name": "Konva.Tag",
+          "url": "https://konvajs.org/api/Konva.Tag.html"
+        },
+        {
+          "name": "Konva.Text",
+          "url": "https://konvajs.org/api/Konva.Text.html"
+        },
+        {
+          "name": "Konva.Label",
+          "url": "https://konvajs.org/api/Konva.Label.html"
+        },
+        {
+          "name": "Shape Rect",
+          "url": "https://konvajs.org/docs/shapes/Rect.html"
+        },
+        {
+          "name": "Shape Circle",
+          "url": "https://konvajs.org/docs/shapes/Circle.html"
+        },
+        {
+          "name": "Shape Text",
+          "url": "https://konvajs.org/docs/shapes/Text.html"
+        },
+        {
+          "name": "Shape Path",
+          "url": "https://konvajs.org/docs/shapes/Path.html"
+        },
+        {
+          "name": "Shape Arrow",
+          "url": "https://konvajs.org/docs/shapes/Arrow.html"
+        },
+        {
+          "name": "Shape Custom",
+          "url": "https://konvajs.org/docs/shapes/Custom.html"
+        },
+        {
+          "name": "Styling Fill",
+          "url": "https://konvajs.org/docs/styling/Fill.html"
+        },
+        {
+          "name": "Styling Stroke",
+          "url": "https://konvajs.org/docs/styling/Stroke.html"
+        },
+        {
+          "name": "Styling Shadow",
+          "url": "https://konvajs.org/docs/styling/Shadow.html"
+        },
+        {
+          "name": "Styling Opacity",
+          "url": "https://konvajs.org/docs/styling/Opacity.html"
+        },
+        {
+          "name": "Styling Line_Join",
+          "url": "https://konvajs.org/docs/styling/Line_Join.html"
+        },
+        {
+          "name": "Styling Hide_and_Show",
+          "url": "https://konvajs.org/docs/styling/Hide_and_Show.html"
+        },
+        {
+          "name": "Styling Mouse_Cursor",
+          "url": "https://konvajs.org/docs/styling/Mouse_Cursor.html"
+        },
+        {
+          "name": "Styling Blend_Mode",
+          "url": "https://konvajs.org/docs/styling/Blend_Mode.html"
+        },
+        {
+          "name": "Styling Fill_Stroke_Order",
+          "url": "https://konvajs.org/docs/styling/Fill_Stroke_Order.html"
+        },
+        {
+          "name": "Shape _Simple_Line",
+          "url": "https://konvajs.org/docs/shapes/Line_-_Simple_Line.html"
+        },
+        {
+          "name": "Shape _PolygonLine",
+          "url": "https://konvajs.org/docs/shapes/Line_-_Polygon.html"
+        },
+        {
+          "name": "Shape _SplineLine",
+          "url": "https://konvajs.org/docs/shapes/Line_-_Spline.html"
+        },
+        {
+          "name": "Shape _BlobLine",
+          "url": "https://konvajs.org/docs/shapes/Line_-_Blob.html"
+        },
+        {
+          "name": "Drag_and_Drop",
+          "url": "https://konvajs.org/docs/drag_and_drop/Drag_and_Drop.html"
+        },
+        {
+          "name": "Drag_an_Image",
+          "url": "https://konvajs.org/docs/drag_and_drop/Drag_an_Image.html"
+        },
+        {
+          "name": "Drag_a_Group",
+          "url": "https://konvajs.org/docs/drag_and_drop/Drag_a_Group.html"
+        },
+        {
+          "name": "Drag_a_Line",
+          "url": "https://konvajs.org/docs/drag_and_drop/Drag_a_Line.html"
+        },
+        {
+          "name": "Drag_a_Stage",
+          "url": "https://konvajs.org/docs/drag_and_drop/Drag_a_Stage.html"
+        },
+        {
+          "name": "Drag_Events",
+          "url": "https://konvajs.org/docs/drag_and_drop/Drag_Events.html"
+        },
+        {
+          "name": "Simple_Drag_Bounds",
+          "url": "https://konvajs.org/docs/drag_and_drop/Simple_Drag_Bounds.html"
+        },
+        {
+          "name": "Complex_Drag_and_Drop",
+          "url": "https://konvajs.org/docs/drag_and_drop/Complex_Drag_and_Drop.html"
+        },
+        {
+          "name": "Drop_Events",
+          "url": "https://konvajs.org/docs/drag_and_drop/Drop_Events.html"
+        },
+        {
+          "name": "Position_vs_Offset",
+          "url": "https://konvajs.org/docs/posts/Position_vs_Offset.html"
+        },
+        {
+          "name": "Vue 3 官网",
+          "url": "https://vuejs.org/"
+        },
+        {
+          "name": "Pinia 官网",
+          "url": "https://pinia.vuejs.org/"
+        }
+      ]
+    },
+    {
+      "description": "在 Vue-Konva 中，通过组件的方式操作 Konva 元素。",
+      "vue-konva_specific_rules": [
+        "使用 `<v-stage>` 组件作为 Konva Stage 的根容器。",
+        "使用 `<v-layer>` 组件在 Stage 上创建 Layer。",
+        "使用各种 Konva 元素的 Vue 组件，例如 `<v-rect>`, `<v-circle>`, `<v-image>` 等来创建图形。",
+        "通过 Vue 的 props 和 events 系统来配置和操作 Konva 组件。",
+        "利用 Vue 的 reactivity 系统来动态更新 Konva 元素。",
+        "注意 Vue-Konva 组件和原生 Konva API 的对应关系，理解 props 和 events 如何映射到 Konva 的配置和事件。",
+        {
+          "example": "例如，要创建一个红色、位置在 (100, 100) 的矩形，可以使用 `<v-rect :config=\"{ x: 100, y: 100, fill: 'red', width: 100, height: 50 }\" />`。"
+        }
+      ]
+    },
+    {
+      "description": "Pinia 用于 Vue 3 的状态管理。",
+      "pinia_specific_rules": [
+        "使用 `defineStore` 定义 Pinia Store。",
+        "在 Store 中定义 state, getters 和 actions。",
+        "在 Vue 组件中使用 `useStore` 来访问 Store。",
+        "利用 Pinia 的模块化特性来组织和管理应用状态。",
+        "考虑使用 Pinia Actions 来处理异步逻辑和业务流程。",
+        {
+          "best_practice": "对于 Konva 场景的状态管理，例如当前选中的图形、场景的缩放比例等，可以考虑使用 Pinia Store 进行统一管理，方便在不同组件之间共享和同步。"
+        }
+      ]
+    }
+  ]
+}
+```
+
+
+## // ============== 文档快速访问 ================
 ```json
   {
     "documentationShortcuts": {
@@ -501,135 +1137,123 @@ const textConfig = computed(() => ({
       "vueKonvaExamples": {
         "internalRepo": "vue-konva-samples",
         "externalLinks": {
-        "complexInteraction": "https://github.com/konvajs/vue-konva/blob/master/tests/index.test.ts",
-        "transformers": "https://konvajs.org/docs/select_and_transform/Basic_demo.html",
-        "dragAndDrop": "https://konvajs.org/docs/drag_and_drop/Drag_and_Drop.html"
+          "complexInteraction": "https://github.com/konvajs/vue-konva/blob/master/tests/index.test.ts"
         }
       }
     }
   }
 ```
 
-## 7. React代码转换指南
+包管理器规范：
+- 使用cnpm install而不是npm install
+- 使用cnpm i作为简写
+- 对于全局安装，使用cnpm install -g
+- 对于开发依赖，使用cnpm install --save-dev或cnpm i -D
+- 对于依赖更新，使用cnpm update
 
-### 7.1 基本转换规则
+终端命令规则：
+- 当我要求安装npm包时，自动将npm命令替换为cnpm
+- 保留原始命令的所有其他参数和选项
+- 如果我明确要求使用npm，请提醒我项目约定使用cnpm
 
-- React的JSX需转换为Vue的模板语法
-- React的useState转换为Vue的ref/reactive
-- React的useEffect转换为Vue的watchEffect/onMounted
-- React的useContext转换为Vue的provide/inject
-- React的自定义hooks转换为Vue的组合式函数
-- React的事件处理转换为Vue的事件系统
-- React的条件渲染转换为Vue的v-if/v-for
+# --- 1. 依赖与环境配置 ---
+dependencies:
+  - konva@^9.3.18
+  - vue-konva@^3.2.0
+  - vue@^3.5.13
+  - typescript@~5.7.3
+  - pinia@^3.0.1  # 状态管理
 
-### 7.2 React-Konva转Vue-Konva
+# --- 2. 核心规则 ---
+rules:
+  # === 基础规范 ===
+  - "所有组件必须基于Vue3的Composition API开发"
+  - "Konva节点必须通过vue-konva的封装组件创建"
+  - "组件尺寸/位置必须绑定到Vue响应式数据（ref/reactive）"
+  - "禁止直接操作Konva实例，所有操作必须通过Vue属性更新触发"
+  - "所有子组件必须通过Vue的props接收父组件的尺寸和位置"
+  - "调整窗框的宽度与高度时必须触发所有子组件的更新"
+  - "标注组件必须绑定到目标组件的尺寸变化"
+  - "窗格、中挺、窗扇等的尺寸必须通过窗户的width/height计算（如比例绑定）"
+  - "禁止直接操作Konva实例，所有操作必须通过Vue属性更新触发"
 
-| React-Konva | Vue-Konva |
-|-------------|-----------|
-| `<Stage>` | `<v-stage>` |
-| `<Layer>` | `<v-layer>` |
-| `<Rect>` | `<v-rect>` |
-| `props={{...}}` | `:config="{...}"` |
-| `onDragEnd={handler}` | `@dragend="handler"` |
-| `useRef()` | `ref()` |
-| `useState([])` | `ref([])` |
-| `ref.current` | `ref.value` |
-
-### 7.3 示例转换
-
-**React版本:**
-```jsx
-function WindowFrame({ width, height }) {
-  const [pos, setPos] = useState({ x: 0, y: 0 });
-  const rectRef = useRef(null);
+  # === 性能优化 ===
+  - "复杂组件必须使用vue-konva的cache()方法，并设置:cacheEnabled='true'"
+  - "使用Vue的Suspense组件处理图层缓存加载"
+  - "批量操作使用batchDraw()代替draw()"
   
-  const handleDragEnd = () => {
-    const node = rectRef.current;
-    if (node) {
-      setPos({
-        x: node.x(),
-        y: node.y()
-      });
-    }
-  };
-  
-  return (
-    <Group>
-      <Rect
-        ref={rectRef}
-        x={pos.x}
-        y={pos.y}
-        width={width}
-        height={height}
-        fill="white"
-        stroke="black"
-        strokeWidth={2}
-        draggable
-        onDragEnd={handleDragEnd}
-      />
-    </Group>
-  );
-}
-```
+参考材料转换规则：
+- 文件夹/Users/shangwenxue/work/cuts/winDoor/window-door/reference_material包含基于React的参考样例代码
+- 我们的目标是在当前Vue 3项目中实现相同的功能逻辑
+- 所有React代码需要被转换为等效的Vue 3代码
+- 不要简单地将React语法转换为Vue语法，而是根据Vue的最佳实践重新实现功能
+- 使用Vue 3的组合式API (Composition API)而非选项式API (Options API)
 
-**Vue版本:**
-```vue
-<script setup>
-import { ref } from 'vue';
+依赖管理规则：
+- 不要安装任何React相关的依赖包
+- 如果参考代码使用了某个React库(如react-konva)，查找并安装对应的Vue版本(如vue-konva)
+- 如果没有直接对应的Vue版本，寻找功能相似的Vue兼容库
+- 所有安装的依赖必须与Vue 3完全兼容
+- 优先使用官方Vue生态系统中的解决方案
 
-const props = defineProps({
-  width: { type: Number, required: true },
-  height: { type: Number, required: true }
-});
+代码转换指南：
+- React的JSX需要转换为Vue的模板语法
+- React的useState/useEffect需要转换为Vue的ref/reactive和watchEffect/onMounted
+- React的useContext需要转换为Vue的provide/inject
+- React的自定义hooks需要转换为Vue的组合式函数
+- React的事件处理需要调整为Vue的事件系统
+- React的条件渲染和列表渲染需要调整为Vue的v-if/v-for
+- 保持组件的命名和目录结构一致，除非Vue最佳实践建议不同的结构
 
-const pos = ref({ x: 0, y: 0 });
-const rectRef = ref(null);
+实现过程规范：
+- 先分析React组件的功能和数据流，再进行Vue实现
+- 一次专注于一个组件的转换
+- 确保保留原始代码的所有功能和交互
+- 进行增量测试，确保每个组件在转换后都能正常工作
+- 如有疑问，请询问我是否需要实现特定功能或组件
 
-const rectConfig = computed(() => ({
-  x: pos.value.x,
-  y: pos.value.y,
-  width: props.width,
-  height: props.height,
-  fill: 'white',
-  stroke: 'black',
-  strokeWidth: 2,
-  draggable: true
-}));
-
-const handleDragEnd = () => {
-  const node = rectRef.value;
-  if (node) {
-    pos.value = {
-      x: node.x(),
-      y: node.y()
-    };
-  }
-};
-</script>
-
-<template>
-  <v-group>
-    <v-rect
-      ref="rectRef"
-      :config="rectConfig"
-      @dragend="handleDragEnd"
-    />
-  </v-group>
-</template>
-```
-
-## 8. 项目最佳实践总结
-
-- 使用TypeScript进行静态类型检查
-- 组件设计遵循单一职责原则
-- 共享状态集中在Pinia中管理
-- UI与业务逻辑分离
-- 复杂交互逻辑封装为组合式函数
-- 性能优化贯穿整个开发周期
-- 组件设计考虑可重用性
-- 标准化组件通信接口
-- 使用ESLint和Prettier保持代码风格一致性
-- 编写单元测试确保功能稳定性
+技术栈规范：
+- 基于Vue 3开发，使用Vue 3的组合式API (Composition API)而非选项式API (Options API)
+- 擅于使用Vue 3的计算属性与监听器，避免在模板中使用复杂的表达式
+- 擅于使用Vue 3的watchEffect，避免在模板中使用复杂的表达式
+- 擅于使用Vue 3的watch，避免在模板中使用复杂的表达式
+- 擅于使用Vue 3的computed，避免在模板中使用复杂的表达式
+- 擅于使用Vue 3的ref，避免在模板中使用复杂的表达式
+- 擅于使用Vue 3的reactive，避免在模板中使用复杂的表达式
+- 擅于使用Vue 3的nextTick，避免在模板中使用复杂的表达式
+- 擅于使用Vue 3的composables，避免在模板中使用复杂的表达式
+- 擅于使用Pinia进行状态管理，避免组件间过度耦合
+- 擅于使用Pinia的store，避免在模板中使用复杂的表达式
+- 擅于使用Pinia的computed，避免在模板中使用复杂的表达式
+- 擅于使用Pinia的ref，避免在模板中使用复杂的表达式
+- 擅于使用Pinia的reactive，避免在模板中使用复杂的表达式
+- 擅于使用Pinia的watchEffect，避免在模板中使用复杂的表达式
+- 擅于使用Pinia的watch，避免在模板中使用复杂的表达式
+- 擅于使用Konva的API，避免在模板中使用复杂的表达式
+- 擅于使用Konva的图形功能，避免在模板中使用复杂的表达式
+- 擅于使用Konva的动画功能，避免在模板中使用复杂的表达式
+- 擅于使用Konva的拖拽功能，避免在模板中使用复杂的表达式
+- 擅于使用Konva的缩放功能，避免在模板中使用复杂的表达式
+- 擅于使用Konva的旋转功能，避免在模板中使用复杂的表达式
+- 擅于使用Konva的变形功能，避免在模板中使用复杂的表达式
+- 擅于使用Konva的文本功能，避免在模板中使用复杂的表达式
+- 擅于使用Konva图形组件规范，包括层级结构（Stage/Layer/Group）、批量渲染、缓存策略
+- 擅于使用Konva动画优化，包括帧率控制、批量动画、避免频繁重绘
+- 擅于使用Konva事件处理，包括事件绑定、事件委托、内存清理
+- 擅于使用Konva性能优化，包括减少图层数量、硬件加速、状态缓存
+- 擅于使用Konva与Vue集成，包括通过ref操作节点、响应式数据绑定、组件化封装
+- 擅于使用Konva组态图元设计，包括图元组件化、序列化存储、实时数据驱动
+- 基于Konva开发图形功能，优先使用Konva API而非DOM API
+- 对于Konva组件，必须使用Konva提供的方法进行操作，如getAbsolutePosition()、getStage()等
+- 避免在Konva对象上使用DOM方法如getBoundingClientRect()
+- 页面UI组件优先使用bootstrap与Element Plus，保持界面风格统一
+- 充分利用@vueuse/core提供的组合式API，避免重复实现已有功能
+- @iconify/vue 图标库优先使用
+- 对UI界面进行重构时，一定有保持功能能正常使用，不要破坏原有功能
+- 采用组件化思维开发，将功能逻辑拆分为独立、可复用的组件
+- 将可复用逻辑提取为composables，提高代码复用性
+- 使用Pinia进行状态管理，避免组件间过度耦合
+- 充分利用项目中配置的unplugin-auto-import与unplugin-vue-components，减少冗余导入
 
 
 

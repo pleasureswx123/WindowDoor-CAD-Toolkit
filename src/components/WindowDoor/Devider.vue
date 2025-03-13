@@ -17,6 +17,8 @@ const props = defineProps<{
 // 计算中挺方向 - 宽度小于高度为垂直中挺，否则为水平中挺
 const isVertical = computed(() => props.width < props.height);
 
+console.log(1333, props)
+
 // 计算中挺的配置
 const rectConfig = computed(() => ({
   x: props.x,
@@ -30,10 +32,13 @@ const rectConfig = computed(() => ({
   deviderId: props.id,
   name: 'devider',
   draggable: true, // 允许拖拽
+  // dragBoundFunc: (a, b, c, d) => {
+  //   console.log(1333, a, b, c, d)
+  // },
   // 拖拽约束函数 - 限制中挺只能在特定方向移动
-  dragBoundFunc: isVertical.value 
-    ? (pos: {x: number, y: number}) => ({ x: pos.x, y: props.y }) // 垂直中挺只能左右移动
-    : (pos: {x: number, y: number}) => ({ x: props.x, y: pos.y }), // 水平中挺只能上下移动
+  // dragBoundFunc: isVertical.value 
+  //   ? (pos: {x: number, y: number}) => ({ x: pos.x, y: props.y }) // 垂直中挺只能左右移动
+  //   : (pos: {x: number, y: number}) => ({ x: props.x, y: pos.y }), // 水平中挺只能上下移动
   listening: true
 }));
 
@@ -55,15 +60,9 @@ function handleDragStart(e: any) {
       x: node.x(),
       y: node.y()
     };
-    
     // 记录初始位置用于计算位移
     node.setAttr('startPos', startPos);
-    
-    // 日志输出中挺信息
-    console.log(`选中中挺 #${props.id}, 尺寸: ${props.width}x${props.height}`);
-    console.log(`方向: ${isVertical.value ? '垂直' : '水平'}`);
   } catch (error) {
-    console.error('处理点击事件失败:', error);
   }
 }
 
@@ -72,35 +71,6 @@ function handleDragMove(e: any) {
   const target = e.target;
   const devider = store.selectedDevider;
   if (!devider) return;
-  
-  // 获取初始位置和当前位置
-  const startPos = target.getAttr('startPos') || { x: props.x, y: props.y };
-  const currentPos = { x: target.x(), y: target.y() };
-  
-  // 计算相对移动距离
-  const moveX = currentPos.x - startPos.x;
-  const moveY = currentPos.y - startPos.y;
-  
-  // 计算移动百分比 - 使用父容器信息
-  const parentSection = devider.parentSection;
-  if (!parentSection) return;
-  
-  let newPosition;
-  
-  if (devider.direction === 'vertical') {
-    // 垂直中挺: 计算水平方向位置百分比
-    const totalWidth = parentSection.width;
-    const currentX = devider.x + moveX;
-    newPosition = (currentX / totalWidth) * 100;
-  } else {
-    // 水平中挺: 计算垂直方向位置百分比
-    const totalHeight = parentSection.height;
-    const currentY = devider.y + moveY;
-    newPosition = (currentY / totalHeight) * 100;
-  }
-  
-  // 临时更新UI显示，不更新数据模型
-  console.log(`拖动中: ${newPosition.toFixed(1)}%`);
 }
 
 // 拖拽结束事件
