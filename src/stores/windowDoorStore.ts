@@ -596,14 +596,10 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     // ... existing code ...
   }
 
-  const scale = ref(1);
-  const updateScale = (newScale: number) => {
-    scale.value = newScale;
-  };
+  const stageDraggable = ref(true);
 
   return {
-    scale,
-    updateScale,
+    stageDraggable,
     root,
     selectedSectionId,
     selectedDeviderId,

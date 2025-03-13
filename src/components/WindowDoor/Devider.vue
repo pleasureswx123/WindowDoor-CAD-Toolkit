@@ -24,7 +24,8 @@ const rectConfig = computed(() => ({
   stroke: props.id === store.selectedDeviderId ? '#4a90e2' : '#999',
   strokeWidth: props.id === store.selectedDeviderId ? 2 : 1,
   id: `devider-${props.id}`, // 使用唯一ID以便于通过Konva API查找
-  name: 'devider', // 使用name属性以便于选择所有中挺
+  deviderId: props.id,
+  name: 'devider',
   draggable: false,
   // 当鼠标悬停时显示手型指针
   listening: true
@@ -38,31 +39,11 @@ watchEffect(() => {
   }
 })
 
-// 在组件挂载后更新中挺数据
-onMounted(() => {
-  nextTick(() => {
-    if (deviderRef.value) {
-      try {
-        console.log(props);
-        // 获取Konva对象 - konvaNode是Konva.Rect实例
-        const konvaNode = deviderRef.value.getNode();
-        
-        // 将中挺数据与Konva节点关联
-        konvaNode.setAttr('deviderId', props.id);
-        
-      } catch (error) {
-        console.error('获取Konva节点失败:', error);
-      }
-    }
-  });
-});
-
-
-
 // 处理点击事件
-function handleClick(e: any) {
+function handleDragStart(e: any) {
   // 阻止事件冒泡
   e.cancelBubble = true;
+  store.stageDraggable = false;
   
   try {
     // 获取Konva节点
@@ -87,21 +68,28 @@ function handleClick(e: any) {
     store.selectedDeviderId = props.id;
   }
 }
+
+const handleDragEnd = () => {
+  store.stageDraggable = true;
+
+}
 </script>
 
 <template>
-  <v-group>
+  <v-group v-bind="{fill: '#000'}" @click.stop.prevent @touch.stop.prevent>
     <!-- 中挺主体 -->
-    <v-rect ref="deviderRef" v-bind="rectConfig" @click="handleClick" />
-    
+    <v-rect ref="deviderRef" v-bind="rectConfig"
+    @mousedown="handleDragStart"
+    @mouseup="handleDragEnd" />
+
     <!-- 如果被选中，显示选中指示器 -->
     <v-circle v-if="store.selectedDeviderId === props.id" :config="{
-      x: props.x + props.width / 2,
-      y: props.y + props.height / 2,
-      radius: 6,
-      fill: '#4a90e2',
-      stroke: 'white',
-      strokeWidth: 1,
+    x: props.x + props.width / 2,
+    y: props.y + props.height / 2,
+    radius: 6,
+    fill: '#4a90e2',
+    stroke: 'white',
+    strokeWidth: 1,
       listening: false // 指示器不接收事件
     }" />
   </v-group>

@@ -1,90 +1,162 @@
-你是一个专业的前端开发助手。
+```json
+{
+  "rules": {
+    // ================= 核心语法规则 =================
+    "vueKonvaSyntax": {
+      "componentMappings": {
+        "v-stage": {
+          "requiredParent": null,
+          "requiredProps": [":config"],
+          "children": ["v-layer"],
+          "docLink": "https://github.com/konvajs/vue-konva/blob/master/src/components/Stage.ts"
+        },
+        "v-layer": {
+          "requiredParent": "v-stage",
+          "lifecycleHooks": {
+            "mounted": "使用ref访问layer实例"
+          }
+        },
+        "v-group": {
+          "transformMethods": ["getAbsoluteTransform()", "getClientRect()"]
+        }
+      },
+      "eventHandlers": {
+        "@dragstart": "返回Konva事件对象",
+        "@transformend": "处理变形事件时需调用node.getAttrs()"
+      }
+    },
+    
+    // ============== Konva对象响应式处理 ==============
+    "reactiveKonva": {
+      "configBinding": {
+        "recommended": "ref<Konva.ShapeConfig>",
+        "antiPatterns": ["直接修改Konva实例属性"],
+        "correctExample": "const rectConfig = ref({ x: 10, y: 10, fill: 'red' })"
+      },
+      "storeIntegration": {
+        "piniaBestPractice": [
+          "在store中保存Konva节点引用时使用Map结构",
+          "状态更新应通过actions进行批量处理"
+        ]
+      }
+    },
 
-你专注于帮我开发一个建材行业的工程制图工具，特别是门窗设计，并且具备行业特定功能。你是Konva、Vue 3和Pinia方面的资深全栈专家，擅长响应式布局与多端适配。
+    // ================ 调试与优化规则 ================
+    "performanceRules": {
+      "batchRendering": {
+        "detectionPattern": "连续调用draw()",
+        "suggestion": "使用layer.batchDraw()代替多次draw"
+      },
+      "memoryLeakPrevention": {
+        "destroyMethod": "组件卸载时调用node.destroy()",
+        "storeCleanup": "从Pinia store移除节点引用"
+      }
+    },
 
-当需要安装npm包时，请始终使用cnpm而不是npm。
+    // ============== 智能提示增强配置 ================
+    "intellisenseEnhancements": {
+      "contextualSuggestions": {
+        "afterVLayer": ["v-rect", "v-circle", "v-group"],
+        "insideVGroup": ["v-shape", "v-text"]
+      },
+      "snippetTemplates": {
+        "createDraggableShape": {
+          "trigger": "draggable",
+          "template": {
+            "config": {
+              "draggable": true,
+              "dragBoundFunc": "function(pos) { /* 限制逻辑 */ }"
+            },
+            "eventHandlers": [
+              "@dragstart=\"handleDragStart\"",
+              "@dragend=\"updatePositionInStore\""
+            ]
+          }
+        }
+      }
+    },
 
-包管理器规范：
-- 使用cnpm install而不是npm install
-- 使用cnpm i作为简写
-- 对于全局安装，使用cnpm install -g
-- 对于开发依赖，使用cnpm install --save-dev或cnpm i -D
-- 对于依赖更新，使用cnpm update
+    // ============== 错误预防机制 ================
+    "errorPrevention": {
+      "commonMistakes": {
+        "missingLayer": {
+          "detection": "v-stage > :not(v-layer)",
+          "message": "Konva元素必须包裹在v-layer内"
+        },
+        "directDomManipulation": {
+          "detection": ["document.querySelector('.konva-container')", "stage.find()"],
+          "message": "请通过Vue ref或Pinia store访问Konva节点"
+        }
+      }
+    },
 
-终端命令规则：
-- 当我要求安装npm包时，自动将npm命令替换为cnpm
-- 保留原始命令的所有其他参数和选项
-- 如果我明确要求使用npm，请提醒我项目约定使用cnpm
+    // ============== 文档快速访问 ================
+    "documentationShortcuts": {
+      "konvaDoc": {
+        "keyboardShortcut": "Ctrl+K",
+        "searchEndpoint": "https://konvajs.org/docs/"
+      },
+      "konvaApi": {
+        "keyboardShortcut": "Ctrl+K",
+        "searchEndpoint": "https://konvajs.org/api/Konva.{query}.html"
+      },
+      "vueKonvaExamples": {
+        "internalRepo": "vue-konva-samples",
+        "externalLinks": {
+          "complexInteraction": "https://github.com/konvajs/vue-konva/blob/master/tests/index.test.ts"
+        }
+      }
+    }
+  },
+  
+  // ============== 示例场景配置 ================
+  "scenarios": {
+    "basicShapeCreation": {
+      "description": "创建基础可交互图形",
+      "template": `
+        <script setup>
+        import { ref } from 'vue';
+        const rectConfig = ref({
+          x: 10, y: 10,
+          width: 100, height: 100,
+          fill: '#00D2FF',
+          draggable: true
+        });
+        </script>
 
-参考材料转换规则：
-- 文件夹/Users/shangwenxue/work/cuts/winDoor/window-door/reference_material包含基于React的参考样例代码
-- 我们的目标是在当前Vue 3项目中实现相同的功能逻辑
-- 所有React代码需要被转换为等效的Vue 3代码
-- 不要简单地将React语法转换为Vue语法，而是根据Vue的最佳实践重新实现功能
-- 使用Vue 3的组合式API (Composition API)而非选项式API (Options API)
-
-依赖管理规则：
-- 不要安装任何React相关的依赖包
-- 如果参考代码使用了某个React库(如react-konva)，查找并安装对应的Vue版本(如vue-konva)
-- 如果没有直接对应的Vue版本，寻找功能相似的Vue兼容库
-- 所有安装的依赖必须与Vue 3完全兼容
-- 优先使用官方Vue生态系统中的解决方案
-
-代码转换指南：
-- React的JSX需要转换为Vue的模板语法
-- React的useState/useEffect需要转换为Vue的ref/reactive和watchEffect/onMounted
-- React的useContext需要转换为Vue的provide/inject
-- React的自定义hooks需要转换为Vue的组合式函数
-- React的事件处理需要调整为Vue的事件系统
-- React的条件渲染和列表渲染需要调整为Vue的v-if/v-for
-- 保持组件的命名和目录结构一致，除非Vue最佳实践建议不同的结构
-
-实现过程规范：
-- 先分析React组件的功能和数据流，再进行Vue实现
-- 一次专注于一个组件的转换
-- 确保保留原始代码的所有功能和交互
-- 进行增量测试，确保每个组件在转换后都能正常工作
-- 如有疑问，请询问我是否需要实现特定功能或组件
-
-技术栈规范：
-- 基于Vue 3开发，使用Vue 3的组合式API (Composition API)而非选项式API (Options API)
-- 擅于使用Vue 3的计算属性与监听器，避免在模板中使用复杂的表达式
-- 擅于使用Vue 3的watchEffect，避免在模板中使用复杂的表达式
-- 擅于使用Vue 3的watch，避免在模板中使用复杂的表达式
-- 擅于使用Vue 3的computed，避免在模板中使用复杂的表达式
-- 擅于使用Vue 3的ref，避免在模板中使用复杂的表达式
-- 擅于使用Vue 3的reactive，避免在模板中使用复杂的表达式
-- 擅于使用Vue 3的nextTick，避免在模板中使用复杂的表达式
-- 擅于使用Vue 3的composables，避免在模板中使用复杂的表达式
-- 擅于使用Pinia进行状态管理，避免组件间过度耦合
-- 擅于使用Pinia的store，避免在模板中使用复杂的表达式
-- 擅于使用Pinia的computed，避免在模板中使用复杂的表达式
-- 擅于使用Pinia的ref，避免在模板中使用复杂的表达式
-- 擅于使用Pinia的reactive，避免在模板中使用复杂的表达式
-- 擅于使用Pinia的watchEffect，避免在模板中使用复杂的表达式
-- 擅于使用Pinia的watch，避免在模板中使用复杂的表达式
-- 擅于使用Konva的API，避免在模板中使用复杂的表达式
-- 擅于使用Konva的图形功能，避免在模板中使用复杂的表达式
-- 擅于使用Konva的动画功能，避免在模板中使用复杂的表达式
-- 擅于使用Konva的拖拽功能，避免在模板中使用复杂的表达式
-- 擅于使用Konva的缩放功能，避免在模板中使用复杂的表达式
-- 擅于使用Konva的旋转功能，避免在模板中使用复杂的表达式
-- 擅于使用Konva的变形功能，避免在模板中使用复杂的表达式
-- 擅于使用Konva的文本功能，避免在模板中使用复杂的表达式
-- 擅于使用Konva图形组件规范，包括层级结构（Stage/Layer/Group）、批量渲染、缓存策略
-- 擅于使用Konva动画优化，包括帧率控制、批量动画、避免频繁重绘
-- 擅于使用Konva事件处理，包括事件绑定、事件委托、内存清理
-- 擅于使用Konva性能优化，包括减少图层数量、硬件加速、状态缓存
-- 擅于使用Konva与Vue集成，包括通过ref操作节点、响应式数据绑定、组件化封装
-- 擅于使用Konva组态图元设计，包括图元组件化、序列化存储、实时数据驱动
-- 基于Konva开发图形功能，优先使用Konva API而非DOM API
-- 对于Konva组件，必须使用Konva提供的方法进行操作，如getAbsolutePosition()、getStage()等
-- 避免在Konva对象上使用DOM方法如getBoundingClientRect()
-- 页面UI组件优先使用bootstrap与Element Plus，保持界面风格统一
-- 充分利用@vueuse/core提供的组合式API，避免重复实现已有功能
-- @iconify/vue 图标库优先使用
-- 对UI界面进行重构时，一定有保持功能能正常使用，不要破坏原有功能
-- 采用组件化思维开发，将功能逻辑拆分为独立、可复用的组件
-- 将可复用逻辑提取为composables，提高代码复用性
-- 使用Pinia进行状态管理，避免组件间过度耦合
-- 充分利用项目中配置的unplugin-auto-import与unplugin-vue-components，减少冗余导入
+        <template>
+          <v-stage :config="{ width: 800, height: 600 }">
+            <v-layer>
+              <v-rect :config="rectConfig" @click="handleSelect" />
+            </v-layer>
+          </v-stage>
+        </template>`
+    },
+    
+    "piniaIntegration": {
+      "storeExample": `
+        // stores/shapes.js
+        export const useShapesStore = defineStore('shapes', {
+          state: () => ({
+            nodes: new Map(),
+            stageSize: { width: 0, height: 0 }
+          }),
+          actions: {
+            registerNode(id, node) {
+              if (!node.isDestroyed()) {
+                this.nodes.set(id, node);
+              }
+            },
+            updatePosition(id, pos) {
+              const node = this.nodes.get(id);
+              if (node && node.getStage()) {
+                node.position(pos);
+                node.getLayer().batchDraw();
+              }
+            }
+          }
+        })`
+    }
+  }
+}
+```

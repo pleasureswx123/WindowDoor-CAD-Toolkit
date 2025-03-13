@@ -20,7 +20,7 @@ onMounted(() => {
   const initialHeight = Math.min(2000, screenHeight * 0.7);
   
   // 更新窗户尺寸
-  // store.updateWindowSize(initialWidth, initialHeight);
+  store.updateWindowSize(initialWidth, initialHeight);
 });
 
 // 页面标题

@@ -17,16 +17,12 @@ const stageSize = ref({
 });
 
 // 添加缩放和平移状态
-const scale = ref(store.scale);
+const scale = ref(1);
 const position = ref({ x: 0, y: 0 });
 const lastMousePosition = ref({ x: 0, y: 0 });
 const isDragging = ref(false);
 // 控制网格显示
 const showGrid = ref(false);
-
-watch(scale, (newScale) => {
-  store.updateScale(newScale);
-});
 
 // 初始化时获取容器宽度并监听窗口大小变化
 onMounted(() => {
@@ -118,49 +114,6 @@ const handleWheel = (e: WheelEvent) => {
   };
 };
 
-// 处理画布拖动开始
-const handleDragStart = (e: any) => {
-  // 只有在非选择状态下才允许拖动画布
-  if (!store.selectedSectionId) {
-    isDragging.value = true;
-    const stage = stageRef.value.getStage();
-    const pointer = stage.getPointerPosition();
-    lastMousePosition.value = {
-      x: pointer.x,
-      y: pointer.y
-    };
-  }
-};
-
-// 处理画布拖动
-const handleDragMove = (e: any) => {
-  if (isDragging.value) {
-    e.evt.preventDefault();
-    const stage = stageRef.value.getStage();
-    const pointer = stage.getPointerPosition();
-    
-    // 计算鼠标移动差值
-    const dx = pointer.x - lastMousePosition.value.x;
-    const dy = pointer.y - lastMousePosition.value.y;
-    
-    // 更新位置
-    position.value = {
-      x: position.value.x + dx,
-      y: position.value.y + dy
-    };
-    
-    // 更新上一次鼠标位置
-    lastMousePosition.value = {
-      x: pointer.x,
-      y: pointer.y
-    };
-  }
-};
-
-// 处理画布拖动结束
-const handleDragEnd = () => {
-  isDragging.value = false;
-};
 
 // 重置缩放和位置
 const resetZoom = () => {
@@ -246,9 +199,12 @@ const gridLines = computed(() => {
   return lines;
 });
 
+const draggable = computed(() => {
+  return store.stageDraggable;
+});
+
 // 为鼠标滚轮事件添加事件监听
 useEventListener(containerRef, 'wheel', handleWheel, { passive: false });
-
 </script>
 
 <template>
@@ -257,17 +213,10 @@ useEventListener(containerRef, 'wheel', handleWheel, { passive: false });
       :config="{
         width: stageSize.width,
         height: stageSize.height,
-        draggable: true
+        draggable: draggable
       }"
       ref="stageRef"
       @click="handleClick"
-      @mousedown="handleDragStart"
-      @mousemove="handleDragMove"
-      @mouseup="handleDragEnd"
-      @mouseleave="handleDragEnd"
-      @touchstart="handleDragStart"
-      @touchmove="handleDragMove"
-      @touchend="handleDragEnd"
     >
       <v-layer 
         :config="{

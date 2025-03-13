@@ -30,10 +30,10 @@ const glassConfig = computed(() => {
     stroke?: string;
     strokeWidth?: number;
   } = {
-    x: props.padding,
-    y: props.padding,
-    width: props.width - props.padding * 2,
-    height: props.height - props.padding * 2,
+    x: 0,
+    y: 0,
+    width: props.width,
+    height: props.height,
     hitStrokeWidth: 0, // 确保点击区域准确
     listening: true // 确保能接收事件
   };
@@ -44,7 +44,7 @@ const glassConfig = computed(() => {
     config.fill = 'rgba(240, 240, 240, 0.5)';
     config.dash = [5, 5]; // 虚线边框
     config.stroke = '#cccccc';
-    config.strokeWidth = 1;
+    // config.strokeWidth = 1;
   } else if (isSplitEmpty.value) {
     // 已分割的空区域使用透明背景，无边框
     config.fill = 'transparent';

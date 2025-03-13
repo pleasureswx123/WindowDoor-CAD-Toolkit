@@ -17,7 +17,9 @@ const isHovered = ref(false);
 const lineProps = computed(() => ({
   closed: true,
   stroke: 'black',
-  strokeWidth: 1,
+  strokeWidth: 2,
+  lineCap: 'square', // butt, round, or square
+  lineJoin: 'round', // miter, round, or bevel
   // 解决遮挡问题：使用透明填充或完全去除填充
   fill: isHovered.value ? 'rgba(240,249,255,0.3)' : 'transparent',
   listening: true, // 确保能接收点击事件

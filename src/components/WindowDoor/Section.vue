@@ -108,75 +108,37 @@ const childSections = computed(() => {
 </script>
 
 <template>
-  <v-group 
-    :x="x" 
-    :y="y" 
-    ref="groupRef"
-    @click="handleClick"
-    name="section"
-  >
+  <v-group :x="x" :y="y" ref="groupRef" @click="handleClick" name="section">
     <!-- 玻璃部分 - 特殊处理已分割的空区域 -->
-    <Glass 
-      :width="section.width" 
-      :height="section.height" 
-      :padding="section.frameSize" 
-      :type="isEmptyWithChildren ? 'split-empty' : section.type"
-    />
-    
+    <Glass :width="section.width" :height="section.height" :padding="section.frameSize"
+      :type="isEmptyWithChildren ? 'split-empty' : section.type" />
+
     <!-- 窗框 - 仅当不是空区域时显示 -->
-    <Sash 
-      v-if="!isEmpty"
-      :width="section.width" 
-      :height="section.height" 
-      :size="section.frameSize" 
-      :isRoot="false"
-    />
-    
+    <Sash v-if="!isEmpty" :width="section.width" :height="section.height" :size="section.frameSize" :isRoot="false" />
+
     <!-- 开启方向 - 仅当不是空区域时显示 -->
-    <OpeningDirection 
-      v-if="!isEmpty"
-      :width="section.width" 
-      :height="section.height" 
-      :padding="section.frameSize" 
-      :type="section.type" 
-    />
-    
+    <OpeningDirection v-if="!isEmpty" :width="section.width" :height="section.height" :padding="section.frameSize"
+      :type="section.type" />
+
+    <!-- 把手 - 只有在不是空区域且有开启类型时显示 -->
+    <Handle v-if="!isEmpty" :width="section.width" :height="section.height" :padding="section.frameSize"
+      :type="section.type" />
+
     <!-- 渲染子组件 -->
     <template v-for="child in childSections" :key="child.key">
       <!-- 子区域 -->
       <template v-if="child.type === 'section'">
-        <Section 
-          :section="child.section"
-          :x="child.x"
-          :y="child.y"
-        />
+        <Section :section="child.section" :x="child.x" :y="child.y" />
       </template>
-      
+
       <!-- 分隔线 -->
-      <template v-else>
-        <DeviderComponent 
-          :width="child.width"
-          :height="child.height"
-          :x="child.x"
-          :y="child.y"
-          :id="child.id"
-        />
+      <template v-if="child.type === 'devider'">
+        <DeviderComponent :width="child.width" :height="child.height" :x="child.x" :y="child.y" :id="child.id" />
       </template>
     </template>
-    
+
     <!-- 选中高亮 -->
-    <v-rect 
-      v-if="isSelected" 
-      v-bind="highlightConfig"
-    />
-    
-    <!-- 把手 - 只有在不是空区域且有开启类型时显示 -->
-    <Handle 
-      v-if="!isEmpty"
-      :width="section.width" 
-      :height="section.height" 
-      :padding="section.frameSize" 
-      :type="section.type" 
-    />
+    <v-rect v-if="isSelected" v-bind="highlightConfig" />
+
   </v-group>
 </template> 

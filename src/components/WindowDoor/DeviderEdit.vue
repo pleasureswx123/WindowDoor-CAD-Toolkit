@@ -26,9 +26,6 @@ const thicknessVal = computed({
     if (store.selectedDevider) {
       const prevThickness = store.selectedDevider[temp[splitDirection.value as keyof typeof temp]];
       store.selectedDevider[temp[splitDirection.value as keyof typeof temp]] = newVal;
-      
-      // 更新相邻元素尺寸 - 使用Konva API
-      updateAdjacentElements(prevThickness, newVal);
     }
   }
 });
@@ -42,9 +39,6 @@ const relativeX = computed({
       if (splitDirection.value === 'vertical') {
         const prevX = store.selectedDevider.x;
         store.selectedDevider.x = newVal;
-        
-        // 更新相邻元素 - 水平方向的影响
-        updateAdjacentElementsPosition('x', prevX, newVal);
       }
     }
   }
@@ -58,9 +52,6 @@ const relativeY = computed({
       if (splitDirection.value === 'horizontal') {
         const prevY = store.selectedDevider.y;
         store.selectedDevider.y = newVal;
-        
-        // 更新相邻元素 - 垂直方向的影响
-        updateAdjacentElementsPosition('y', prevY, newVal);
       }
     }
   }
@@ -114,186 +105,6 @@ const findAdjacentElements = (deviderNode: any): any[] => {
   return parentGroup.getChildren((node: any) => node.id() !== deviderNode.id());
 };
 
-// 更新相邻元素尺寸
-const updateAdjacentElements = (prevThickness: number, newThickness: number) => {
-  if (!store.selectedDevider) return;
-  
-  const deviderNode = getDeviderNode();
-  if (!deviderNode) {
-    console.warn('未找到中挺节点');
-    return;
-  }
-  
-  const adjacentElements = findAdjacentElements(deviderNode);
-  if (adjacentElements.length === 0) {
-    console.warn('未找到相邻元素');
-    return;
-  }
-  
-  // 计算需要调整的尺寸差值
-  const diffThickness = newThickness - prevThickness;
-  if (diffThickness === 0) return;
-  
-  // 根据中挺方向调整相邻元素
-  if (splitDirection.value === 'vertical') {
-    // 垂直中挺影响左右元素的宽度
-    for (const element of adjacentElements) {
-      // 获取元素位置，决定是增加还是减少宽度
-      const elementX = element.x();
-      
-      // 依据相对位置决定如何调整宽度
-      if (elementX < deviderNode.x()) {
-        // 左侧元素
-        // 保持宽度，仅将多余的宽度传递给数据模型
-        const newWidth = element.width() - diffThickness;
-        element.width(newWidth);
-        
-        // 更新数据模型
-        store.updateElementSize(element.id(), {
-          width: newWidth
-        });
-      } else {
-        // 右侧元素
-        // 调整位置和宽度
-        const newX = element.x() + diffThickness;
-        element.x(newX);
-        
-        // 更新数据模型
-        store.updateElementPosition(element.id(), newX, element.y());
-      }
-    }
-  } else {
-    // 水平中挺影响上下元素的高度
-    for (const element of adjacentElements) {
-      // 获取元素位置，决定是增加还是减少高度
-      const elementY = element.y();
-      
-      // 依据相对位置决定如何调整高度
-      if (elementY < deviderNode.y()) {
-        // 上方元素
-        // 保持高度，仅将多余的高度传递给数据模型
-        const newHeight = element.height() - diffThickness;
-        element.height(newHeight);
-        
-        // 更新数据模型
-        store.updateElementSize(element.id(), {
-          height: newHeight
-        });
-      } else {
-        // 下方元素
-        // 调整位置和高度
-        const newY = element.y() + diffThickness;
-        element.y(newY);
-        
-        // 更新数据模型
-        store.updateElementPosition(element.id(), element.x(), newY);
-      }
-    }
-  }
-  
-  // 更新Stage以反映变化
-  const stage = deviderNode.getStage();
-  if (stage) {
-    stage.batchDraw();
-  }
-};
-
-// 更新相邻元素位置
-const updateAdjacentElementsPosition = (axis: 'x' | 'y', prevValue: number, newValue: number) => {
-  if (!store.selectedDevider) return;
-  
-  const deviderNode = getDeviderNode();
-  if (!deviderNode) {
-    console.warn('未找到中挺节点');
-    return;
-  }
-  
-  const adjacentElements = findAdjacentElements(deviderNode);
-  if (adjacentElements.length === 0) {
-    console.warn('未找到相邻元素');
-    return;
-  }
-  
-  // 计算位置差值
-  const posDiff = newValue - prevValue;
-  if (posDiff === 0) return;
-  
-  const isVertical = splitDirection.value === 'vertical';
-  
-  // 根据中挺方向调整相邻元素
-  for (const element of adjacentElements) {
-    const elementPos = isVertical ? element.x() : element.y();
-    
-    // 中挺是垂直的，处理左右元素
-    if (isVertical && axis === 'x') {
-      if (elementPos > prevValue) {
-        // 右侧元素跟随中挺移动
-        const newX = element.x() + posDiff;
-        element.x(newX);
-        
-        // 同时调整宽度
-        const newWidth = element.width() - posDiff;
-        element.width(newWidth);
-        
-        // 更新数据模型
-        store.updateElementPosition(element.id(), newX, element.y());
-        store.updateElementSize(element.id(), {
-          width: newWidth
-        });
-      } else {
-        // 左侧元素宽度调整
-        const newWidth = element.width() + posDiff;
-        element.width(newWidth);
-        
-        // 更新数据模型
-        store.updateElementSize(element.id(), {
-          width: newWidth
-        });
-      }
-    }
-    
-    // 中挺是水平的，处理上下元素
-    if (!isVertical && axis === 'y') {
-      if (elementPos > prevValue) {
-        // 下方元素跟随中挺移动
-        const newY = element.y() + posDiff;
-        element.y(newY);
-        
-        // 同时调整高度
-        const newHeight = element.height() - posDiff;
-        element.height(newHeight);
-        
-        // 更新数据模型
-        store.updateElementPosition(element.id(), element.x(), newY);
-        store.updateElementSize(element.id(), {
-          height: newHeight
-        });
-      } else {
-        // 上方元素高度调整
-        const newHeight = element.height() + posDiff;
-        element.height(newHeight);
-        
-        // 更新数据模型
-        store.updateElementSize(element.id(), {
-          height: newHeight
-        });
-      }
-    }
-  }
-  
-  // 更新中挺位置
-  deviderNode.position({
-    x: isVertical ? newValue : deviderNode.x(),
-    y: !isVertical ? newValue : deviderNode.y()
-  });
-  
-  // 更新Stage以反映变化
-  const stage = deviderNode.getStage();
-  if (stage) {
-    stage.batchDraw();
-  }
-};
-
 // 应用坐标按钮事件处理
 const applyPosition = () => {
   // 更新中挺节点位置，并同步更新相邻元素
@@ -311,11 +122,9 @@ const applyPosition = () => {
   if (splitDirection.value === 'vertical') {
     // 垂直中挺只能左右移动
     deviderNode.x(relativeX.value);
-    updateAdjacentElementsPosition('x', prevX, relativeX.value);
   } else {
     // 水平中挺只能上下移动
     deviderNode.y(relativeY.value);
-    updateAdjacentElementsPosition('y', prevY, relativeY.value);
   }
   
   // 更新数据模型
@@ -365,7 +174,6 @@ const inferOptimalPosition = () => {
     relativeX.value = Math.round(optimalX);
     
     // 应用新位置
-    updateAdjacentElementsPosition('x', prevX, relativeX.value);
     
   } else {
     // 水平中挺最佳位置：平分上下高度
@@ -385,9 +193,6 @@ const inferOptimalPosition = () => {
     // 更新Y坐标
     const prevY = deviderNode.y();
     relativeY.value = Math.round(optimalY);
-    
-    // 应用新位置
-    updateAdjacentElementsPosition('y', prevY, relativeY.value);
   }
   
   // 更新数据模型
