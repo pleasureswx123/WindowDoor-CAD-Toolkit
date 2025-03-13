@@ -16,7 +16,7 @@ alwaysApply: true
 当需要安装npm包时，请始终使用cnpm而不是npm。
 
 
-## https://konvajs.org/docs/overview.html
+# 概念层级结构 https://konvajs.org/docs/overview.html
 
               Stage
                 |
@@ -35,6 +35,838 @@ Shape   Group    Shape
            +
            |
          Shape
+
+# vue-konva Basic Intro 使用示例代码
+```vue
+<template>
+  <div>
+    <v-stage
+      ref="stage"
+      :config="configKonva"
+      @dragstart="handleDragstart"
+      @dragend="handleDragend"
+    >
+      <v-layer ref="layer">
+        <v-star
+          v-for="item in list"
+          :key="item.id"
+          :config="{
+            x: item.x,
+            y: item.y,
+            rotation: item.rotation,
+            id: item.id,
+            numPoints: 5,
+            innerRadius: 30,
+            outerRadius: 50, fill: '#89b717',
+            opacity: 0.8,
+            draggable: true,
+            scaleX: dragItemId === item.id ? item.scale * 1.2 : item.scale,
+            scaleY: dragItemId === item.id ? item.scale * 1.2 : item.scale,
+            shadowColor: 'black',
+            shadowBlur: 10,
+            shadowOffsetX: dragItemId === item.id ? 15 : 5,
+            shadowOffsetY: dragItemId === item.id ? 15 : 5,
+            shadowOpacity: 0.6
+          }"
+        ></v-star>
+      </v-layer>
+    </v-stage>
+  </div>
+</template>
+
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+export default {
+  data() {
+    return {
+      list: [],
+      dragItemId: null,
+      configKonva: {
+        width: width,
+        height: height
+      }
+    };
+  },
+  methods: {
+    handleDragstart(e) {
+      // save drag element:
+      this.dragItemId = e.target.id();
+      // move current element to the top:
+      const item = this.list.find(i => i.id === this.dragItemId);
+      const index = this.list.indexOf(item);
+      this.list.splice(index, 1);
+      this.list.push(item);
+    },
+    handleDragend(e) {
+      this.dragItemId = null;
+    }
+  },
+  mounted() {
+    for (let n = 0; n < 30; n++) {
+      this.list.push({
+        id: Math.round(Math.random() * 10000).toString(),
+        x: Math.random() * width,
+        y: Math.random() * height,
+        rotation: Math.random() * 180,
+        scale: Math.random()
+      });
+    }
+  }
+};
+</script>
+
+<style>
+body {
+  margin: 0;
+  padding: 0;
+}
+</style>
+```
+
+# vue-konva Basic shape 使用示例代码
+```vue
+<template>
+  <div>
+    <v-stage ref="stage" :config="stageSize">
+      <v-layer>
+      <v-text :config="{text: 'Some text on canvas', fontSize: 15}"/>
+      <v-rect :config="{
+          x: 20,
+          y: 50,
+          width: 100,
+          height: 100,
+          fill: 'red',
+          shadowBlur: 10
+        }"
+      />
+      <v-circle :config="{
+          x: 200,
+          y: 100,
+          radius: 50,
+          fill: 'green'
+        }"
+      />
+      <v-line :config="{
+        x: 20,
+        y: 200,
+        points: [0, 0, 100, 0, 100, 100],
+        tension: 0.5,
+        closed: true,
+        stroke: 'black',
+        fillLinearGradientStartPoint: { x: -50, y: -50 },
+        fillLinearGradientEndPoint: { x: 50, y: 50 },
+        fillLinearGradientColorStops: [0, 'red', 1, 'yellow']
+      }"/>
+      </v-layer>
+      <v-layer ref="dragLayer"></v-layer>
+    </v-stage>
+  </div>
+</template>
+
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+let vm = {};
+export default {
+  data() {
+    return {
+      stageSize: {
+        width: width,
+        height: height
+      }
+    };
+  }
+};
+</script>
+```
+
+# vue-konva Custom shape 使用示例代码
+```vue
+<template>
+    <v-stage ref="stage" :config="stageSize">
+      <v-layer>
+        <v-shape :config="{
+        width: 260,
+        height: 170,
+        sceneFunc: function (context, shape) {
+          const width = shape.width();
+          const height = shape.height();
+          context.beginPath();
+          context.moveTo(0, 0);
+          context.lineTo(width - 40, height - 90);
+          context.quadraticCurveTo(width - 110, height - 70, width, height);
+          context.closePath();
+
+          // (!) Konva specific method, it is very important
+          context.fillStrokeShape(shape);
+        },
+        fill: '#00D2FF',
+        stroke: 'black',
+        strokeWidth: 4
+      }"/>
+    </v-layer>
+  </v-stage>
+</template>
+
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+export default {
+  data() {
+    return {
+      stageSize: {
+        width: width,
+        height: height
+      }
+    };
+  }
+};
+</script>
+```
+
+# vue-konva Events 使用示例代码
+```vue
+<template>
+<v-stage ref="stage" :config="stageSize">
+      <v-layer ref="layer">
+        <v-regular-polygon
+          @mousemove="handleMouseMove"
+          @mouseout="handleMouseOut"
+          :config="{
+            x: 80,
+            y: 120,
+            sides: 3,
+            radius: 80,
+            fill: '#00D2FF',
+            stroke: 'black',
+            strokeWidth: 4
+          }"
+        />
+        <v-text ref="text" :config="{
+          x: 10,
+          y: 10,
+          fontFamily: 'Calibri',
+          fontSize: 24,
+          text: text,
+          fill: 'black'
+        }" />
+      </v-layer>
+    </v-stage>
+</template>
+
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+export default {
+  data() {
+    return {
+      stageSize: {
+        width: width,
+        height: height
+      },
+      text: ''
+    };
+  },
+  methods: {
+    writeMessage(message) {
+      this.text = message;
+    },
+    handleMouseOut(event) {
+      this.writeMessage('Mouseout triangle');
+    },
+    handleMouseMove(event) {
+      const mousePos = this.$refs.stage.getNode().getPointerPosition();
+      const x = mousePos.x - 190;
+      const y = mousePos.y - 40;
+      this.writeMessage('x: ' + x + ', y: ' + y);
+    }
+  }
+};
+</script>
+```
+
+# vue-konva Images 使用示例代码
+```vue
+<template>
+  <v-stage ref="stage" :config="stageSize">
+    <v-layer ref="layer">
+      <v-image :config="{
+            image: image
+          }"/>
+    </v-layer>
+  </v-stage>
+</template>
+
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+export default {
+  data() {
+    return {
+      stageSize: {
+        width: width,
+        height: height
+      },
+      image: null
+    };
+  },
+  created() {
+    const image = new window.Image();
+    image.src = "https://konvajs.org/assets/yoda.jpg";
+    image.onload = () => {
+      // set image only when it is loaded
+      this.image = image;
+    };
+  }
+};
+</script>
+```
+
+# vue-konva Filters 使用示例代码
+```vue
+<template>
+<v-stage ref="stage" :config="stageSize">
+      <v-layer ref="layer">
+        <v-rect
+          ref="rect"
+          @mousemove="handleMouseMove"
+          :config="{
+            filters: filters,
+            noise: 1,
+            x: 10,
+            y: 10,
+            width: 50,
+            height: 50,
+            fill: color,
+            shadowBlur: 10
+          }"
+        />
+      </v-layer>
+    </v-stage>
+</template>
+
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+import Konva from 'konva';
+
+export default {
+  data() {
+    return {
+      stageSize: {
+        width: width,
+        height: height
+      },
+      color: 'green',
+      filters: [Konva.Filters.Noise]
+    };
+  },
+  methods: {
+    handleMouseMove() {
+      this.color = Konva.Util.getRandomColor();
+      // recache
+      const rectNode = this.$refs.rect.getNode();
+      // may need to redraw layer manually
+      rectNode.cache();
+    }
+  },
+  mounted() {
+    const rectNode = this.$refs.rect.getNode();
+    rectNode.cache();
+  },
+};
+</script>
+
+```
+
+# vue-konva Save/Load 使用示例代码
+```vue
+<template>
+  <div>
+    Click on canvas to create a cirlce.
+    <a href=".">Reload the page</a>. Circles should stay here.
+    <v-stage ref="stage"
+      :config="stageSize"
+      @click="handleClick"
+    >
+      <v-layer ref="layer">
+        <v-circle
+          v-for="item in list"
+          :key="item.id"
+          :config="item"></v-circle>
+      </v-layer>
+      <v-layer ref="dragLayer"></v-layer>
+    </v-stage>
+  </div>
+</template>
+
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+export default {
+  data() {
+    return {
+      list: [{ x: 100, y: 100, radius: 50, fill: 'blue' }],
+      stageSize: {
+        width: width,
+        height: height
+      }
+    };
+  },
+  methods: {
+    handleClick(evt) {
+      const stage = evt.target.getStage();
+      const pos = stage.getPointerPosition();
+      this.list.push({
+        radius: 50,
+        fill: 'red',
+        ...pos
+      });
+
+      this.save();
+    },
+
+    load() {
+      const data = localStorage.getItem('storage');
+      if (data) this.list = JSON.parse(data);
+    },
+
+    save() {
+      localStorage.setItem('storage', JSON.stringify(this.list));
+    }
+  },
+  mounted() {
+    this.load();
+  }
+};
+</script>
+```
+
+# vue-konva Drag and Drop 使用示例代码
+```vue
+<template>
+<v-stage ref="stage" :config="stageSize">
+      <v-layer ref="layer">
+        <v-text
+          @dragstart="handleDragStart"
+          @dragend="handleDragEnd"
+          :config="{
+            text: 'Draggable Text',
+            x: 50,
+            y: 50,
+            draggable: true,
+            fill: isDragging ? 'green' : 'black'
+          }"
+        />
+      </v-layer>
+    </v-stage>
+</template>
+
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+export default {
+  data() {
+    return {
+      stageSize: {
+        width: width,
+        height: height
+      },
+      isDragging: false
+    };
+  },
+  methods: {
+    handleDragStart() {
+      this.isDragging = true;
+    },
+    handleDragEnd() {
+      this.isDragging = false;
+    }
+  }
+};
+</script>
+```
+
+# vue-konva Transformer 使用示例代码
+```vue
+<template>
+  <v-stage
+    ref="stage"
+    :config="stageSize"
+    @mousedown="handleStageMouseDown"
+    @touchstart="handleStageMouseDown"
+  >
+    <v-layer ref="layer">
+      <v-rect
+        v-for="item in rectangles"
+        :key="item.id"
+        :config="item"
+        @transformend="handleTransformEnd"
+      />
+      <v-transformer ref="transformer" />
+    </v-layer>
+  </v-stage>
+</template>
+
+<script>
+import Konva from 'konva';
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+export default {
+  data() {
+    return {
+      stageSize: {
+        width: width,
+        height: height,
+      },
+      rectangles: [
+        {
+          rotation: 0,
+          x: 10,
+          y: 10,
+          width: 100,
+          height: 100,
+          scaleX: 1,
+          scaleY: 1,
+          fill: 'red',
+          name: 'rect1',
+          draggable: true,
+        },
+        {
+          rotation: 0,
+          x: 150,
+          y: 150,
+          width: 100,
+          height: 100,
+          scaleX: 1,
+          scaleY: 1,
+          fill: 'green',
+          name: 'rect2',
+          draggable: true,
+        },
+      ],
+      selectedShapeName: '',
+    };
+  },
+  methods: {
+    handleTransformEnd(e) {
+      // shape is transformed, let us save new attrs back to the node
+      // find element in our state
+      const rect = this.rectangles.find(
+        (r) => r.name === this.selectedShapeName
+      );
+      // update the state
+      rect.x = e.target.x();
+      rect.y = e.target.y();
+      rect.rotation = e.target.rotation();
+      rect.scaleX = e.target.scaleX();
+      rect.scaleY = e.target.scaleY();
+
+      // change fill
+      rect.fill = Konva.Util.getRandomColor();
+    },
+    handleStageMouseDown(e) {
+      // clicked on stage - clear selection
+      if (e.target === e.target.getStage()) {
+        this.selectedShapeName = '';
+        this.updateTransformer();
+        return;
+      }
+
+      // clicked on transformer - do nothing
+      const clickedOnTransformer =
+        e.target.getParent().className === 'Transformer';
+      if (clickedOnTransformer) {
+        return;
+      }
+
+      // find clicked rect by its name
+      const name = e.target.name();
+      const rect = this.rectangles.find((r) => r.name === name);
+      if (rect) {
+        this.selectedShapeName = name;
+      } else {
+        this.selectedShapeName = '';
+      }
+      this.updateTransformer();
+    },
+    updateTransformer() {
+      // here we need to manually attach or detach Transformer node
+      const transformerNode = this.$refs.transformer.getNode();
+      const stage = transformerNode.getStage();
+      const { selectedShapeName } = this;
+
+      const selectedNode = stage.findOne('.' + selectedShapeName);
+      // do nothing if selected node is already attached
+      if (selectedNode === transformerNode.node()) {
+        return;
+      }
+
+      if (selectedNode) {
+        // attach to another node
+        transformerNode.nodes([selectedNode]);
+      } else {
+        // remove transformer
+        transformerNode.nodes([]);
+      }
+    },
+  },
+};
+</script>
+
+```
+
+# vue-konva Simple Animations 使用示例代码
+```vue
+<template>
+  <v-stage ref="stage" :config="stageSize">
+    <v-layer ref="layer">
+      <v-rect
+        ref="rect"
+        @dragstart="changeSize"
+        @dragend="changeSize"
+        :config="{
+            width: 50,
+            height: 50,
+            fill: 'green',
+            draggable: true
+          }"
+      />
+      <v-regular-polygon
+        ref="hexagon"
+        :config="{
+          x: 200,
+          y: 200,
+          sides: 6,
+          radius: 20,
+          fill: 'red',
+          stroke: 'black',
+          strokeWidth: 4
+        }"
+      />
+    </v-layer>
+  </v-stage>
+</template>
+
+<script>
+import Konva from "konva";
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+export default {
+  data() {
+    return {
+      stageSize: {
+        width: width,
+        height: height
+      }
+    };
+  },
+  methods: {
+    changeSize(e) {
+      // to() is a method of `Konva.Node` instances
+      e.target.to({
+        scaleX: Math.random() + 0.8,
+        scaleY: Math.random() + 0.8,
+        duration: 0.2
+      });
+    }
+  },
+  mounted() {
+    const vm = this;
+    const amplitude = 100;
+    const period = 5000;
+    // in ms
+    const centerX = vm.$refs.stage.getNode().getWidth() / 2;
+
+    const hexagon = this.$refs.hexagon.getNode();
+
+    // example of Konva.Animation
+    const anim = new Konva.Animation(function(frame) {
+      hexagon.setX(
+        amplitude * Math.sin((frame.time * 2 * Math.PI) / period) + centerX
+      );
+    }, hexagon.getLayer());
+
+    anim.start();
+  }
+};
+</script>
+```
+
+# vue-konva Cache 使用示例代码
+```vue
+<template>
+  <div>
+    <v-stage ref="stage" :config="stageConfig">
+      <v-layer ref="layer">
+        <v-group ref="group">
+          <v-star
+            v-for="item in list"
+            :key="item.id"
+            :config="{
+            x: item.x,
+            y: item.y,
+            rotation: item.rotation,
+            id: item.id,
+            numPoints: 5,
+            innerRadius: 30,
+            outerRadius: 50, fill: '#89b717',
+            opacity: 0.8,
+            shadowColor: 'black',
+            shadowBlur: 10,
+            shadowOpacity: 0.6,
+            scaleX: item.scale,
+            scaleY: item.scale,
+          }"
+          />
+        </v-group>
+      </v-layer>
+    </v-stage>
+    <div class="cache">
+      <input type="checkbox" @change="handleCacheChange"> cache shapes
+    </div>
+  </div>
+</template>
+
+<script>
+const width = window.innerWidth;
+const height = window.innerHeight;
+export default {
+  data() {
+    return {
+      list: [],
+      dragItemId: null,
+      stageConfig: {
+        width: width,
+        height: height,
+        draggable: true
+      }
+    };
+  },
+  methods: {
+    handleCacheChange(e) {
+      const shouldCache = e.target.checked;
+      if (shouldCache) {
+        this.$refs.group.getNode().cache();
+      } else {
+        this.$refs.group.getNode().clearCache();
+      }
+    }
+  },
+  mounted() {
+    for (let n = 0; n < 300; n++) {
+      this.list.push({
+        id: Math.round(Math.random() * 10000).toString(),
+        x: Math.random() * width,
+        y: Math.random() * height,
+        rotation: Math.random() * 180,
+        scale: Math.random()
+      });
+    }
+  }
+};
+</script>
+
+<style>
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.cache {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+</style>
+```
+
+# vue-konva Changing zIndex 使用示例代码
+```vue
+<template>
+  <div>
+    <v-stage ref="stage" :config="configKonva">
+      <v-layer ref="layer">
+        <v-circle
+          v-for="item in items"
+          :key="item.id"
+          :config="item"
+          @dragstart="handleDragstart"
+          @dragend="handleDragend"
+        ></v-circle>
+      </v-layer>
+    </v-stage>
+  </div>
+</template>
+
+<script>
+import Konva from "konva";
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+function generateItems() {
+  const items = [];
+  for (let i = 0; i < 10; i++) {
+    items.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      radius: 50,
+      id: "node-" + i,
+      fill: Konva.Util.getRandomColor(),
+      draggable: true,
+    });
+  }
+  return items;
+}
+
+export default {
+  data() {
+    return {
+      items: [],
+      dragItemId: null,
+      configKonva: {
+        width: width,
+        height: height,
+      },
+    };
+  },
+  methods: {
+    handleDragstart(e) {
+      // save drag element:
+      this.dragItemId = e.target.id();
+      // move current element to the top, by rearranging the items array:
+      const item = this.items.find((i) => i.id === this.dragItemId);
+      const index = this.items.indexOf(item);
+      this.items.splice(index, 1);
+      this.items.push(item);
+    },
+    handleDragend(e) {
+      this.dragItemId = null;
+    },
+  },
+  mounted() {
+    this.items = generateItems();
+  },
+};
+</script>
+
+<style>
+body {
+  margin: 0;
+  padding: 0;
+}
+</style>
+```
+
+## 参考资料
 
 ```json
 {

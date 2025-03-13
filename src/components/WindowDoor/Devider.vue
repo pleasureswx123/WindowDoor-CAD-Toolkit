@@ -31,14 +31,6 @@ const rectConfig = computed(() => ({
   listening: true
 }));
 
-watchEffect(() => {
-  if (store.selectedDeviderId) {
-    store.selectedDevider.splitDirection = store.selectedDevider.width > store.selectedDevider.height ? 'horizontal' : 'vertical';
-    store.selectedDevider.x = props.x;
-    store.selectedDevider.y = props.y;
-  }
-})
-
 // 处理点击事件
 function handleDragStart(e: any) {
   // 阻止事件冒泡

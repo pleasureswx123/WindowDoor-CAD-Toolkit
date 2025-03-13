@@ -63,7 +63,17 @@ export class Section {
   }
 }
 
-// 分隔线类
+// 分隔线类，这个是中挺，是将大的空白区域按照尺寸按比例分隔成多个小的空白区域
+// 明确概念：中挺厚度指的是，水平中挺的厚度对应的是中挺的高度，垂直中挺的厚度指的是中挺的宽度
+// 由中挺的位置及厚度的变化来决定其相邻的空白区域的大小
+// 空白区域是用来放置并配置窗扇的预留区域
+// 重构窗户中的所有数据store化，都能保证做到响应式与stage、layer中的数据即时响应。
+// 尤其是对splitCurrentSection所产生的数据，应始终保持是响应数据，
+// 修改某一中挺的厚度或位置数据，保证能够响应到其它数据的改变，也就是某一部分数据如用ref、reactive、computed、watch、watchEffect计算得出，比如当用户修改中挺宽度或位置时，要做到其相邻或关联的部分直接响应变化到stage中去
+// 父元素的宽度是固定的，也就是说当用户调整中挺的厚度或位置移动时，要即时改变其相邻的节点的尺寸及位置，但限制父元素的宽度不能超过父元素的宽度或高度
+// 垂直的中挺只能左右移动，不能超出父元素的宽度
+// 水平的中挺只能上下移动，不能超出父元素的高度
+
 export class Devider {
   nodeType = "devider";
   id: number;
@@ -222,7 +232,7 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
           // 默认创建空区域，等待用户配置
           type: "empty"
         }),
-        new Devider({
+        new Devider({ // 中挺
           width: DEVIDER_SIZE,
           height: section.height,
         }),
@@ -241,7 +251,7 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
           // 默认创建空区域，等待用户配置
           type: "empty"
         }),
-        new Devider({
+        new Devider({ // 中挺
           width: section.width,
           height: DEVIDER_SIZE,
         }),

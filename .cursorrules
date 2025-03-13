@@ -18,11 +18,60 @@
         },
         "v-group": {
           "transformMethods": ["getAbsoluteTransform()", "getClientRect()"]
+        },
+        "v-rect": {
+          "requiredProps": [":config"],
+          "commonConfig": ["x", "y", "width", "height", "fill", "stroke", "strokeWidth", "cornerRadius"],
+          "docLink": "https://konvajs.org/api/Konva.Rect.html"
+        },
+        "v-circle": {
+          "requiredProps": [":config"],
+          "commonConfig": ["x", "y", "radius", "fill", "stroke", "strokeWidth"],
+          "docLink": "https://konvajs.org/api/Konva.Circle.html"
+        },
+        "v-text": {
+          "requiredProps": [":config"],
+          "commonConfig": ["x", "y", "text", "fontSize", "fontFamily", "fill", "align", "verticalAlign"],
+          "docLink": "https://konvajs.org/api/Konva.Text.html"
+        },
+        "v-line": {
+          "requiredProps": [":config"],
+          "commonConfig": ["points", "stroke", "strokeWidth", "tension", "lineCap", "lineJoin"],
+          "docLink": "https://konvajs.org/api/Konva.Line.html"
+        },
+        "v-arrow": {
+          "requiredProps": [":config"],
+          "commonConfig": ["points", "pointerLength", "pointerWidth", "fill", "stroke", "strokeWidth"],
+          "docLink": "https://konvajs.org/api/Konva.Arrow.html"
+        },
+        "v-label": {
+          "requiredProps": [":config"],
+          "children": ["v-tag", "v-text"],
+          "docLink": "https://konvajs.org/api/Konva.Label.html"
+        },
+        "v-image": {
+          "requiredProps": [":config"],
+          "commonConfig": ["x", "y", "width", "height", "image"],
+          "imageLoading": "需要提前加载Image对象，传入到config中",
+          "docLink": "https://konvajs.org/api/Konva.Image.html"
         }
       },
       "eventHandlers": {
         "@dragstart": "返回Konva事件对象",
-        "@transformend": "处理变形事件时需调用node.getAttrs()"
+        "@transformend": "处理变形事件时需调用node.getAttrs()",
+        "@click": "处理点击事件，通过e.target获取被点击的节点",
+        "@dblclick": "处理双击事件，可用于特殊交互如编辑模式切换",
+        "@mousedown": "处理鼠标按下事件，常用于开始绘制或选择操作",
+        "@mouseup": "处理鼠标释放事件，常用于完成绘制操作",
+        "@mousemove": "处理鼠标移动事件，注意性能影响，可考虑节流",
+        "@mouseover": "处理鼠标悬停事件，可用于显示提示或高亮效果",
+        "@mouseout": "处理鼠标离开事件，可用于取消高亮效果",
+        "@dragmove": "处理拖动中事件，可获取新位置，常用于实时更新关联元素",
+        "@dragend": "处理拖动结束事件，常用于更新状态存储",
+        "@wheel": "处理滚轮事件，常用于缩放画布",
+        "@touchstart": "处理触摸开始事件，移动端交互必备",
+        "@touchmove": "处理触摸移动事件，移动端交互必备",
+        "@touchend": "处理触摸结束事件，移动端交互必备"
       }
     },
     
@@ -38,6 +87,15 @@
           "在store中保存Konva节点引用时使用Map结构",
           "状态更新应通过actions进行批量处理"
         ]
+      },
+      "responsiveUpdates": {
+        "sizeChanges": "通过computed计算派生尺寸，确保尺寸联动",
+        "positionSync": "通过watch/watchEffect监听位置变化并同步关联元素",
+        "colorBinding": "颜色属性应该使用ref/reactive，方便主题切换"
+      },
+      "refAccess": {
+        "correct": "通过ref获取Konva实例后再调用Konva方法",
+        "example": "const circleRef = ref(null); onMounted(() => circleRef.value.getStage());"
       }
     },
 
@@ -50,14 +108,55 @@
       "memoryLeakPrevention": {
         "destroyMethod": "组件卸载时调用node.destroy()",
         "storeCleanup": "从Pinia store移除节点引用"
+      },
+      "caching": {
+        "recommendation": "对于复杂或静态组件使用缓存",
+        "implementation": "设置 :config=\"{...rectConfig, cache: true, cacheEnabled: true}\"",
+        "warning": "修改缓存的形状属性后需调用clearCache()",
+        "example": "if (rectRef.value) rectRef.value.clearCache();"
+      },
+      "minimizeNodes": {
+        "recommendation": "减少舞台上的节点数量",
+        "implementation": "合并静态元素、使用图片代替复杂形状、条件渲染不可见元素",
+        "example": "使用v-if=\"isVisible\"而非通过visible属性隐藏大量元素"
+      },
+      "eventOptimization": {
+        "recommendation": "优化事件监听",
+        "implementation": "仅为需要交互的元素设置listening=true，其余设为false",
+        "example": ":config=\"{...shapeConfig, listening: isInteractive}\""
+      },
+      "layerManagement": {
+        "recommendation": "合理使用图层分离静态和动态内容",
+        "staticLayer": "不频繁更新的元素放在单独的layer中并缓存",
+        "dynamicLayer": "频繁更新的元素单独成层，避免影响其他元素性能"
+      }
+    },
+
+    // ============== 调试工具配置 ================
+    "debugTools": {
+      "nodeInspection": {
+        "method": "通过ref获取节点实例后使用toObject()或toJSON()方法",
+        "example": "console.log(rectRef.value.toObject())"
+      },
+      "hitRegionDetection": {
+        "method": "stage.getIntersection(point)检测点击区域",
+        "example": "const shape = stage.getIntersection({x: 100, y: 100})"
+      },
+      "visualDebug": {
+        "method": "给形状添加边框以可视化边界",
+        "example": "临时设置shape的stroke为'red'，strokeWidth为2"
+      },
+      "performanceMonitoring": {
+        "fps": "使用Konva.Util.getAnimationFrame()监控帧率",
+        "nodeCount": "使用stage.find('*').length获取节点总数监控性能瓶颈"
       }
     },
 
     // ============== 智能提示增强配置 ================
     "intellisenseEnhancements": {
       "contextualSuggestions": {
-        "afterVLayer": ["v-rect", "v-circle", "v-group"],
-        "insideVGroup": ["v-shape", "v-text"]
+        "afterVLayer": ["v-rect", "v-circle", "v-group", "v-line", "v-text", "v-image", "v-label", "v-arrow"],
+        "insideVGroup": ["v-shape", "v-text", "v-rect", "v-circle", "v-line", "v-image", "v-path"]
       },
       "snippetTemplates": {
         "createDraggableShape": {
@@ -71,6 +170,32 @@
               "@dragstart=\"handleDragStart\"",
               "@dragend=\"updatePositionInStore\""
             ]
+          }
+        },
+        "createTransformableShape": {
+          "trigger": "transformable",
+          "template": {
+            "setup": "import { useTransformer } from '@/composables/useTransformer';",
+            "composable": "const { transformer, attachToNode, detachFromNode } = useTransformer();",
+            "eventHandlers": [
+              "@click=\"attachToNode($event.target)\"",
+              "@transformend=\"handleTransformEnd\""
+            ]
+          }
+        },
+        "createResizableGroup": {
+          "trigger": "resizable",
+          "template": {
+            "config": {
+              "x": 0,
+              "y": 0,
+              "width": 200,
+              "height": 100
+            },
+            "methods": [
+              "function handleResize(newWidth, newHeight) { /* 更新子元素 */ }"
+            ],
+            "watchEffect": "watchEffect(() => { if (width.value && height.value) handleResize(width.value, height.value); });"
           }
         }
       }
@@ -86,7 +211,23 @@
         "directDomManipulation": {
           "detection": ["document.querySelector('.konva-container')", "stage.find()"],
           "message": "请通过Vue ref或Pinia store访问Konva节点"
+        },
+        "missingConfig": {
+          "detection": "<v-rect></v-rect>",
+          "message": "Konva组件必须提供:config属性"
+        },
+        "directStateModification": {
+          "detection": "node.x(100)",
+          "message": "避免直接修改Konva实例属性，应更新config对象触发响应式更新"
+        },
+        "missingEventCleanup": {
+          "detection": "onMounted中添加事件但没有onUnmounted清理",
+          "message": "组件卸载时必须清理事件监听以防内存泄漏"
         }
+      },
+      "requireCleanup": {
+        "components": ["v-transformer", "v-image"],
+        "message": "特殊组件需在onUnmounted中执行清理逻辑"
       }
     },
 
@@ -103,7 +244,9 @@
       "vueKonvaExamples": {
         "internalRepo": "vue-konva-samples",
         "externalLinks": {
-          "complexInteraction": "https://github.com/konvajs/vue-konva/blob/master/tests/index.test.ts"
+          "complexInteraction": "https://github.com/konvajs/vue-konva/blob/master/tests/index.test.ts",
+          "transformers": "https://konvajs.org/docs/select_and_transform/Basic_demo.html",
+          "dragAndDrop": "https://konvajs.org/docs/drag_and_drop/Drag_and_Drop.html"
         }
       }
     }
@@ -122,6 +265,11 @@
           fill: '#00D2FF',
           draggable: true
         });
+        
+        const handleSelect = (e) => {
+          console.log('矩形被选中', e.target.getAttrs());
+          // 通知store选中了这个节点
+        };
         </script>
 
         <template>
@@ -136,27 +284,186 @@
     "piniaIntegration": {
       "storeExample": `
         // stores/shapes.js
-        export const useShapesStore = defineStore('shapes', {
-          state: () => ({
-            nodes: new Map(),
-            stageSize: { width: 0, height: 0 }
-          }),
-          actions: {
-            registerNode(id, node) {
-              if (!node.isDestroyed()) {
-                this.nodes.set(id, node);
-              }
-            },
-            updatePosition(id, pos) {
-              const node = this.nodes.get(id);
-              if (node && node.getStage()) {
-                node.position(pos);
-                node.getLayer().batchDraw();
-              }
+        import { defineStore } from 'pinia';
+        import { ref, reactive } from 'vue';
+        
+        export const useShapesStore = defineStore('shapes', () => {
+          // 使用Map存储节点引用
+          const nodes = reactive(new Map());
+          const stageSize = reactive({ width: 800, height: 600 });
+          const selectedNodeId = ref(null);
+          
+          // 注册节点引用  
+          function registerNode(id, node) {
+            if (!node.isDestroyed()) {
+              nodes.set(id, node);
             }
           }
-        })`
+          
+          // 注销节点引用
+          function unregisterNode(id) {
+            nodes.delete(id);
+          }
+          
+          // 更新节点位置
+          function updatePosition(id, pos) {
+            const node = nodes.get(id);
+            if (node && node.getStage()) {
+              node.position(pos);
+              node.getLayer().batchDraw();
+            }
+          }
+          
+          return {
+            nodes,
+            stageSize,
+            selectedNodeId,
+            registerNode,
+            unregisterNode,
+            updatePosition
+          };
+        });`
+    },
+    
+    "transformerExample": {
+      "description": "使用变形器实现图形缩放和旋转",
+      "template": `
+        <script setup>
+        import { ref, onMounted, onUnmounted } from 'vue';
+        
+        const stageRef = ref(null);
+        const layerRef = ref(null);
+        const rectRef = ref(null);
+        const transformerRef = ref(null);
+        
+        const rectConfig = ref({
+          x: 50,
+          y: 50,
+          width: 100,
+          height: 100,
+          fill: 'yellow',
+          stroke: 'black',
+          strokeWidth: 1,
+          draggable: true
+        });
+        
+        const transformerConfig = ref({
+          rotateEnabled: true,
+          keepRatio: false,
+          enabledAnchors: [
+            'top-left', 'top-center', 'top-right',
+            'middle-left', 'middle-right',
+            'bottom-left', 'bottom-center', 'bottom-right'
+          ]
+        });
+        
+        onMounted(() => {
+          // 附加变形器到矩形
+          transformerRef.value.nodes([rectRef.value]);
+          layerRef.value.batchDraw();
+        });
+        
+        const handleTransformEnd = (e) => {
+          // 更新矩形的配置以匹配变形后的状态
+          const node = rectRef.value;
+          const scaleX = node.scaleX();
+          const scaleY = node.scaleY();
+          
+          // 重置比例并更新尺寸
+          rectConfig.value = {
+            ...rectConfig.value,
+            x: node.x(),
+            y: node.y(),
+            rotation: node.rotation(),
+            width: node.width() * scaleX,
+            height: node.height() * scaleY
+          };
+          
+          // 重置比例
+          node.scaleX(1);
+          node.scaleY(1);
+        };
+        </script>
+        
+        <template>
+          <v-stage ref="stageRef" :config="{ width: 800, height: 600 }">
+            <v-layer ref="layerRef">
+              <v-rect
+                ref="rectRef"
+                :config="rectConfig"
+                @transformend="handleTransformEnd"
+              />
+              <v-transformer
+                ref="transformerRef"
+                :config="transformerConfig"
+              />
+            </v-layer>
+          </v-stage>
+        </template>`
+    },
+    
+    "annotationExample": {
+      "description": "创建尺寸标注组件",
+      "template": `
+        <script setup>
+        import { ref, computed } from 'vue';
+        
+        const props = defineProps({
+          startX: { type: Number, required: true },
+          startY: { type: Number, required: true },
+          endX: { type: Number, required: true },
+          endY: { type: Number, required: true },
+          text: { type: String, default: '' },
+          offset: { type: Number, default: 10 }
+        });
+        
+        // 计算箭头点位
+        const arrowPoints = computed(() => [
+          props.startX, props.startY, 
+          props.endX, props.endY
+        ]);
+        
+        // 计算文本位置 (居中)
+        const textPosition = computed(() => ({
+          x: (props.startX + props.endX) / 2,
+          y: (props.startY + props.endY) / 2 - props.offset
+        }));
+        
+        // 计算尺寸值
+        const dimensionText = computed(() => {
+          if (props.text) return props.text;
+          
+          const dx = props.endX - props.startX;
+          const dy = props.endY - props.startY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          return \`\${Math.round(distance)}px\`;
+        });
+        
+        const arrowConfig = ref({
+          stroke: '#666',
+          fill: '#666',
+          strokeWidth: 1,
+          pointerLength: 5,
+          pointerWidth: 5
+        });
+        
+        const textConfig = computed(() => ({
+          ...textPosition.value,
+          text: dimensionText.value,
+          fontSize: 12,
+          fontFamily: 'Arial',
+          fill: '#333',
+          padding: 2,
+          align: 'center'
+        }));
+        </script>
+        
+        <template>
+          <v-group>
+            <v-arrow :config="{ ...arrowConfig, points: arrowPoints }" />
+            <v-text :config="textConfig" />
+          </v-group>
+        </template>`
     }
   }
 }
-```
