@@ -1,202 +1,186 @@
 <script setup lang="ts">
-import { QuestionFilled } from '@element-plus/icons-vue';
-// 中挺调整面板组件
 import { ref, computed, watch } from 'vue';
 import { useWindowDoorStore } from '@/stores/windowDoorStore';
 
 const store = useWindowDoorStore();
 
-// 中挺位置和厚度
+// 中挺位置和厚度的响应式引用
 const position = ref(50);
 const thickness = ref(40);
 
-// 监听选中中挺变化
-watch(() => store.selectedDevider, (devider) => {
-  if (devider) {
-    position.value = devider.position || 50;
-    thickness.value = devider.direction === 'vertical' ? devider.width : devider.height;
+// 监听选中的中挺变化，更新位置和厚度
+watch(() => store.selectedDevider, (newDevider) => {
+  if (newDevider) {
+    position.value = newDevider.position;
+    thickness.value = newDevider.thickness;
   }
-}, { immediate: true, deep: true });
+}, { immediate: true });
 
-// 中挺方向和尺寸信息
+// 计算中挺信息
 const deviderInfo = computed(() => {
-  if (!store.selectedDevider) return null;
-  
   const devider = store.selectedDevider;
-  const direction = devider.direction;
+  if (!devider) return null;
   
   return {
     id: devider.id,
-    direction,
-    directionText: direction === 'vertical' ? '垂直中挺' : '水平中挺',
-    width: devider.width,
-    height: devider.height,
-    actualThickness: devider.actualThickness,
-    position: devider.position
+    direction: devider.direction,
+    width: Math.round(devider.width),
+    height: Math.round(devider.height),
+    actualThickness: devider.actualThickness
   };
 });
 
-// 更新位置
-function updatePosition(value: number) {
+// 更新中挺位置
+function updatePosition(value: number | number[]) {
   if (!store.selectedDevider) return;
-  position.value = value;
-  store.updateDeviderPosition(store.selectedDevider.id, value);
+  
+  // 确保值是数字
+  const newPosition = Array.isArray(value) ? value[0] : value;
+  
+  // 更新本地状态
+  position.value = newPosition;
+  
+  // 更新存储中的中挺位置
+  store.updateDeviderPosition(store.selectedDevider.id, newPosition);
 }
 
-// 更新厚度
-function updateThickness(value: number) {
+// 更新中挺厚度
+function updateThickness(value: number | number[]) {
   if (!store.selectedDevider) return;
-  thickness.value = value;
-  store.updateDeviderThickness(store.selectedDevider.id, value);
+  
+  // 确保值是数字
+  const newThickness = Array.isArray(value) ? value[0] : value;
+  
+  // 更新本地状态
+  thickness.value = newThickness;
+  
+  // 更新存储中的中挺厚度
+  store.updateDeviderThickness(store.selectedDevider.id, newThickness);
 }
 </script>
 
 <template>
   <div class="devider-adjust-panel">
-    <div v-if="store.selectedDevider" class="panel-content">
-      <div class="panel-info">
-        <div class="info-item">
-          <span class="info-label">中挺 ID:</span>
-          <span class="info-value">#{{ deviderInfo?.id }}</span>
-        </div>
-        
-        <div class="info-item">
-          <span class="info-label">方向:</span>
-          <span class="info-value">{{ deviderInfo?.directionText }}</span>
-        </div>
-        
-        <div class="info-item">
-          <span class="info-label">尺寸:</span>
-          <span class="info-value">{{ deviderInfo?.width }} × {{ deviderInfo?.height }} px</span>
-        </div>
-      </div>
-      
-      <div class="slider-group">
-        <div class="slider-label">
-          <span>位置 ({{ position }}%)</span>
-          <el-tooltip content="拖动滑块调整中挺位置" placement="top">
-            <el-icon><QuestionFilled /></el-icon>
-          </el-tooltip>
-        </div>
-        <el-slider
-          v-model="position"
-          :min="10"
-          :max="90"
-          :step="1"
-          show-stops
-          show-input
-          @change="updatePosition"
-        />
-      </div>
-      
-      <div class="slider-group">
-        <div class="slider-label">
-          <span>厚度 ({{ thickness }}px)</span>
-          <el-tooltip content="拖动滑块调整中挺厚度" placement="top">
-            <el-icon><QuestionFilled /></el-icon>
-          </el-tooltip>
-        </div>
-        <el-slider
-          v-model="thickness"
-          :min="30"
-          :max="100"
-          :step="5"
-          show-stops
-          show-input
-          @change="updateThickness"
-        />
-      </div>
-      
-      <div class="tip">
-        <el-alert
-          type="info"
-          :closable="false"
-          show-icon
-        >
-          <template #title>调整说明</template>
-          <div class="tip-content">
-            <p>1. 位置百分比表示中挺在父容器中的相对位置</p>
-            <p>2. 厚度表示中挺的实际宽度或高度</p>
-            <p>3. 调整中挺将自动更新相邻区域的尺寸</p>
-          </div>
-        </el-alert>
-      </div>
+    <div v-if="!store.selectedDevider" class="no-selection">
+      <p>请选择一个中挺进行调整</p>
     </div>
     
-    <div v-else class="no-selection">
-      <el-empty description="未选中中挺" />
-      <p class="hint-text">点击一个中挺以进行调整</p>
+    <div v-else class="devider-controls">
+      <div class="devider-info">
+        <h4>中挺信息</h4>
+        <div class="info-row">
+          <span class="label">ID:</span>
+          <span class="value">#{{ deviderInfo?.id }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">方向:</span>
+          <span class="value">{{ deviderInfo?.direction === 'vertical' ? '垂直' : '水平' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">尺寸:</span>
+          <span class="value">{{ deviderInfo?.width }}×{{ deviderInfo?.height }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">实际厚度:</span>
+          <span class="value">{{ deviderInfo?.actualThickness }}mm</span>
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <div class="control-label">
+          <span>位置:</span>
+          <span class="value">{{ position.toFixed(1) }}%</span>
+        </div>
+        <el-tooltip content="调整中挺在父容器中的相对位置" placement="top">
+          <el-slider 
+            v-model="position" 
+            :min="10" 
+            :max="90" 
+            :step="0.5"
+            @change="updatePosition" 
+          />
+        </el-tooltip>
+      </div>
+      
+      <div class="control-group">
+        <div class="control-label">
+          <span>厚度:</span>
+          <span class="value">{{ thickness }}mm</span>
+        </div>
+        <el-tooltip content="调整中挺的厚度" placement="top">
+          <el-slider 
+            v-model="thickness" 
+            :min="30" 
+            :max="100" 
+            :step="1"
+            @change="updateThickness" 
+          />
+        </el-tooltip>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .devider-adjust-panel {
-  padding: 16px;
-}
-
-.panel-info {
-  margin-bottom: 24px;
-  background: #f5f7fa;
-  border-radius: 4px;
-  padding: 12px;
-}
-
-.info-item {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.info-item:last-child {
-  margin-bottom: 0;
-}
-
-.info-label {
-  color: #606266;
-  font-weight: 500;
-}
-
-.info-value {
-  color: #303133;
-}
-
-.slider-group {
-  margin-bottom: 24px;
-}
-
-.slider-label {
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #606266;
+  padding: 10px 0;
 }
 
 .no-selection {
+  text-align: center;
+  color: #999;
+  padding: 20px 0;
+}
+
+.devider-controls {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 250px;
+  gap: 16px;
 }
 
-.hint-text {
-  color: #909399;
-  font-size: 13px;
-  margin-top: 8px;
+.devider-info {
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  padding: 10px;
 }
 
-.tip {
-  margin-top: 24px;
-}
-
-.tip-content {
-  font-size: 12px;
+.devider-info h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 14px;
   color: #606266;
 }
 
-.tip-content p {
-  margin: 4px 0;
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+
+.info-row .label {
+  color: #909399;
+}
+
+.info-row .value {
+  font-weight: 500;
+  color: #303133;
+}
+
+.control-group {
+  margin-bottom: 10px;
+}
+
+.control-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #606266;
+}
+
+.control-label .value {
+  font-weight: 500;
+  color: #409EFF;
 }
 </style> 

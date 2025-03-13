@@ -24,6 +24,7 @@ const tools = [
   { id: 'select', name: '选择', icon: 'i-lucide-mouse-pointer' },
   { id: 'splitVertical', name: '垂直分割', icon: 'i-lucide-square-split-horizontal' },
   { id: 'splitHorizontal', name: '水平分割', icon: 'i-lucide-square-split-vertical' },
+  { id: 'penTool', name: '钢笔工具', icon: 'i-lucide-pen-tool' },
   { id: 'fixed', name: '固定窗', icon: 'i-lucide-square' },
   { id: 'leftOpen', name: '左开窗', icon: 'i-lucide-panel-left-open' },
   { id: 'rightOpen', name: '右开窗', icon: 'i-lucide-panel-right-open' },
@@ -45,6 +46,13 @@ const activePanels = ref(['windowFrame', 'sectionSettings', 'deviderSettings']);
 // 处理工具选择
 const selectTool = (toolId: string) => {
   currentTool.value = toolId;
+  
+  // 如果选择了钢笔工具，激活钢笔模式
+  if (toolId === 'penTool') {
+    store.togglePenTool(true);
+  } else {
+    store.togglePenTool(false);
+  }
   
   // 根据工具执行相应操作
   switch (toolId) {
@@ -132,6 +140,7 @@ const handleViewTool = (toolId: string) => {
               <icon-lucide-mouse-pointer v-if="tool.icon === 'i-lucide-mouse-pointer'" />
               <icon-lucide-square-split-horizontal v-else-if="tool.icon === 'i-lucide-square-split-horizontal'" />
               <icon-lucide-square-split-vertical v-else-if="tool.icon === 'i-lucide-square-split-vertical'" />
+              <icon-lucide-pen-tool v-else-if="tool.icon === 'i-lucide-pen-tool'" />
               <icon-lucide-square v-else-if="tool.icon === 'i-lucide-square'" />
               <icon-lucide-panel-left-open v-else-if="tool.icon === 'i-lucide-panel-left-open'" />
               <icon-lucide-panel-right-open v-else-if="tool.icon === 'i-lucide-panel-right-open'" />

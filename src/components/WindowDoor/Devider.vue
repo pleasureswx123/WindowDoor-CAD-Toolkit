@@ -87,7 +87,7 @@ function handleDragMove(e: any) {
   
   let newPosition;
   
-  if (isVertical.value) {
+  if (devider.direction === 'vertical') {
     // 垂直中挺: 计算水平方向位置百分比
     const totalWidth = parentSection.width;
     const currentX = devider.x + moveX;
@@ -125,7 +125,7 @@ function handleDragEnd(e: any) {
   
   let newPosition;
   
-  if (isVertical.value) {
+  if (devider.direction === 'vertical') {
     // 垂直中挺: 计算水平方向位置百分比
     const totalWidth = parentSection.width;
     const prevSectionWidth = devider.x;

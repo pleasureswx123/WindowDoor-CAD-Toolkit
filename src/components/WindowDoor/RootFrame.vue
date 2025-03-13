@@ -1,10 +1,12 @@
 <script setup lang="ts">
 // 根框架组件 - 对应React版本中的RootFrame.jsx
-import { ref, onMounted, computed, watch, nextTick } from 'vue';
+import { ref, onMounted, computed, watch, nextTick, onUnmounted } from 'vue';
 import { useWindowDoorStore } from '@/stores/windowDoorStore';
 import Section from './Section.vue';
 import Sash from './Sash.vue';
 import { useEventListener } from '@vueuse/core';
+import PenToolPreview from './PenToolPreview.vue';
+import PenToolGuide from './PenToolGuide.vue';
 
 const store = useWindowDoorStore();
 const containerRef = ref<HTMLDivElement | null>(null);
@@ -23,6 +25,71 @@ const lastMousePosition = ref({ x: 0, y: 0 });
 const isDragging = ref(false);
 // 控制网格显示
 const showGrid = ref(false);
+
+// 钢笔工具引用
+const penToolPreviewRef = ref<any>(null);
+
+// 计算容器样式类
+const containerClass = computed(() => {
+  if (!store.isPenToolActive) return 'root-frame-container';
+  
+  if (store.penToolMode === 'idle') {
+    return 'root-frame-container pen-tool-cursor-idle';
+  } else if (store.penToolMode === 'drawing') {
+    // 检查当前位置是否有效
+    const valid = store.penEndPoint ? store.findSectionByPoint(store.penEndPoint) !== null : false;
+    return valid 
+      ? 'root-frame-container pen-tool-cursor-drawing'
+      : 'root-frame-container pen-tool-cursor-invalid';
+  } else {
+    return 'root-frame-container pen-tool-cursor-drawing';
+  }
+});
+
+// 舞台配置
+const stageConfig = computed(() => ({
+  width: stageSize.value.width,
+  height: stageSize.value.height,
+  draggable: draggable
+}));
+
+// 框架尺寸
+const frameWidth = computed(() => store.root.width || 800);
+const frameHeight = computed(() => store.root.height || 600);
+
+// 网格配置
+const gridConfig = computed(() => ({
+  x: 0,
+  y: 0,
+  width: frameWidth.value,
+  height: frameHeight.value,
+  fillPatternImage: createGridPattern(),
+  fillPatternRepeat: 'repeat'
+}));
+
+// 创建网格图案
+function createGridPattern() {
+  const gridSize = 20;
+  const canvas = document.createElement('canvas');
+  canvas.width = gridSize;
+  canvas.height = gridSize;
+  const context = canvas.getContext('2d');
+  
+  if (context) {
+    context.strokeStyle = '#dddddd';
+    context.lineWidth = 0.5;
+    context.beginPath();
+    context.moveTo(0, 0);
+    context.lineTo(0, gridSize);
+    context.moveTo(0, 0);
+    context.lineTo(gridSize, 0);
+    context.stroke();
+  }
+  
+  const image = new Image();
+  image.src = canvas.toDataURL();
+  return image;
+}
 
 // 初始化时获取容器宽度并监听窗口大小变化
 onMounted(() => {
@@ -66,8 +133,55 @@ watch(() => [store.root.width, store.root.height], () => {
   nextTick(updateStageDimensions);
 });
 
-// 处理舞台点击事件，用于取消选择
-const handleClick = (e: any) => {
+// 添加键盘事件监听
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown);
+});
+
+// 处理键盘事件
+function handleKeyDown(e: KeyboardEvent) {
+  // 仅在钢笔工具激活时处理
+  if (!store.isPenToolActive) return;
+  
+  // ESC键 - 取消当前绘制
+  if (e.key === 'Escape') {
+    store.resetPenToolState();
+  }
+  
+  // Shift键 - 切换绘制方向
+  if (e.key === 'Shift' && store.penToolMode === 'drawing' && store.penStartPoint && store.penEndPoint) {
+    // 切换方向
+    store.penDirection = store.penDirection === 'vertical' 
+      ? 'horizontal' 
+      : 'vertical';
+    
+    // 更新终点坐标
+    if (store.penDirection === 'vertical') {
+      store.penEndPoint = {
+        x: store.penEndPoint.x,
+        y: store.penStartPoint.y
+      };
+    } else {
+      store.penEndPoint = {
+        x: store.penStartPoint.x,
+        y: store.penEndPoint.y
+      };
+    }
+  }
+}
+
+// 原有的handleClick函数修改为分发处理逻辑
+function handleClick(e: any) {
+  // 如果钢笔工具激活，优先处理钢笔工具交互
+  if (store.isPenToolActive) {
+    handlePenToolClick(e);
+    return;
+  }
+  
   // 获取目标节点
   const target = e.target;
   
@@ -84,7 +198,81 @@ const handleClick = (e: any) => {
   if (!isSection) {
     store.selectedSectionId = null;
   }
-};
+}
+
+// 钢笔工具点击处理
+function handlePenToolClick(e: any) {
+  // 阻止事件冒泡
+  e.cancelBubble = true;
+  
+  // 获取舞台和点击位置
+  const stage = e.target.getStage();
+  const pointerPos = stage.getPointerPosition();
+  
+  // 转换坐标，考虑缩放和平移
+  const transformedPoint = {
+    x: (pointerPos.x - position.value.x) / scale.value,
+    y: (pointerPos.y - position.value.y) / scale.value
+  };
+  
+  // 根据当前模式处理
+  if (store.penToolMode === 'idle') {
+    // 设置起点
+    store.penStartPoint = transformedPoint;
+    store.penToolMode = 'drawing';
+  } else if (store.penToolMode === 'drawing') {
+    // 设置终点并准备确认
+    store.penEndPoint = transformedPoint;
+    store.penToolMode = 'confirming';
+  } else if (store.penToolMode === 'confirming') {
+    // 确认创建
+    store.createDeviderWithPenTool();
+    // 重置状态，准备下一次绘制
+    store.resetPenToolState();
+  }
+}
+
+// 处理鼠标移动
+function handleMouseMove(e: any) {
+  if (!store.isPenToolActive || store.penToolMode !== 'drawing' || !store.penStartPoint) return;
+  
+  // 获取舞台和鼠标位置
+  const stage = e.target.getStage();
+  const pointerPos = stage.getPointerPosition();
+  
+  // 转换坐标
+  const transformedPoint = {
+    x: (pointerPos.x - position.value.x) / scale.value,
+    y: (pointerPos.y - position.value.y) / scale.value
+  };
+  
+  // 如果还没确定方向，现在根据移动确定
+  if (!store.penDirection) {
+    const dx = Math.abs(transformedPoint.x - store.penStartPoint.x);
+    const dy = Math.abs(transformedPoint.y - store.penStartPoint.y);
+    
+    // 根据移动方向确定是垂直还是水平中挺
+    store.penDirection = dx > dy ? 'vertical' : 'horizontal';
+  }
+  
+  // 使用预览组件的吸附功能更新
+  if (penToolPreviewRef.value) {
+    penToolPreviewRef.value.updatePreviewWithSnapping(transformedPoint);
+  } else {
+    // 降级处理 - 简单的方向约束
+    if (store.penDirection === 'vertical') {
+      store.penEndPoint = {
+        x: transformedPoint.x,
+        y: store.penStartPoint.y
+      };
+    } else if (store.penDirection === 'horizontal') {
+      store.penEndPoint = {
+        x: store.penStartPoint.x,
+        y: transformedPoint.y
+      };
+    }
+  }
+}
 
 // 处理鼠标滚轮缩放
 const handleWheel = (e: WheelEvent) => {
@@ -208,15 +396,19 @@ useEventListener(containerRef, 'wheel', handleWheel, { passive: false });
 </script>
 
 <template>
-  <div ref="containerRef" class="root-frame-container">
+  <!-- 根框架容器 -->
+  <div ref="containerRef" :class="containerClass">
+    <!-- Konva舞台容器 -->
     <v-stage
+      ref="stageRef"
       :config="{
-        width: stageSize.width,
-        height: stageSize.height,
+        width: stageSize.value.width,
+        height: stageSize.value.height,
         draggable: draggable
       }"
-      ref="stageRef"
+      @wheel="handleWheel"
       @click="handleClick"
+      @mousemove="handleMouseMove"
     >
       <v-layer 
         :config="{
@@ -227,7 +419,7 @@ useEventListener(containerRef, 'wheel', handleWheel, { passive: false });
         }"
       >
         <!-- 背景 - 用于点击取消选择 -->
-        <v-rect 
+        <v-rect
           :config="{
             width: (store.root.width || 0) + 300,
             height: (store.root.height || 0) + 300,
@@ -267,8 +459,14 @@ useEventListener(containerRef, 'wheel', handleWheel, { passive: false });
           :size="store.root.frameSize || 0"
           :isRoot="true"
         />
+        
+        <!-- 钢笔工具预览图层 -->
+        <PenToolPreview v-if="store.isPenToolActive" ref="penToolPreviewRef" />
       </v-layer>
     </v-stage>
+    
+    <!-- 钢笔工具引导提示 -->
+    <PenToolGuide v-if="store.isPenToolActive" />
   </div>
 </template>
 
@@ -327,5 +525,17 @@ useEventListener(containerRef, 'wheel', handleWheel, { passive: false });
   border-radius: 4px;
   font-size: 12px;
   pointer-events: none;
+}
+
+.pen-tool-cursor-idle {
+  cursor: crosshair;
+}
+
+.pen-tool-cursor-drawing {
+  cursor: crosshair;
+}
+
+.pen-tool-cursor-invalid {
+  cursor: not-allowed;
 }
 </style> 
