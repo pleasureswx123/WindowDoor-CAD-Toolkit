@@ -307,13 +307,13 @@ function handleDragStart(e: any) {
     try {
       const layer = group.getLayer();
       if (layer) {
-        // 暂存当前层的选择状态
-        layer._originalHitEnabled = layer.hitGraphEnabled();
-        // 临时启用更精确的碰撞检测
-        layer.hitGraphEnabled(true);
+        // 暂存当前层的监听状态 - 使用新API
+        layer._originalListeningState = layer.listening();
+        // 临时启用更精确的碰撞检测 - 使用新API
+        layer.listening(true);
       }
     } catch (error) {
-      console.warn('设置层碰撞检测失败:', error);
+      console.warn('设置层监听状态失败:', error);
     }
   } catch (error) {
     console.error('拖拽开始事件处理错误:', error);
@@ -403,15 +403,15 @@ function handleDragEnd(e: any) {
     const node = e.target;
     const group = node.getParent();
     
-    // 恢复层的原始碰撞检测状态
+    // 恢复层的原始监听状态 - 使用新API
     try {
       const layer = group.getLayer();
-      if (layer && layer._originalHitEnabled !== undefined) {
-        layer.hitGraphEnabled(layer._originalHitEnabled);
-        delete layer._originalHitEnabled;
+      if (layer && layer._originalListeningState !== undefined) {
+        layer.listening(layer._originalListeningState);
+        delete layer._originalListeningState;
       }
     } catch (error) {
-      console.warn('恢复层碰撞检测失败:', error);
+      console.warn('恢复层监听状态失败:', error);
     }
     
     // 获取当前位置
