@@ -155,16 +155,16 @@ const rectConfig = computed(() => {
                    dividerColors.value.border.normal;
   
   return {
-    x: props.x,
-    y: props.y,
-    width: props.width,
-    height: props.height,
+  x: props.x,
+  y: props.y,
+  width: props.width,
+  height: props.height,
     fill: isSelected.value ? dividerColors.value.selected : dividerColors.value.normal,
     stroke: lineColor,
     strokeWidth: isSelected.value ? 2 : 1,
     id: `devider-${props.id}`,
-    deviderId: props.id,
-    name: 'devider',
+  deviderId: props.id,
+  name: 'devider',
     draggable: true, // 允许拖拽
     // 拖拽约束函数 - 限制中挺只能在特定方向移动
     dragBoundFunc: function(pos: {x: number, y: number}): {x: number, y: number} {
@@ -567,7 +567,7 @@ onUnmounted(() => {
       @dragstart="handleDragStart"
       @dragmove="handleDragMove"
       @dragend="handleDragEnd"
-      @mousedown="handleDragStart"
+    @mousedown="handleDragStart"
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
     />
