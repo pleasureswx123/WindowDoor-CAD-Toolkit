@@ -1,8 +1,8 @@
 <script setup lang="ts">
-// 中挺组件 - 重构版本
-import { ref, computed, onMounted, nextTick } from 'vue';
+// 中挺组件 - 优化版本
+import { ref, computed, onMounted, nextTick, watch, onUnmounted } from 'vue';
 import { useWindowDoorStore } from '@/stores/windowDoorStore';
-import Konva from 'konva';
+import { getKonvaNode, safePreventDefault, getKonvaAttr } from './utils/konvaHelper';
 
 const props = defineProps<{
   id: number;
@@ -18,17 +18,150 @@ const store = useWindowDoorStore();
 // 判断中挺方向
 const isVertical = computed(() => props.width < props.height);
 const dividerRef = ref<any>(null);
+const groupRef = ref<any>(null);
 
-// 计算中挺的配置
+// 是否正在拖拽中
+const isDragging = ref(false);
+
+// 中挺颜色配置 - 响应式属性
+const dividerColors = ref({
+  normal: '#e8e8e8',
+  selected: '#4a90e2',
+  border: {
+    normal: '#999',
+    selected: '#4a90e2'
+  },
+  highlight: 'rgba(74, 144, 226, 0.3)'
+});
+
+// 计算中挺是否被选中
+const isSelected = computed(() => store.selectedDeviderId === props.id);
+
+// 监听选中状态变化，如果被选中则提升层级
+watch(() => store.selectedDeviderId, (newId) => {
+  if (newId === props.id) {
+    nextTick(() => {
+      moveToTop();
+    });
+  }
+});
+
+// 将中挺移到顶层的公共函数
+function moveToTop() {
+  try {
+    // 获取组Group节点提升到顶层
+    const group = getKonvaNode(groupRef.value);
+    if (group && typeof group.moveToTop === 'function') {
+      group.moveToTop();
+      
+      // 获取图层并重绘
+      const layer = group.getLayer();
+      if (layer && typeof layer.batchDraw === 'function') {
+        layer.batchDraw();
+      }
+    }
+  } catch (error) {
+    console.warn('提升中挺层级失败:', error);
+  }
+}
+
+// 鼠标样式
+const cursorStyle = computed(() => {
+  if (isDragging.value) {
+    return isVertical.value ? 'ew-resize' : 'ns-resize';
+  }
+  return isVertical.value ? 'col-resize' : 'row-resize';
+});
+
+// 显示中挺百分比位置
+const positionLabel = ref('');
+const showPositionLabel = ref(false);
+
+// 更新位置标签
+function updatePositionLabel(percentage: number) {
+  positionLabel.value = `${Math.round(percentage)}%`;
+  showPositionLabel.value = true;
+}
+
+// 计算位置标签配置
+const positionLabelConfig = computed(() => {
+  return {
+    x: props.x + props.width / 2,
+    y: props.y + props.height / 2 - 20,
+    text: positionLabel.value,
+    fontSize: 12,
+    fontFamily: 'Arial',
+    fill: '#333',
+    padding: 4,
+    align: 'center',
+    verticalAlign: 'middle',
+    listening: false,
+    visible: showPositionLabel.value && isDragging.value,
+    offsetX: 15,
+    offsetY: 0,
+    background: '#fff',
+    cornerRadius: 3,
+    shadowColor: 'black',
+    shadowBlur: 4,
+    shadowOffset: { x: 1, y: 1 },
+    shadowOpacity: 0.2
+  };
+});
+
+// 辅助线显示
+const snapLines = ref({
+  show: false,
+  position: 0,
+  isVertical: isVertical.value
+});
+
+// 计算辅助线配置
+const snapLineConfig = computed(() => {
+  // 水平或垂直线的绘制
+  const points = isVertical.value 
+    ? [0, 0, 0, store.root.height] // 垂直线
+    : [0, 0, store.root.width, 0]; // 水平线
+    
+  return {
+    points: points,
+    stroke: '#4a90e2',
+    strokeWidth: 1,
+    dash: [5, 5],
+    x: isVertical.value ? snapLines.value.position : 0,
+    y: isVertical.value ? 0 : snapLines.value.position,
+    listening: false,
+    visible: snapLines.value.show && isDragging.value
+  };
+});
+
+// 计算中挺点击区域的配置 - 透明背景更大区域用于点击
+const hitAreaConfig = computed(() => {
+  return {
+    x: props.x - 10,
+    y: props.y - 10,
+    width: props.width + 20,
+    height: props.height + 20,
+    fill: 'transparent',
+    opacity: 0.01,
+    listening: true,
+    perfectDrawEnabled: false, // 性能优化
+  };
+});
+
+// 计算中挺主体的配置
 const rectConfig = computed(() => {
+  const lineColor = isSelected.value ? 
+                   dividerColors.value.border.selected : 
+                   dividerColors.value.border.normal;
+  
   return {
     x: props.x,
     y: props.y,
     width: props.width,
     height: props.height,
-    fill: '#e8e8e8',
-    stroke: props.id === store.selectedDeviderId ? '#4a90e2' : '#999',
-    strokeWidth: props.id === store.selectedDeviderId ? 2 : 1,
+    fill: isSelected.value ? dividerColors.value.selected : dividerColors.value.normal,
+    stroke: lineColor,
+    strokeWidth: isSelected.value ? 2 : 1,
     id: `devider-${props.id}`,
     deviderId: props.id,
     name: 'devider',
@@ -69,46 +202,92 @@ const rectConfig = computed(() => {
         };
       }
     },
-    listening: true
+    listening: true,
+    cursor: cursorStyle.value,
+    // 性能优化
+    perfectDrawEnabled: false,
+    transformsEnabled: 'position', // 只有位置信息变化
   };
 });
 
-// 查找当前中挺的父区域
-function findParentSection(rootSection: any, deviderId: number): any {
-  if (!rootSection || !rootSection.sections) return null;
+// 计算选中指示器的配置
+const selectionIndicatorConfig = computed(() => {
+  return {
+    x: props.x + props.width / 2,
+    y: props.y + props.height / 2,
+    radius: 6,
+    fill: dividerColors.value.selected,
+    stroke: 'white',
+    strokeWidth: 1,
+    listening: false,
+    shadowColor: 'black',
+    shadowBlur: 4,
+    shadowOffset: { x: 1, y: 1 },
+    shadowOpacity: 0.3,
+    visible: isSelected.value
+  };
+});
+
+// 计算拖拽手柄的配置
+const dragHandleConfig = computed(() => {
+  return {
+    x: isVertical.value ? props.x + props.width / 2 - 10 : props.x + props.width / 2 - 30,
+    y: isVertical.value ? props.y + props.height / 2 - 30 : props.y + props.height / 2 - 10,
+    width: isVertical.value ? 20 : 60,
+    height: isVertical.value ? 60 : 20,
+    fill: dividerColors.value.highlight,
+    stroke: dividerColors.value.selected,
+    strokeWidth: 1,
+    cornerRadius: 3,
+    listening: false,
+    shadowColor: 'black',
+    shadowBlur: 2,
+    shadowOffset: { x: 1, y: 1 },
+    shadowOpacity: 0.2,
+    visible: isSelected.value
+  };
+});
+
+// 查找当前中挺的父区域 - 使用store提供的API
+function findParentSection() {
+  return store.findDeviderAndParent(store.root, props.id)?.parent || null;
+}
+
+// 检查是否有吸附点
+function checkSnapping(percentage: number): number | null {
+  const snapPercentages = store.getSnapPercentages?.() || [25, 33, 50, 66, 75];
+  const threshold = 3; // 吸附阈值(百分比)
   
-  // 在当前层级查找
-  for (let i = 0; i < rootSection.sections.length; i++) {
-    const child = rootSection.sections[i];
-    if (child.nodeType === 'devider' && child.id === deviderId) {
-      return rootSection; // 返回父区域
+  // 查找最近的吸附点
+  for (const snapValue of snapPercentages) {
+    if (Math.abs(percentage - snapValue) <= threshold) {
+      return snapValue;
     }
   }
   
-  // 递归查找子区域
-  for (let i = 0; i < rootSection.sections.length; i++) {
-    const child = rootSection.sections[i];
-    if (child.nodeType === 'section') {
-      const result = findParentSection(child, deviderId);
-      if (result) return result;
-    }
-  }
-  
-  return null;
+  return null; // 没有找到吸附点
 }
 
 // 拖拽开始事件
 function handleDragStart(e: any) {
-  // 阻止事件冒泡
+  // 阻止事件冒泡和默认行为
   e.cancelBubble = true;
+  safePreventDefault(e);
+  
+  // 切换为拖拽模式并禁用舞台拖拽
   store.stageDraggable = false;
+  isDragging.value = true;
   
   // 选中中挺
   store.selectedDeviderId = props.id;
   
   try {
-    // 获取Konva节点
+    // 获取Konva节点并提升到顶层
     const node = e.target;
+    const group = node.getParent();
+    if (group && typeof group.moveToTop === 'function') {
+      group.moveToTop();
+    }
 
     // 获取初始位置
     const startPos = {
@@ -119,10 +298,22 @@ function handleDragStart(e: any) {
     store.dragStartPos = startPos;
     
     // 记录当前节点的父区域
-    const parentSection = findParentSection(store.root, props.id);
+    const parentSection = findParentSection();
     if (parentSection) {
       store.dragParentSection = parentSection;
-      console.log('开始拖动中挺', props.id, '父区域:', parentSection.id);
+    }
+    
+    // 为拖拽期间禁用其他区域的点击监听，防止穿透
+    try {
+      const layer = group.getLayer();
+      if (layer) {
+        // 暂存当前层的选择状态
+        layer._originalHitEnabled = layer.hitGraphEnabled();
+        // 临时启用更精确的碰撞检测
+        layer.hitGraphEnabled(true);
+      }
+    } catch (error) {
+      console.warn('设置层碰撞检测失败:', error);
     }
   } catch (error) {
     console.error('拖拽开始事件处理错误:', error);
@@ -131,6 +322,10 @@ function handleDragStart(e: any) {
 
 // 拖拽中事件
 function handleDragMove(e: any) {
+  // 阻止事件冒泡和默认行为
+  e.cancelBubble = true;
+  safePreventDefault(e);
+  
   try {
     // 获取Konva节点
     const node = e.target;
@@ -164,8 +359,27 @@ function handleDragMove(e: any) {
       // 限制百分比在有效范围内 (10%-90%)
       percentage = Math.max(10, Math.min(90, percentage));
       
-      // 临时更新UI显示 (最终位置会在dragend时更新到store)
-      console.log('拖动中:', percentage.toFixed(2) + '%');
+      // 更新位置标签
+      updatePositionLabel(percentage);
+      
+      // 检查是否有吸附点
+      const snapValue = checkSnapping(percentage);
+      if (snapValue !== null) {
+        // 显示吸附辅助线
+        snapLines.value.show = true;
+        
+        // 计算吸附线位置
+        if (isVertical.value) {
+          // 垂直中挺 - 计算水平方向吸附线位置
+          snapLines.value.position = parent.x + (parent.width * snapValue / 100);
+        } else {
+          // 水平中挺 - 计算垂直方向吸附线位置
+          snapLines.value.position = parent.y + (parent.height * snapValue / 100);
+        }
+      } else {
+        // 隐藏吸附辅助线
+        snapLines.value.show = false;
+      }
     }
   } catch (error) {
     console.error('拖拽移动事件处理错误:', error);
@@ -174,12 +388,31 @@ function handleDragMove(e: any) {
 
 // 拖拽结束事件
 function handleDragEnd(e: any) {
-  // 恢复舞台拖动功能
+  // 阻止事件冒泡和默认行为
+  e.cancelBubble = true;
+  safePreventDefault(e);
+  
+  // 恢复状态
   store.stageDraggable = true;
+  isDragging.value = false;
+  showPositionLabel.value = false;
+  snapLines.value.show = false;
   
   try {
     // 获取Konva节点
     const node = e.target;
+    const group = node.getParent();
+    
+    // 恢复层的原始碰撞检测状态
+    try {
+      const layer = group.getLayer();
+      if (layer && layer._originalHitEnabled !== undefined) {
+        layer.hitGraphEnabled(layer._originalHitEnabled);
+        delete layer._originalHitEnabled;
+      }
+    } catch (error) {
+      console.warn('恢复层碰撞检测失败:', error);
+    }
     
     // 获取当前位置
     const endPos = {
@@ -212,9 +445,19 @@ function handleDragEnd(e: any) {
       // 限制百分比在有效范围内 (10%-90%)
       percentage = Math.max(10, Math.min(90, percentage));
       
+      // 检查是否有吸附点并使用吸附值
+      const snapValue = checkSnapping(percentage);
+      if (snapValue !== null) {
+        percentage = snapValue;
+      }
+      
       // 更新中挺位置
-      console.log('更新中挺位置:', percentage.toFixed(2) + '%');
       store.updateDeviderPosition(props.id, percentage);
+      
+      // 强制重绘
+      if (group && group.getLayer()) {
+        group.getLayer().batchDraw();
+      }
     }
     
     // 清除拖拽状态
@@ -224,10 +467,99 @@ function handleDragEnd(e: any) {
     console.error('拖拽结束事件处理错误:', error);
   }
 }
+
+// 处理鼠标进入事件
+function handleMouseEnter(e: any) {
+  e.cancelBubble = true;
+  safePreventDefault(e);
+  
+  try {
+    // 更新鼠标样式
+    const stage = e.target.getStage();
+    if (stage && stage.container) {
+      stage.container().style.cursor = cursorStyle.value;
+    }
+  } catch (error) {
+    console.warn('设置鼠标样式失败:', error);
+  }
+}
+
+// 处理鼠标离开事件
+function handleMouseLeave(e: any) {
+  e.cancelBubble = true;
+  safePreventDefault(e);
+  
+  // 只有在非拖拽状态下才恢复鼠标样式
+  if (!isDragging.value) {
+    try {
+      const stage = e.target.getStage();
+      if (stage && stage.container) {
+        stage.container().style.cursor = 'default';
+      }
+    } catch (error) {
+      console.warn('恢复鼠标样式失败:', error);
+    }
+  }
+}
+
+// 点击事件 - 确保被选中
+function handleClick(e: any) {
+  e.cancelBubble = true;
+  safePreventDefault(e);
+  
+  // 选中中挺
+  store.selectedDeviderId = props.id;
+  
+  // 提升到顶层
+  moveToTop();
+}
+
+// 双击事件 - 可以打开属性编辑对话框
+function handleDoubleClick(e: any) {
+  e.cancelBubble = true;
+  safePreventDefault(e);
+  
+  // 选中中挺
+  store.selectedDeviderId = props.id;
+  
+  // 这里可以触发打开属性编辑对话框
+  // store.openDeviderPropertiesDialog?.(props.id);
+}
+
+// 组件挂载后设置初始状态
+onMounted(() => {
+  nextTick(() => {
+    // 如果这个中挺被选中，提升它的层级
+    if (store.selectedDeviderId === props.id) {
+      moveToTop();
+    }
+  });
+});
+
+// 组件卸载前清理
+onUnmounted(() => {
+  // 清理任何可能的引用或事件监听
+  if (isDragging.value) {
+    store.stageDraggable = true;
+  }
+  
+  // 如果当前中挺被选中，取消选中
+  if (store.selectedDeviderId === props.id) {
+    store.selectedDeviderId = null;
+  }
+});
 </script>
 
 <template>
-  <v-group>
+  <v-group ref="groupRef" @click="handleClick" @dblclick="handleDoubleClick">
+    <!-- 透明的背景矩形 - 仅用于扩大点击区域，提高可用性 -->
+    <v-rect 
+      :config="hitAreaConfig"
+      @mouseenter="handleMouseEnter"
+      @mouseleave="handleMouseLeave"
+      @click="handleClick"
+    />
+    
     <!-- 中挺主体 - 配置了拖拽相关事件 -->
     <v-rect 
       ref="dividerRef" 
@@ -236,36 +568,20 @@ function handleDragEnd(e: any) {
       @dragmove="handleDragMove"
       @dragend="handleDragEnd"
       @mousedown="handleDragStart"
+      @mouseenter="handleMouseEnter"
+      @mouseleave="handleMouseLeave"
     />
 
-    <!-- 选中指示器 -->
-    <v-circle 
-      v-if="store.selectedDeviderId === props.id" 
-      :config="{
-        x: props.x + props.width / 2,
-        y: props.y + props.height / 2,
-        radius: 6,
-        fill: '#4a90e2',
-        stroke: 'white',
-        strokeWidth: 1,
-        listening: false
-      }" 
-    />
+    <!-- 选中指示器 - 使用计算属性控制显示 -->
+    <v-circle :config="selectionIndicatorConfig" />
     
-    <!-- 拖拽手柄 -->
-    <v-rect
-      v-if="store.selectedDeviderId === props.id"
-      :config="{
-        x: isVertical ? props.x + props.width / 2 - 10 : props.x + props.width / 2 - 30,
-        y: isVertical ? props.y + props.height / 2 - 30 : props.y + props.height / 2 - 10,
-        width: isVertical ? 20 : 60,
-        height: isVertical ? 60 : 20,
-        fill: 'rgba(74, 144, 226, 0.3)',
-        stroke: '#4a90e2',
-        strokeWidth: 1,
-        cornerRadius: 3,
-        listening: false
-      }"
-    />
+    <!-- 拖拽手柄 - 使用计算属性控制显示 -->
+    <v-rect :config="dragHandleConfig" />
+    
+    <!-- 拖拽过程中显示位置百分比 -->
+    <v-text :config="positionLabelConfig" />
+    
+    <!-- 吸附辅助线 -->
+    <v-line :config="snapLineConfig" />
   </v-group>
 </template> 

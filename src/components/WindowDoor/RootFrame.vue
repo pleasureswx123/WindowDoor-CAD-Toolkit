@@ -319,7 +319,8 @@ function handleMouseMove(e: any) {
 }
 
 // 处理鼠标滚轮缩放
-const handleWheel = (e: WheelEvent) => {
+const handleWheel = (event: any) => {
+  const e = event.evt || event;
   e.preventDefault();
   
   const scaleBy = 1.05;

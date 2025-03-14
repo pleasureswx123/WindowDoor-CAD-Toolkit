@@ -16,6 +16,12 @@ alwaysApply: true
 当需要安装npm包时，请始终使用cnpm而不是npm。
 
 
+请始终站在 [konva.min.js](mdc:konva.min.js) [vue-konva.min.js](mdc:vue-konva.min.js) 这两个文件的角度上去解决问题，请始终时刻要记得我们的项目是基于此为基础的
+
+始终从项目整体角度去考虑解决问题
+始终要确保解决问题后功能的正常运行
+
+
 # 概念层级结构 https://konvajs.org/docs/overview.html
 
               Stage

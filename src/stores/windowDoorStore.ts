@@ -276,7 +276,7 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       // 创建中挺及左右区域
       const leftSection = new Section({
         width: Math.round(section.width * (splitPosition / 100)) - DEVIDER_SIZE / 2,
-        height: section.height,
+          height: section.height,
         type: "empty",
         parentSection: section, // 记录父区域引用
         x: 0,
@@ -284,8 +284,8 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       });
       
       const devider = new Devider({
-        width: DEVIDER_SIZE,
-        height: section.height,
+          width: DEVIDER_SIZE,
+          height: section.height,
         parentSection: section, // 记录父区域引用
         position: splitPosition, // 默认位置
         x: leftSection.width,
@@ -294,7 +294,7 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       
       const rightSection = new Section({
         width: section.width - leftSection.width - DEVIDER_SIZE,
-        height: section.height,
+          height: section.height,
         type: "empty",
         parentSection: section, // 记录父区域引用
         x: leftSection.width + DEVIDER_SIZE,
@@ -306,7 +306,7 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
     } else {
       // 创建中挺及上下区域
       const topSection = new Section({
-        width: section.width,
+          width: section.width,
         height: Math.round(section.height * (splitPosition / 100)) - DEVIDER_SIZE / 2,
         type: "empty",
         parentSection: section, // 记录父区域引用
@@ -315,8 +315,8 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       });
       
       const devider = new Devider({
-        width: section.width,
-        height: DEVIDER_SIZE,
+          width: section.width,
+          height: DEVIDER_SIZE,
         parentSection: section, // 记录父区域引用
         position: splitPosition, // 默认位置
         x: 0,
@@ -324,7 +324,7 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
       });
       
       const bottomSection = new Section({
-        width: section.width,
+          width: section.width,
         height: section.height - topSection.height - DEVIDER_SIZE,
         type: "empty",
         parentSection: section, // 记录父区域引用
@@ -1270,7 +1270,7 @@ export const useWindowDoorStore = defineStore('windowDoor', () => {
   // 拖动时的临时状态
   const dragStartPos = ref<{x: number, y: number} | null>(null);
   const dragParentSection = ref<Section | null>(null);
-  
+
   return {
     stageDraggable,
     root,
