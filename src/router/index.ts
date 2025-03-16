@@ -19,9 +19,17 @@ const router = createRouter({
       component: () => import('../views/AboutView.vue'),
     },
     {
-      path: '/window-door-design',
-      name: 'WindowDoorDesign',
-      component: () => import('../views/WindowDoorDesign.vue'),
+      path: '/old-window-door-design',
+      name: 'OldWindowDoorDesign',
+      component: () => import('../views/OldWindowDoorDesign.vue'),
+      meta: {
+        title: '门窗设计工具'
+      }
+    },
+    {
+      path: '/new-window-door-design',
+      name: 'NewWindowDoorDesign',
+      component: () => import('../views/NewWindowDoorDesign.vue'),
       meta: {
         title: '门窗设计工具'
       }

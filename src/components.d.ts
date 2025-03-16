@@ -10,6 +10,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AppButton: typeof import('./components/common/AppButton.vue')['default']
     AppIcon: typeof import('./components/common/AppIcon.vue')['default']
+    DesignToolbar: typeof import('./components/new-window-door/DesignToolbar.vue')['default']
     Devider: typeof import('./components/WindowDoor/Devider.vue')['default']
     DeviderAdjustPanel: typeof import('./components/WindowDoor/DeviderAdjustPanel.vue')['default']
     DeviderDragPreview: typeof import('./components/WindowDoor/DeviderDragPreview.vue')['default']
@@ -93,6 +94,7 @@ declare module 'vue' {
     TestButton: typeof import('./components/TestButton.vue')['default']
     TheWelcome: typeof import('./components/TheWelcome.vue')['default']
     WelcomeItem: typeof import('./components/WelcomeItem.vue')['default']
+    WindowCanvas: typeof import('./components/new-window-door/WindowCanvas.vue')['default']
     WindowDoorApp: typeof import('./components/WindowDoor/WindowDoorApp.vue')['default']
     ZoomControls: typeof import('./components/WindowDoor/ZoomControls.vue')['default']
   }
