@@ -35,6 +35,7 @@ interface IDimension {
   ele: string;
   tag: string;
   parentId?: string;
+  parent?: WindowComponent;
 }
 
 export const elementIdMap = reactive(new Map());
@@ -53,6 +54,7 @@ class WindowComponent {
   ele: string; // 元素类型 window-frame、window-empty-area、window-muntin、window-sash、window-sash-frame、window-sash-glass、window-sash-handle
   tag: string; // 元素标签 window-frame、window-empty-area、window-muntin、window-sash、window-sash-frame、window-sash-glass、window-sash-handle
   parentId?: string; // 父元素ID
+  parent?: any; // 父元素
 
   constructor(config: IDimension) {
     const id = uuidv4();
@@ -65,6 +67,7 @@ class WindowComponent {
     this.ele = config.ele || '';
     this.tag = config.tag || '';
     this.parentId = config.parentId || '';
+    this.parent = config.parent || null;
   }
   
   // 获取konva配置
@@ -90,9 +93,15 @@ class WindowComponent {
 export class WindowStructure extends WindowComponent {
   frame: WindowFrame;
   mainArea: WindowEmptyArea;
+  frameSize: number;
+  width: number;
+  height: number;
   
   constructor(width: number, height: number, frameSize: number = 50) {
     super({ x: 0, y: 0, width, height, tag: 'root-window', ele: 'root-window' });
+    this.width = width;
+    this.height = height;
+    this.frameSize = frameSize;
     
     // 创建主框架
     this.frame = new WindowFrame({
@@ -108,8 +117,8 @@ export class WindowStructure extends WindowComponent {
     
     // 创建主空白区域
     this.mainArea = new WindowEmptyArea({
-      x: frameSize,
-      y: frameSize,
+      x: 0,
+      y: 0,
       width: width - frameSize * 2,
       height: height - frameSize * 2,
       ele: 'window-empty-area',
@@ -125,7 +134,20 @@ export class WindowStructure extends WindowComponent {
       config: this.getKonvaConfig(),
       children: [
         this.frame.render(),
-        this.mainArea.render()
+        { 
+          component: 'v-rect',
+          config: {
+            id: 'main-area',
+            x: this.frameSize,
+            y: this.frameSize,
+            width: this.width - this.frameSize * 2,
+            height: this.height - this.frameSize * 2,
+            fill: 'transparent'
+          },
+          children: [
+            this.mainArea.render()
+          ]
+        }
       ]
     };
   }
@@ -218,12 +240,15 @@ export class WindowEmptyArea extends WindowComponent {
   children: Array<WindowEmptyArea | WindowMuntin | WindowSash>;
   sash: WindowSash | null;
   splitDirection: 'horizontal' | 'vertical' | null;
-  
+  muntinThickness: number;
+  position: number;
   constructor(config: IDimension) {
     super(config);
     this.children = [];
     this.sash = null;
     this.splitDirection = null;
+    this.muntinThickness = 0;
+    this.position = 0;
   }
   
   // 添加窗扇
@@ -253,6 +278,8 @@ export class WindowEmptyArea extends WindowComponent {
     }
     
     this.splitDirection = direction;
+    this.position = position;
+    this.muntinThickness = muntinThickness;
     
     let area1: WindowEmptyArea, area2: WindowEmptyArea, muntin: WindowMuntin;
 
@@ -266,7 +293,7 @@ export class WindowEmptyArea extends WindowComponent {
       area1 = new WindowEmptyArea({
         x: x,
         y: y,
-        width: splitPosition - muntinThickness/2,
+        width: splitPosition - this.muntinThickness/2,
         height: this.height,
         ele: 'window-empty-area',
         tag: 'window-empty-area',
@@ -274,20 +301,21 @@ export class WindowEmptyArea extends WindowComponent {
       });
       
       muntin = new WindowMuntin({
-        x: x + splitPosition - muntinThickness/2,
+        x: x + splitPosition - this.muntinThickness/2,
         y: y,
-        width: muntinThickness,
+        width: this.muntinThickness,
         height: this.height,
         direction: 'vertical',
         ele: 'window-muntin',
         tag: 'window-muntin',
-        parentId: this.id
+        parentId: this.id,
+        parent: this
       });
       
       area2 = new WindowEmptyArea({
-        x: x + splitPosition + muntinThickness/2,
+        x: x + splitPosition + this.muntinThickness/2,
         y: y,
-        width: this.width - splitPosition - muntinThickness/2,
+        width: this.width - splitPosition - this.muntinThickness/2,
         height: this.height,
         ele: 'window-empty-area',
         tag: 'window-empty-area',
@@ -301,7 +329,7 @@ export class WindowEmptyArea extends WindowComponent {
         x: x,
         y: y,
         width: this.width,
-        height: splitPosition - muntinThickness/2,
+        height: splitPosition - this.muntinThickness/2,
         ele: 'window-empty-area',
         tag: 'window-empty-area',
         parentId: this.id
@@ -309,20 +337,21 @@ export class WindowEmptyArea extends WindowComponent {
       
       muntin = new WindowMuntin({
         x: x,
-        y: y + splitPosition - muntinThickness/2,
+        y: y + splitPosition - this.muntinThickness/2,
         width: this.width,
-        height: muntinThickness,
+        height: this.muntinThickness,
         direction: 'horizontal',
         ele: 'window-muntin',
         tag: 'window-muntin',
-        parentId: this.id
+        parentId: this.id,
+        parent: this
       });
       
       area2 = new WindowEmptyArea({
         x: x,
-        y: y + splitPosition + muntinThickness/2,
+        y: y + splitPosition + this.muntinThickness/2,
         width: this.width,
-        height: this.height - splitPosition - muntinThickness/2,
+        height: this.height - splitPosition - this.muntinThickness/2,
         ele: 'window-empty-area',
         tag: 'window-empty-area',
         parentId: this.id
@@ -356,10 +385,10 @@ export class WindowEmptyArea extends WindowComponent {
       component: 'v-rect',
       config: {
         ...this.getKonvaConfig(),
-        fill: '#F0F0F0',
-        // fill: Konva.Util.getRandomColor(),
-        stroke: '#CCCCCC',
-        strokeWidth: 1
+        // fill: '#F0F0F0',
+        fill: Konva.Util.getRandomColor(),
+        // stroke: '#CCCCCC',
+        // strokeWidth: 1
       }
     };
   }
@@ -377,6 +406,10 @@ export class WindowMuntin extends WindowComponent {
     this.thickness = config.thickness || 40;
     this.color = config.color || '#8B4513'; // 默认棕色
   }
+
+  changeColor(color: string) {
+    this.color = color;
+  }
   
   render(): KonvaRenderConfig {
     return {
@@ -387,7 +420,9 @@ export class WindowMuntin extends WindowComponent {
         stroke: '#666666',
         strokeWidth: 1,
         direction: this.direction,
-        thickness: this.thickness
+        thickness: this.thickness,
+        width: this.width,
+        height: this.height
       }
     };
   }

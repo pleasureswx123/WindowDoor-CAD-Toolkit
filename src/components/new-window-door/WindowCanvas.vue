@@ -131,23 +131,22 @@ watch(() => [windowStore.windowConfig.width, windowStore.windowConfig.height], (
   updateCanvasSize();
 });
 
+const selectRelativePos = ref({x: 0, y: 0});
+const selectedSize = ref({width: 0, height: 0});
+
 // 点击事件处理
 function handleStageClick(e: any) {
   const clickedNode = e.target;
+  // 尽是使用Konva api提供的方法：getRelativePointerPosition getSize id()等
+  selectRelativePos.value = clickedNode.getRelativePointerPosition();
+  selectedSize.value = clickedNode.getSize();
   windowStore.setSelectedElement(clickedNode.id());
-  const clickPoint = {
-    x: e.evt.offsetX / scale.value,
-    y: e.evt.offsetY / scale.value
-  };
-  
-  console.log("点击坐标:", clickPoint, "点击节点:", clickedNode.getClassName());
-  
   if (windowStore.activeTool === 'select') {
     // 处理选择工具
     selectElement(clickedNode);
   } else if (windowStore.activeTool === 'split') {
     // 处理分割工具
-    splitElementAtPoint(clickPoint);
+    splitElementAtPoint();
   } else if (windowStore.activeTool === 'sash') {
     // 处理窗扇工具
     windowStore.addSash();
@@ -171,39 +170,27 @@ function selectElement(node: any) {
 }
 
 // 在指定点分割元素
-function splitElementAtPoint(point: { x: number, y: number }) {
+function splitElementAtPoint() {
   if (!windowStore.windowStructure) return;
-  console.log("分割元素:", windowStore.splitDirection, point);
-  // 找到点所在的区域
-  const targetArea: any = windowStore.selectedElement;
-  if (targetArea) {
-    console.log("发现目标区域:", targetArea.id);
-    try {
-      // 默认在中心位置分割
-      let position = 50;
-      
-      // 根据分割方向和点击位置计算分割位置的百分比
-      if (windowStore.splitDirection === 'vertical') {
-        // 垂直分割，计算水平位置百分比
-        position = ((point.x - targetArea.x) / targetArea.width) * 100;
-      } else {
-        // 水平分割，计算垂直位置百分比
-        position = ((point.y - targetArea.y) / targetArea.height) * 100;
-      }
-      
-      // 确保分割位置在有效范围内
-      position = Math.max(20, Math.min(80, position));
-      
-      console.log(`执行${windowStore.splitDirection}分割，位置:${position}%`);
-      windowStore.splitArea(position);
-      
-      // 分割后隐藏预览线
-      showPreviewLine.value = false;
-    } catch (err) {
-      console.error("分割区域时出错:", err);
+  const targetArea = windowStore.selectedElement;
+  try {
+    let position = 0;
+    if (windowStore.splitDirection === 'vertical') {
+      // 垂直分割，计算水平位置百分比
+      position = (selectRelativePos.value.x / selectedSize.value.width) * 1000000 / 10000;
+    } else {
+      // 水平分割，计算垂直位置百分比
+      position = (selectRelativePos.value.y / selectedSize.value.height) * 1000000 / 10000;
     }
-  } else {
-    console.warn("未找到可分割的区域");
+    if (position > 95 || position < 5) {
+      showPreviewLine.value = false;
+      return;
+    }
+    windowStore.splitArea(position);
+    // 分割后隐藏预览线
+    showPreviewLine.value = false;
+  } catch (err) {
+    console.error("分割区域时出错:", err);
   }
 }
 
