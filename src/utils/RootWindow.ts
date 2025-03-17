@@ -241,14 +241,14 @@ export class WindowEmptyArea extends WindowComponent {
   sash: WindowSash | null;
   splitDirection: 'horizontal' | 'vertical' | null;
   muntinThickness: number;
-  position: number;
+  pointerPosition: { x: number, y: number };
   constructor(config: IDimension) {
     super(config);
     this.children = [];
     this.sash = null;
     this.splitDirection = null;
     this.muntinThickness = 0;
-    this.position = 0;
+    this.pointerPosition = { x: 0, y: 0 };
   }
   
   // 添加窗扇
@@ -271,14 +271,14 @@ export class WindowEmptyArea extends WindowComponent {
   }
   
   // 分割区域
-  splitArea(direction: 'horizontal' | 'vertical', position: number = 50, muntinThickness: number = 40) {
+  splitArea(direction: 'horizontal' | 'vertical', pointerPosition: { x: number, y: number }, muntinThickness: number = 40) {
     if (this.sash) {
       console.error('此区域已有窗扇，无法分割');
       return;
     }
     
     this.splitDirection = direction;
-    this.position = position;
+    this.pointerPosition = pointerPosition;
     this.muntinThickness = muntinThickness;
     
     let area1: WindowEmptyArea, area2: WindowEmptyArea, muntin: WindowMuntin;
@@ -288,12 +288,10 @@ export class WindowEmptyArea extends WindowComponent {
     
     if (direction === 'vertical') {
       // 垂直分割 - 创建左右两个区域
-      const splitPosition = this.width * position / 100;
-      
       area1 = new WindowEmptyArea({
         x: x,
         y: y,
-        width: splitPosition - this.muntinThickness/2,
+        width: pointerPosition.x - this.muntinThickness/2,
         height: this.height,
         ele: 'window-empty-area',
         tag: 'window-empty-area',
@@ -301,7 +299,7 @@ export class WindowEmptyArea extends WindowComponent {
       });
       
       muntin = new WindowMuntin({
-        x: x + splitPosition - this.muntinThickness/2,
+        x: x + pointerPosition.x - this.muntinThickness/2,
         y: y,
         width: this.muntinThickness,
         height: this.height,
@@ -313,9 +311,9 @@ export class WindowEmptyArea extends WindowComponent {
       });
       
       area2 = new WindowEmptyArea({
-        x: x + splitPosition + this.muntinThickness/2,
+        x: x + pointerPosition.x + this.muntinThickness/2,
         y: y,
-        width: this.width - splitPosition - this.muntinThickness/2,
+        width: this.width - pointerPosition.x - this.muntinThickness/2,
         height: this.height,
         ele: 'window-empty-area',
         tag: 'window-empty-area',
@@ -323,13 +321,11 @@ export class WindowEmptyArea extends WindowComponent {
       });
     } else {
       // 水平分割 - 创建上下两个区域
-      const splitPosition = this.height * position / 100;
-      
       area1 = new WindowEmptyArea({
         x: x,
         y: y,
         width: this.width,
-        height: splitPosition - this.muntinThickness/2,
+        height: pointerPosition.y - this.muntinThickness/2,
         ele: 'window-empty-area',
         tag: 'window-empty-area',
         parentId: this.id
@@ -337,7 +333,7 @@ export class WindowEmptyArea extends WindowComponent {
       
       muntin = new WindowMuntin({
         x: x,
-        y: y + splitPosition - this.muntinThickness/2,
+        y: y + pointerPosition.y - this.muntinThickness/2,
         width: this.width,
         height: this.muntinThickness,
         direction: 'horizontal',
@@ -349,9 +345,9 @@ export class WindowEmptyArea extends WindowComponent {
       
       area2 = new WindowEmptyArea({
         x: x,
-        y: y + splitPosition + this.muntinThickness/2,
+        y: y + pointerPosition.y + this.muntinThickness/2,
         width: this.width,
-        height: this.height - splitPosition - this.muntinThickness/2,
+        height: this.height - pointerPosition.y - this.muntinThickness/2,
         ele: 'window-empty-area',
         tag: 'window-empty-area',
         parentId: this.id
@@ -359,6 +355,7 @@ export class WindowEmptyArea extends WindowComponent {
     }
     
     this.children = [area1, muntin, area2];
+    this.render();
   }
   
   render(): KonvaRenderConfig {
@@ -386,6 +383,7 @@ export class WindowEmptyArea extends WindowComponent {
       config: {
         ...this.getKonvaConfig(),
         fill: '#F0F0F0',
+        self: this,
         // fill: Konva.Util.getRandomColor(),
         // stroke: '#CCCCCC',
         // strokeWidth: 1
@@ -417,14 +415,51 @@ export class WindowMuntin extends WindowComponent {
       config: {
         ...this.getKonvaConfig(),
         fill: this.color,
-        stroke: '#666666',
-        strokeWidth: 1,
+        // stroke: '#666666',
+        // strokeWidth: 1,
         direction: this.direction,
         thickness: this.thickness,
         width: this.width,
-        height: this.height
+        height: this.height,
+        draggable: true,
+        dragBoundFunc(pos: { x: number, y: number }) {
+          // 以下都是测试的代码，不准确，请完善
+          const x = this.x();
+          const y = this.y();
+          const parent = this.parent as WindowEmptyArea;
+          const aaa = this.getAbsolutePosition();
+          debugger;
+          // const pointerPosition = parent.getNode().getRelativePointerPosition();
+          // parent.splitArea(this.direction, { x: pos.x, y: pos.y });
+          debugger;
+          if (this.direction === 'horizontal') {
+            debugger;
+            return {
+              x: 50,
+              y: pos.y
+            }
+          } else {
+            debugger;
+            return {
+              x: parent.getRelativePointerPosition().x,
+              y
+            }
+          }
+        },
+        ondragstart: (e: any) => {
+          // 请完善
+          console.log('ondragstart', e);
+        },
+        ondragmove: (e: any) => {
+          // 请完善
+          console.log('ondragmove', e);
+        },
+        ondragend: (e: any) => {
+          // 请完善
+          console.log('ondragend', e);
+        }
       }
-    };
+    }
   }
 }
 

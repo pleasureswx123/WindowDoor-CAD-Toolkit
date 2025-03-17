@@ -1,6 +1,6 @@
 <template>
   <div class="window-canvas" ref="canvasContainer">
-    <v-stage ref="stageRef" :config="stageConfig" @click="handleStageClick" @mousemove="handleMouseMove">
+    <v-stage ref="stageRef" :config="stageConfig" @click="handleStageClick" @mousemove="handleMouseMove" @mouseleave="handleMouseLeave">
       <v-layer ref="layerRef">
         <!-- 调试信息 -->
         <v-text v-if="showDebugInfo" :config="{ 
@@ -131,22 +131,21 @@ watch(() => [windowStore.windowConfig.width, windowStore.windowConfig.height], (
   updateCanvasSize();
 });
 
-const selectRelativePos = ref({x: 0, y: 0});
-const selectedSize = ref({width: 0, height: 0});
 
 // 点击事件处理
 function handleStageClick(e: any) {
   const clickedNode = e.target;
   // 尽是使用Konva api提供的方法：getRelativePointerPosition getSize id()等
-  selectRelativePos.value = clickedNode.getRelativePointerPosition();
-  selectedSize.value = clickedNode.getSize();
   windowStore.setSelectedElement(clickedNode.id());
   if (windowStore.activeTool === 'select') {
     // 处理选择工具
     selectElement(clickedNode);
   } else if (windowStore.activeTool === 'split') {
     // 处理分割工具
-    splitElementAtPoint();
+    if (clickedNode?.attrs?.self?.splitArea) {
+      clickedNode.attrs.self.splitArea(windowStore.splitDirection, clickedNode.getRelativePointerPosition());
+      showPreviewLine.value = false;
+    }
   } else if (windowStore.activeTool === 'sash') {
     // 处理窗扇工具
     windowStore.addSash();
@@ -161,37 +160,24 @@ function handleMouseMove(e: any) {
   }
 }
 
+// 鼠标离开事件处理
+function handleMouseLeave() {
+  showPreviewLine.value = false;
+}
+
+watch(() => windowStore.activeTool, (newTool) => {
+  if (newTool !== 'split') {
+    showPreviewLine.value = false;
+  }
+});
+
+
 // 选择元素
 function selectElement(node: any) {
   // 实现元素选择逻辑
   const id = node.id();
   const nodeType = node.getClassName();
   console.log("选中元素:", id, nodeType, node.attrs, windowStore.selectedElement);
-}
-
-// 在指定点分割元素
-function splitElementAtPoint() {
-  if (!windowStore.windowStructure) return;
-  const targetArea = windowStore.selectedElement;
-  try {
-    let position = 0;
-    if (windowStore.splitDirection === 'vertical') {
-      // 垂直分割，计算水平位置百分比
-      position = (selectRelativePos.value.x / selectedSize.value.width) * 1000000 / 10000;
-    } else {
-      // 水平分割，计算垂直位置百分比
-      position = (selectRelativePos.value.y / selectedSize.value.height) * 1000000 / 10000;
-    }
-    if (position > 95 || position < 5) {
-      showPreviewLine.value = false;
-      return;
-    }
-    windowStore.splitArea(position);
-    // 分割后隐藏预览线
-    showPreviewLine.value = false;
-  } catch (err) {
-    console.error("分割区域时出错:", err);
-  }
 }
 
 // 实现分割预览线显示

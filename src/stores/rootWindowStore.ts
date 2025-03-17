@@ -61,18 +61,6 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
     }
   }
   
-  // 执行分割操作
-  function splitArea(position: number = 50) {
-    if (!windowStructure.value) return;
-    if (!selectedElement.value) {
-      console.warn("未找到选中的元素");
-      return;
-    }
-    if (selectedElement.value.constructor && selectedElement.value.constructor.name === 'WindowEmptyArea') {
-      selectedElement.value.splitArea(splitDirection.value, position);
-    }
-  }
-  
   // 添加窗扇
   function addSash() {
     if (!windowStructure.value) return;
@@ -136,7 +124,6 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
     initializeWindow,
     updateWindowSize,
     updateFrameSize,
-    splitArea,
     addSash,
     exportWindowConfig,
     importWindowConfig,
