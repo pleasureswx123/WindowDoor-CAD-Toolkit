@@ -385,8 +385,8 @@ export class WindowEmptyArea extends WindowComponent {
       component: 'v-rect',
       config: {
         ...this.getKonvaConfig(),
-        // fill: '#F0F0F0',
-        fill: Konva.Util.getRandomColor(),
+        fill: '#F0F0F0',
+        // fill: Konva.Util.getRandomColor(),
         // stroke: '#CCCCCC',
         // strokeWidth: 1
       }
