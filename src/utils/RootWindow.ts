@@ -36,6 +36,7 @@ interface IDimension {
   tag: string;
   parentId?: string;
   parent?: WindowComponent;
+  thickness?: number;
 }
 
 export const elementIdMap = reactive(new Map());
@@ -55,6 +56,7 @@ class WindowComponent {
   tag: string; // 元素标签 window-frame、window-empty-area、window-muntin、window-sash、window-sash-frame、window-sash-glass、window-sash-handle
   parentId?: string; // 父元素ID
   parent?: any; // 父元素
+  thickness?: number; // 厚度
 
   constructor(config: IDimension) {
     const id = uuidv4();
@@ -68,6 +70,7 @@ class WindowComponent {
     this.tag = config.tag || '';
     this.parentId = config.parentId || '';
     this.parent = config.parent || null;
+    this.thickness = config.thickness || 0;
   }
   
   // 获取konva配置
@@ -240,14 +243,14 @@ export class WindowEmptyArea extends WindowComponent {
   children: Array<WindowEmptyArea | WindowMuntin | WindowSash>;
   sash: WindowSash | null;
   splitDirection: 'horizontal' | 'vertical' | null;
-  muntinThickness: number;
+  thickness: number;
   pointerPosition: { x: number, y: number };
   constructor(config: IDimension) {
     super(config);
     this.children = [];
     this.sash = null;
     this.splitDirection = null;
-    this.muntinThickness = 0;
+    this.thickness = 0;
     this.pointerPosition = { x: 0, y: 0 };
   }
   
@@ -271,7 +274,7 @@ export class WindowEmptyArea extends WindowComponent {
   }
   
   // 分割区域
-  splitArea(direction: 'horizontal' | 'vertical', pointerPosition: { x: number, y: number }, muntinThickness: number = 40) {
+  splitArea(direction: 'horizontal' | 'vertical', pointerPosition: { x: number, y: number }, thickness: number = 40) {
     if (this.sash) {
       console.error('此区域已有窗扇，无法分割');
       return;
@@ -279,7 +282,7 @@ export class WindowEmptyArea extends WindowComponent {
     
     this.splitDirection = direction;
     this.pointerPosition = pointerPosition;
-    this.muntinThickness = muntinThickness;
+    this.thickness = thickness;
     
     let area1: WindowEmptyArea, area2: WindowEmptyArea, muntin: WindowMuntin;
 
@@ -291,7 +294,7 @@ export class WindowEmptyArea extends WindowComponent {
       area1 = new WindowEmptyArea({
         x: x,
         y: y,
-        width: pointerPosition.x - this.muntinThickness/2,
+        width: pointerPosition.x - this.thickness/2,
         height: this.height,
         ele: 'window-empty-area',
         tag: 'window-empty-area',
@@ -299,10 +302,11 @@ export class WindowEmptyArea extends WindowComponent {
       });
       
       muntin = new WindowMuntin({
-        x: x + pointerPosition.x - this.muntinThickness/2,
+        x: x + pointerPosition.x - this.thickness/2,
         y: y,
-        width: this.muntinThickness,
+        width: this.thickness,
         height: this.height,
+        thickness: this.thickness,
         direction: 'vertical',
         ele: 'window-muntin',
         tag: 'window-muntin',
@@ -311,9 +315,9 @@ export class WindowEmptyArea extends WindowComponent {
       });
       
       area2 = new WindowEmptyArea({
-        x: x + pointerPosition.x + this.muntinThickness/2,
+        x: x + pointerPosition.x + this.thickness/2,
         y: y,
-        width: this.width - pointerPosition.x - this.muntinThickness/2,
+        width: this.width - pointerPosition.x - this.thickness/2,
         height: this.height,
         ele: 'window-empty-area',
         tag: 'window-empty-area',
@@ -325,7 +329,7 @@ export class WindowEmptyArea extends WindowComponent {
         x: x,
         y: y,
         width: this.width,
-        height: pointerPosition.y - this.muntinThickness/2,
+        height: pointerPosition.y - this.thickness/2,
         ele: 'window-empty-area',
         tag: 'window-empty-area',
         parentId: this.id
@@ -333,9 +337,10 @@ export class WindowEmptyArea extends WindowComponent {
       
       muntin = new WindowMuntin({
         x: x,
-        y: y + pointerPosition.y - this.muntinThickness/2,
+        y: y + pointerPosition.y - this.thickness/2,
         width: this.width,
-        height: this.muntinThickness,
+        height: this.thickness,
+        thickness: this.thickness,
         direction: 'horizontal',
         ele: 'window-muntin',
         tag: 'window-muntin',
@@ -345,9 +350,9 @@ export class WindowEmptyArea extends WindowComponent {
       
       area2 = new WindowEmptyArea({
         x: x,
-        y: y + pointerPosition.y + this.muntinThickness/2,
+        y: y + pointerPosition.y + this.thickness/2,
         width: this.width,
-        height: this.height - pointerPosition.y - this.muntinThickness/2,
+        height: this.height - pointerPosition.y - this.thickness/2,
         ele: 'window-empty-area',
         tag: 'window-empty-area',
         parentId: this.id

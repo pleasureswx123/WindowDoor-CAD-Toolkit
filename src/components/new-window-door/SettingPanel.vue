@@ -69,9 +69,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRootWindowStore } from '../../stores/rootWindowStore';
 import { WindowMuntin } from '../../utils/RootWindow';
+import { useEventListener, onKeyStroke } from '@vueuse/core';
 
 const windowStore = useRootWindowStore();
 
@@ -118,8 +119,8 @@ const muntinThickness = computed({
     if (windowStore.selectedElement.parent && windowStore.selectedElement.parent.splitArea) {
       // 获取当前中挺位置
       const position = muntinDirection.value === 'horizontal' 
-        ? { x: 0, y: muntinPosition.value } 
-        : { x: muntinPosition.value, y: 0 };
+        ? { x: 0, y: muntinPosition.value + validThickness / 2 } 
+        : { x: muntinPosition.value + validThickness / 2, y: 0 };
         
       // 调用父元素的splitArea方法更新分割
       nextTick(() => {
@@ -137,7 +138,8 @@ const muntinThickness = computed({
 const muntinPosition = computed({
   get: () => {
     if (!isMuntinSelected.value || !windowStore.selectedElement) return 0;
-    
+    const a = windowStore.selectedElement;
+    debugger;
     // 根据方向返回对应的位置
     if (muntinDirection.value === 'horizontal') {
       return windowStore.selectedElement.y || 0;
@@ -161,8 +163,8 @@ const muntinPosition = computed({
     // 调用父元素的splitArea方法更新分割
     if (windowStore.selectedElement.parent && windowStore.selectedElement.parent.splitArea) {
       const position = muntinDirection.value === 'horizontal' 
-        ? { x: 0, y: validPosition } 
-        : { x: validPosition, y: 0 };
+        ? { x: 0, y: validPosition + muntinThickness.value / 2 } 
+        : { x: validPosition + muntinThickness.value / 2, y: 0 };
 
       nextTick(() => {
         windowStore.selectedElement.parent.splitArea(
@@ -218,21 +220,12 @@ function deleteMuntin() {
   }
 }
 
-// 键盘处理 - 监听删除键
-function handleKeyDown(event: KeyboardEvent) {
-  if (event.key === 'Delete' && isMuntinSelected.value) {
+// 使用VueUse的onKeyStroke替代原生的键盘事件监听
+// 同时监听Delete和Backspace键，兼容Windows和Mac
+onKeyStroke(['Delete', 'Backspace'], (e) => {
+  if (isMuntinSelected.value) {
     deleteMuntin();
   }
-}
-
-// 添加键盘监听
-onMounted(() => {
-  window.addEventListener('keydown', handleKeyDown);
-});
-
-// 移除键盘监听
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeyDown);
 });
 </script>
 
