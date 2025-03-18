@@ -30,6 +30,19 @@
             dash: [5, 5],
             listening: false
           }" />
+          
+        <!-- 中挺位置标注线和尺寸文本 -->
+        <template v-if="selectedMuntin">
+          <annotation-marker 
+            :element="selectedMuntin" 
+            :is-horizontal="isMuntinHorizontal" 
+            line-color="#3498db"
+            text-color="#3498db"
+            arrow-color="#3498db"
+            :line-width="1.5"
+            :font-size="16"
+          />
+        </template>
       </v-layer>
     </v-stage>
   </div>
@@ -38,6 +51,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useRootWindowStore } from '../../stores/rootWindowStore';
+import AnnotationMarker from './AnnotationMarker.vue';
 
 // 获取窗户状态
 const windowStore = useRootWindowStore();
@@ -72,6 +86,21 @@ const stageConfig = computed(() => {
 
 // 缩放比例
 const scale = ref(0.5);
+
+// 选中的中挺
+const selectedMuntin = computed(() => {
+  if (!windowStore.selectedElement || windowStore.selectedElement.ele !== 'window-muntin') {
+    return null;
+  }
+  console.log("选中的中挺:", windowStore.selectedElement);
+  return windowStore.selectedElement;
+});
+
+// 判断选中的中挺是否是水平的
+const isMuntinHorizontal = computed(() => {
+  if (!selectedMuntin.value) return false;
+  return selectedMuntin.value.direction === 'horizontal';
+});
 
 // 窗户组件
 const windowComponents = computed(() => {
@@ -229,6 +258,28 @@ function updateCanvasSize() {
   console.log("计算的缩放比例:", scale.value);
 }
 
+// 当选中元素发生变化时，更新视图
+watch(() => windowStore.selectedElement, (newVal) => {
+  // 刷新layer以显示标注
+  nextTick(() => {
+    if (layerRef.value) {
+      console.log('刷新图层显示标注');
+      const layer = layerRef.value.getNode();
+      layer.batchDraw();
+      
+      // 强制延迟再次刷新一次，解决某些情况下标注不显示的问题
+      setTimeout(() => {
+        layer.batchDraw();
+      }, 100);
+    }
+  });
+});
+
+// 添加窗扇
+function addSash() {
+  if (!windowStore.windowStructure) return;
+}
+
 // 初始化
 onMounted(() => {
   console.log("WindowCanvas组件已挂载");
@@ -244,6 +295,11 @@ onMounted(() => {
     
     // 监听窗口大小变化
     window.addEventListener('resize', updateCanvasSize);
+    
+    // 强制刷新图层，确保标注显示
+    if (layerRef.value) {
+      layerRef.value.getNode().batchDraw();
+    }
   });
 });
 

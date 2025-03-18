@@ -8,6 +8,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AnnotationMarker: typeof import('./components/new-window-door/AnnotationMarker.vue')['default']
     AppButton: typeof import('./components/common/AppButton.vue')['default']
     AppIcon: typeof import('./components/common/AppIcon.vue')['default']
     DesignToolbar: typeof import('./components/new-window-door/DesignToolbar.vue')['default']
