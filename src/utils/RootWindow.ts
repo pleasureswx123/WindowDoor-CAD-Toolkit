@@ -382,7 +382,8 @@ export class WindowEmptyArea extends WindowComponent {
       component: 'v-rect',
       config: {
         ...this.getKonvaConfig(),
-        fill: '#F0F0F0',
+        // fill: '#F0F0F0',
+        fill: 'transparent',
         self: this,
         // fill: Konva.Util.getRandomColor(),
         // stroke: '#CCCCCC',
@@ -422,41 +423,107 @@ export class WindowMuntin extends WindowComponent {
         width: this.width,
         height: this.height,
         draggable: true,
+        parent: this.parent,
         dragBoundFunc(pos: { x: number, y: number }) {
-          // 以下都是测试的代码，不准确，请完善
-          const x = this.x();
-          const y = this.y();
-          const parent = this.parent as WindowEmptyArea;
-          const aaa = this.getAbsolutePosition();
-          debugger;
-          // const pointerPosition = parent.getNode().getRelativePointerPosition();
-          // parent.splitArea(this.direction, { x: pos.x, y: pos.y });
-          debugger;
-          if (this.direction === 'horizontal') {
-            debugger;
+          // const posInfo = this.getAbsolutePosition();
+          // const parentSize = this.parent.getSize();
+          // const parentSize = this.parent.getClientRect();
+          // this.getPosition()
+          // this.getAbsolutePosition()
+          // this.getRelativePointerPosition()
+          // this.getClientRect()
+          // console.log('posInfo', posInfo, pos, parentSize);
+          const direction = this.getAttrs().direction;
+          // console.log('sss', this.absolutePosition(), this.position(), this.getClientRect());
+          if (direction === 'horizontal') {
             return {
-              x: 50,
+              x: this.absolutePosition().x,
               y: pos.y
             }
           } else {
-            debugger;
             return {
-              x: parent.getRelativePointerPosition().x,
-              y
+              x: pos.x,
+              y: this.absolutePosition().y
+             }
+           }
+        },
+        onDragStart(e: any) {
+          // 记录拖动开始时的位置信息
+          this.startPos = this.getPosition();
+          // 保存当前方向
+          this.dragDirection = this.getAttrs().direction;; 
+          // 获取父容器尺寸
+          this.parentWidth = this.getAttrs().parent.width;
+          this.parentHeight = this.getAttrs().parent.height;
+          this.thickness = this.getAttrs().thickness || 10;
+        },
+        onDragMove(e: any) {
+          // 获取当前位置
+          const pos = this.getPosition();
+          // 获取舞台上的相对位置
+          const stage = e.target.getStage();
+          const pointerPos = stage.getPointerPosition();
+          
+          // 根据中挺方向处理拖动
+          if (this.dragDirection === 'horizontal') {
+            // 水平中挺只能上下拖动，锁定x坐标
+            this.x(this.startPos.x);
+            
+            // 计算新的y坐标，但不能小于最小安全距离或大于父容器高度减去安全距离
+            const minY = this.thickness * 1.5; // 安全距离
+            const maxY = this.parentHeight - minY;
+            
+            // 限制y的有效范围
+            let newY = pos.y;
+            if (newY < minY) {
+              newY = minY;
+            } else if (newY > maxY) {
+              newY = maxY;
+            }
+            
+            // 设置新的y坐标
+            this.y(newY);
+            
+            // 通知父元素更新分割区域
+            if (typeof this.getAttrs().parent.splitArea === 'function') {
+              this.dragPos = {x: 0, y: newY};
+            }
+          } else if (this.dragDirection === 'vertical') {
+            // 垂直中挺只能左右拖动，锁定y坐标
+            this.y(this.startPos.y);
+            
+            // 计算新的x坐标，但不能小于最小安全距离或大于父容器宽度减去安全距离
+            const minX = this.thickness * 1.5; // 安全距离
+            const maxX = this.parentWidth - minX;
+            
+            // 限制x的有效范围
+            let newX = pos.x;
+            if (newX < minX) {
+              newX = minX;
+            } else if (newX > maxX) {
+              newX = maxX;
+            }
+            
+            // 设置新的x坐标
+            this.x(newX);
+            
+            // 通知父元素更新分割区域
+            if (typeof this.getAttrs().parent.splitArea === 'function') {
+              this.dragPos = {x: newX, y: 0};
             }
           }
         },
-        ondragstart: (e: any) => {
-          // 请完善
-          console.log('ondragstart', e);
-        },
-        ondragmove: (e: any) => {
-          // 请完善
-          console.log('ondragmove', e);
-        },
-        ondragend: (e: any) => {
-          // 请完善
-          console.log('ondragend', e);
+        onDragEnd(e: any) {
+          // 最后一次更新分割区域，确保数据同步
+          if (typeof this.getAttrs().parent.splitArea === 'function') {
+            this.getAttrs().parent.splitArea(this.dragDirection, this.dragPos);
+          }
+          // 清除临时状态
+          delete this.startPos;
+          delete this.dragDirection;
+          delete this.parentWidth;
+          delete this.parentHeight;
+          delete this.dragPos;
         }
       }
     }
