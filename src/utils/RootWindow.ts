@@ -357,6 +357,63 @@ export class WindowEmptyArea extends WindowComponent {
     this.children = [area1, muntin, area2];
     this.render();
   }
+
+  // 删除中挺和相应的区域结构
+  removeMuntin(muntinId: string) {
+    // 如果没有子元素，直接返回
+    if (!this.children || this.children.length === 0) {
+      return false;
+    }
+    
+    // 查找中挺在children中的索引
+    const muntinIndex = this.children.findIndex(child => 
+      child instanceof WindowMuntin && child.id === muntinId
+    );
+    
+    // 未找到中挺
+    if (muntinIndex === -1) {
+      return false;
+    }
+    
+    // 找到对应的中挺和相邻的两个区域
+    const muntin = this.children[muntinIndex] as WindowMuntin;
+    
+    // 确保中挺的前后是两个空白区域
+    if (muntinIndex === 0 || muntinIndex === this.children.length - 1) {
+      console.error('中挺位置错误，无法删除');
+      return false;
+    }
+    
+    const area1 = this.children[muntinIndex - 1] as WindowEmptyArea;
+    const area2 = this.children[muntinIndex + 1] as WindowEmptyArea;
+    
+    // 计算合并后的尺寸
+    if (muntin.direction === 'vertical') {
+      // 如果是垂直中挺，合并后的宽度是两个区域的宽度加上中挺的宽度
+      this.width = area1.width + muntin.width + area2.width;
+      this.height = Math.max(area1.height, area2.height);
+    } else {
+      // 如果是水平中挺，合并后的高度是两个区域的高度加上中挺的高度
+      this.width = Math.max(area1.width, area2.width);
+      this.height = area1.height + muntin.height + area2.height;
+    }
+    
+    // 从Map中移除元素引用
+    elementIdMap.delete(muntin.id);
+    elementIdMap.delete(area1.id);
+    elementIdMap.delete(area2.id);
+    
+    // 清空子元素列表
+    this.children = [];
+    
+    // 清除分割方向
+    this.splitDirection = null;
+    
+    // 重置为空白区域
+    this.sash = null;
+    
+    return true;
+  }
   
   render(): KonvaRenderConfig {
     // 如果有窗扇，渲染窗扇

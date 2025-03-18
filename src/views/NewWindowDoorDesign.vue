@@ -24,6 +24,7 @@
         </div>
       </div>
     </div>
+    <SettingPanel class="design-setting-panel" />
   </div>
 </template>
 
@@ -32,6 +33,7 @@ import { ref, computed } from 'vue';
 import DesignToolbar from '../components/new-window-door/DesignToolbar.vue';
 import WindowCanvas from '../components/new-window-door/WindowCanvas.vue';
 import { useRootWindowStore } from '../stores/rootWindowStore';
+import SettingPanel from '../components/new-window-door/SettingPanel.vue';
 
 const windowStore = useRootWindowStore();
 
@@ -68,6 +70,11 @@ function zoomOut() {
 }
 
 .design-toolbar {
+  width: 250px;
+  flex-shrink: 0;
+}
+
+.design-setting-panel {
   width: 250px;
   flex-shrink: 0;
 }

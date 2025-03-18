@@ -1,6 +1,7 @@
 <template>
   <div class="window-canvas" ref="canvasContainer">
-    <v-stage ref="stageRef" :config="stageConfig" @click="handleStageClick" @mousemove="handleMouseMove" @mouseleave="handleMouseLeave">
+    <v-stage ref="stageRef" :config="stageConfig" @click="handleStageClick" @mousemove="handleMouseMove"
+      @mouseleave="handleMouseLeave">
       <v-layer ref="layerRef">
         <!-- 调试信息 -->
         <v-text v-if="showDebugInfo" :config="{ 
@@ -10,29 +11,25 @@
           fontSize: 14, 
           fill: 'red' 
         }" />
-        
+
         <!-- 渲染窗户结构 -->
         <template v-if="windowComponents.length > 0">
           <v-group :config="{ x: 0, y: 0 }">
             <template v-for="(component, index) in flattenComponents" :key="index">
-              <component 
-                :is="component.component" 
-                :config="component.config"
-              />
+              <component :is="component.component" :config="component.config" />
             </template>
           </v-group>
         </template>
 
         <!-- 分割预览线 -->
-        <v-line 
-          v-if="showPreviewLine"
-          :config="{
+        <!-- 如果时activeTool为split，点击预览线允许穿透，执行stage上的click事件 -->
+        <v-line v-if="showPreviewLine" :config="{
             points: previewLinePoints,
             stroke: '#f00',
             strokeWidth: 2,
-            dash: [5, 5]
-          }"
-        />
+            dash: [5, 5],
+            listening: false
+          }" />
       </v-layer>
     </v-stage>
   </div>

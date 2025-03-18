@@ -90,6 +90,7 @@ declare module 'vue' {
     Section: typeof import('./components/WindowDoor/Section.vue')['default']
     SectionEdit: typeof import('./components/WindowDoor/SectionEdit.vue')['default']
     SectionTypeControl: typeof import('./components/WindowDoor/utils/SectionTypeControl.vue')['default']
+    SettingPanel: typeof import('./components/new-window-door/SettingPanel.vue')['default']
     SizeControlPanel: typeof import('./components/WindowDoor/SizeControlPanel.vue')['default']
     TestButton: typeof import('./components/TestButton.vue')['default']
     TheWelcome: typeof import('./components/TheWelcome.vue')['default']
