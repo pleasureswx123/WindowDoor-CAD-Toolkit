@@ -4,12 +4,12 @@
       @mouseleave="handleMouseLeave">
       <v-layer ref="layerRef">
         <!-- 调试信息 -->
-        <v-text v-if="showDebugInfo" :config="{ 
-          x: 10, 
-          y: 10, 
-          text: `Components: ${windowComponents.length}`, 
-          fontSize: 14, 
-          fill: 'red' 
+        <v-text v-if="showDebugInfo" :config="{
+          x: 10,
+          y: 10,
+          text: `Components: ${windowComponents.length}`,
+          fontSize: 14,
+          fill: 'red'
         }" />
 
         <!-- 渲染窗户结构 -->
@@ -24,24 +24,48 @@
         <!-- 分割预览线 -->
         <!-- 如果时activeTool为split，点击预览线允许穿透，执行stage上的click事件 -->
         <v-line v-if="showPreviewLine" :config="{
-            points: previewLinePoints,
-            stroke: '#f00',
-            strokeWidth: 2,
-            dash: [5, 5],
-            listening: false
-          }" />
-          
+          points: previewLinePoints,
+          stroke: '#f00',
+          strokeWidth: 2,
+          dash: [5, 5],
+          listening: false
+        }" />
+
         <!-- 中挺位置标注线和尺寸文本 -->
         <template v-if="selectedMuntin">
-          <annotation-marker 
-            :element="selectedMuntin" 
-            :is-horizontal="isMuntinHorizontal" 
-            line-color="#3498db"
-            text-color="#3498db"
-            arrow-color="#3498db"
-            :line-width="1.5"
-            :font-size="16"
-          />
+          <v-group>
+            <v-group :config="{
+              x: nodeAttrs.x - selectedMuntin.x,
+              y: nodeAttrs.y - selectedMuntin.y
+            }">
+              <v-group :config="{
+                x: selectedMuntin.x,
+                y: selectedMuntin.y,
+                width: selectedMuntin.width,
+                height: selectedMuntin.height
+              }">
+                <annotation-marker :element="selectedMuntin" :is-horizontal="isMuntinHorizontal"
+                  :parent-element="muntinParentElement" line-color="#ff3333" text-color="#ff3333" arrow-color="#ff3333"
+                  :line-width="1" :font-size="20" />
+              </v-group>
+            </v-group>
+
+            <v-group :config="{
+              x: isMuntinHorizontal ? windowStore.windowConfig.frameSize : 0,
+              y: isMuntinHorizontal ? 0 : windowStore.windowConfig.frameSize
+            }">
+              <v-group :config="{
+                x: selectedMuntin1.x,
+                y: selectedMuntin1.y,
+                width: selectedMuntin1.width,
+                height: selectedMuntin1.height
+              }">
+                <annotation-marker :element="selectedMuntin1" :is-horizontal="isMuntinHorizontal"
+                  :parent-element="muntinParentElement" line-color="#ff3333" text-color="#ff3333" arrow-color="#ff3333"
+                  :line-width="1" :font-size="20" />
+              </v-group>
+            </v-group>
+          </v-group>
         </template>
       </v-layer>
     </v-stage>
@@ -62,9 +86,13 @@ interface KonvaStageRef {
   getNode: () => any;
 }
 
+interface KonvaLayerRef {
+  getNode: () => any;
+}
+
 // 舞台引用
 const stageRef = ref<KonvaStageRef | null>(null);
-const layerRef = ref(null);
+const layerRef = ref<KonvaLayerRef | null>(null);
 const canvasContainer = ref<HTMLElement | null>(null); // 修复类型
 
 // 调试标记
@@ -92,8 +120,16 @@ const selectedMuntin = computed(() => {
   if (!windowStore.selectedElement || windowStore.selectedElement.ele !== 'window-muntin') {
     return null;
   }
-  console.log("选中的中挺:", windowStore.selectedElement);
-  return windowStore.selectedElement;
+  console.log("选中的111111中挺:", windowStore.selectedElement);
+  return Object.assign({}, windowStore.selectedElement);
+});
+// 选中的中挺
+const selectedMuntin1 = computed(() => {
+  if (!windowStore.selectedElement || windowStore.selectedElement.ele !== 'window-muntin') {
+    return null;
+  }
+  console.log("选中的111111中挺:", windowStore.selectedElement);
+  return Object.assign({}, windowStore.selectedElement, nodeAttrs.value);
 });
 
 // 判断选中的中挺是否是水平的
@@ -102,13 +138,32 @@ const isMuntinHorizontal = computed(() => {
   return selectedMuntin.value.direction === 'horizontal';
 });
 
+// 获取中挺的父元素（窗框）
+const muntinParentElement = computed(() => {
+  if (!selectedMuntin.value || !windowStore.windowStructure) return null;
+
+  // 获取窗框作为父元素
+  try {
+    return {
+      x: 0, // 窗框始终从0,0开始
+      y: 0,
+      width: windowStore.windowConfig.width,
+      height: windowStore.windowConfig.height,
+      frameSize: windowStore.windowConfig.frameSize
+    };
+  } catch (error) {
+    console.error("获取窗框信息出错:", error);
+    return null;
+  }
+});
+
 // 窗户组件
 const windowComponents = computed(() => {
   if (!windowStore.windowStructure) {
     console.log("窗户结构不存在");
     return [];
   }
-  
+
   try {
     // 转换WindowStructure的render输出为v-组件配置
     const renderConfig = windowStore.windowStructure.render();
@@ -126,19 +181,19 @@ const flattenComponents = computed(() => {
 
   function flatten(component: any, parentX = 0, parentY = 0) {
     if (!component) return;
-    
+
     // 处理当前组件
     const newConfig = {
       ...component.config,
       x: (component.config.x || 0) + parentX,
       y: (component.config.y || 0) + parentY
     };
-    
+
     result.push({
       component: component.component,
       config: newConfig
     });
-    
+
     // 处理子组件
     if (component.children && component.children.length > 0) {
       component.children.forEach((child: any) => {
@@ -146,7 +201,7 @@ const flattenComponents = computed(() => {
       });
     }
   }
-  
+
   windowComponents.value.forEach(comp => flatten(comp));
   console.log("展平组件树:", result);
   return result;
@@ -157,12 +212,59 @@ watch(() => [windowStore.windowConfig.width, windowStore.windowConfig.height], (
   updateCanvasSize();
 });
 
+const nodeAttrs = ref({
+  x: 0,
+  y: 0,
+});
+
 
 // 点击事件处理
 function handleStageClick(e: any) {
   const clickedNode = e.target;
+  if (clickedNode && clickedNode.attrs && clickedNode.attrs.ele === 'window-muntin') {
+    nodeAttrs.value = {
+      x: clickedNode.attrs.x,
+      y: clickedNode.attrs.y
+    };
+    // 获取中挺元素的客户端矩形信息（相对于舞台的绝对位置和尺寸）
+    const clientRect = clickedNode.getClientRect();
+    const pointer = clickedNode.getRelativePointerPosition();
+    const absoluteTransform = clickedNode.getAbsoluteTransform();
+    const position = clickedNode.position();
+    const position1 = clickedNode.absolutePosition();
+
+    console.log('=== 中挺位置信息 ===');
+    console.log('元素ID:', clickedNode.id());
+    console.log('客户端矩形:', clientRect); // 包含 x, y, width, height
+    console.log('相对位置:', pointer);
+    console.log('绝对变换:', absoluteTransform.m);
+    console.log('相对位置:', position);
+    console.log('原始属性11111:', clickedNode.attrs);
+    console.log('绝对位置:', position1);
+
+    // 获取相对于舞台的鼠标位置
+    const stage = stageRef.value?.getStage();
+    if (stage) {
+      const stagePos = stage.getPointerPosition();
+      const scalePos = {
+        x: stagePos.x / scale.value,
+        y: stagePos.y / scale.value
+      };
+      console.log('鼠标位置(舞台坐标系):', stagePos);
+      console.log('鼠标位置(缩放后):', scalePos);
+    }
+  }
+
   // 尽是使用Konva api提供的方法：getRelativePointerPosition getSize id()等
-  windowStore.setSelectedElement(clickedNode.id());
+  const id = clickedNode.id();
+  if (id) {
+    windowStore.setSelectedElement(id);
+  } else {
+    // 如果没有ID，则清除选择
+    // setSelectedElement内部仅在id为truthy时才执行查找和设置，所以传入空字符串即可
+    windowStore.setSelectedElement('');
+  }
+
   if (windowStore.activeTool === 'select') {
     // 处理选择工具
     selectElement(clickedNode);
@@ -200,23 +302,63 @@ watch(() => windowStore.activeTool, (newTool) => {
 
 // 选择元素
 function selectElement(node: any) {
-  // 实现元素选择逻辑
+  debugger;
+  // 如果没有点击到任何元素，或点击到的是舞台，清除选择
+  if (!node || node.getClassName() === 'Stage') {
+    console.log('清除选择');
+    // 不能直接传null，因为setSelectedElement期望一个string类型的参数
+    windowStore.setSelectedElement('');
+    return;
+  }
+
+  // 获取节点ID和类型
   const id = node.id();
   const nodeType = node.getClassName();
-  console.log("选中元素:", id, nodeType, node.attrs, windowStore.selectedElement);
+  const nodeElement = node.attrs.ele || '';
+
+  console.log("选中元素:", id, nodeType);
+  console.log("元素类型:", nodeElement);
+
+  // 处理中挺选择逻辑
+  if (nodeElement === 'window-muntin') {
+    console.log("选中了中挺元素:", node.attrs);
+
+    // 获取中挺的位置和尺寸
+    const position = node.position();
+    const size = {
+      width: node.width(),
+      height: node.height()
+    };
+
+    console.log("中挺位置:", position);
+    console.log("中挺尺寸:", size);
+
+    // 如果中挺有变换，获取变换信息
+    if (node.scaleX() !== 1 || node.scaleY() !== 1 || node.rotation() !== 0) {
+      console.log("中挺变换:", {
+        scaleX: node.scaleX(),
+        scaleY: node.scaleY(),
+        rotation: node.rotation()
+      });
+    }
+
+    // 获取相对于窗框的位置
+    const absoluteRect = node.getClientRect();
+    console.log("中挺绝对位置和尺寸:", absoluteRect);
+  }
 }
 
 // 实现分割预览线显示
 function showSplitPreview(e: any) {
   if (!windowStore.windowStructure || !stageRef.value) return;
-  
+
   const stage = stageRef.value.getStage();
   const pointerPos = stage.getPointerPosition();
   if (!pointerPos) return;
-  
+
   const x = pointerPos.x / scale.value;
   const y = pointerPos.y / scale.value;
-  
+
   // 根据分割方向显示不同的预览线
   if (windowStore.splitDirection === 'vertical') {
     // 垂直分割线
@@ -231,7 +373,7 @@ function showSplitPreview(e: any) {
       windowStore.windowConfig.width, y
     ];
   }
-  
+
   showPreviewLine.value = true;
 }
 
@@ -241,34 +383,37 @@ function updateCanvasSize() {
     console.log("容器引用不存在");
     return;
   }
-  
+
   const containerWidth = canvasContainer.value.clientWidth || 800;
   const containerHeight = canvasContainer.value.clientHeight || 600;
   console.log("容器尺寸:", containerWidth, containerHeight);
-  
+
   // 计算合适的缩放比例
   const windowWidth = windowStore.windowConfig.width;
   const windowHeight = windowStore.windowConfig.height;
-  
+
   const scaleX = (containerWidth - 40) / windowWidth;
   const scaleY = (containerHeight - 40) / windowHeight;
-  
+
   // 使用较小的缩放比例，确保窗户完全可见
   scale.value = Math.min(scaleX, scaleY, 1) || 0.5;
   console.log("计算的缩放比例:", scale.value);
 }
 
 // 当选中元素发生变化时，更新视图
-watch(() => windowStore.selectedElement, (newVal) => {
+watch(() => windowStore.selectedElement, (newVal, oldVal) => {
+  console.log('选中元素变化，旧值:', oldVal, '新值:', newVal);
+
   // 刷新layer以显示标注
   nextTick(() => {
     if (layerRef.value) {
       console.log('刷新图层显示标注');
       const layer = layerRef.value.getNode();
       layer.batchDraw();
-      
+
       // 强制延迟再次刷新一次，解决某些情况下标注不显示的问题
       setTimeout(() => {
+        console.log('再次刷新图层以确保标注显示');
         layer.batchDraw();
       }, 100);
     }
@@ -283,19 +428,19 @@ function addSash() {
 // 初始化
 onMounted(() => {
   console.log("WindowCanvas组件已挂载");
-  
+
   // 初始化窗户
   windowStore.initializeWindow();
   console.log("窗户已初始化:", windowStore.windowStructure);
-  
+
   // 确保DOM已完全渲染
   nextTick(() => {
     // 更新画布大小
     updateCanvasSize();
-    
+
     // 监听窗口大小变化
     window.addEventListener('resize', updateCanvasSize);
-    
+
     // 强制刷新图层，确保标注显示
     if (layerRef.value) {
       layerRef.value.getNode().batchDraw();
