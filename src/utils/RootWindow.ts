@@ -428,9 +428,51 @@ export class WindowEmptyArea extends WindowComponent {
   }
 
   removeSash(sashId: string) {
-    debugger;
+    // 如果没有sash，直接返回
+    if (!this.sash) {
+      return false;
+    }
+    
+    // 检查sash ID是否匹配
+    if (this.sash.id !== sashId) {
+      // 如果有子元素，尝试在子元素中查找
+      if (this.children && this.children.length > 0) {
+        for (const child of this.children) {
+          if (child instanceof WindowEmptyArea) {
+            if (child.removeSash(sashId)) {
+              return true;
+            }
+          }
+        }
+      }
+      return false;
+    }
+    
+    // 从Map中移除窗扇及其子元素的引用
+    elementIdMap.delete(this.sash.id);
+    
+    // 如果窗扇有框架，移除框架
+    if (this.sash.frame) {
+      elementIdMap.delete(this.sash.frame.id);
+    }
+    
+    // 如果窗扇有玻璃，移除玻璃
+    if (this.sash.glass) {
+      elementIdMap.delete(this.sash.glass.id);
+    }
+    
+    // 如果窗扇有把手，移除把手
+    if (this.sash.handle) {
+      elementIdMap.delete(this.sash.handle.id);
+    }
+    
+    // 清空窗扇引用
     this.sash = null;
+    
+    // 重新渲染
     this.render();
+    
+    return true;
   }
   
   render(): KonvaRenderConfig {

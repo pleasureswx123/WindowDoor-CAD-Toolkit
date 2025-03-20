@@ -103,6 +103,49 @@
       </div>
     </div>
 
+    <!-- 空白区域设置面板 -->
+    <div v-else-if="isEmptyAreaSelected" class="empty-area-settings">
+      <h3>空白区域设置</h3>
+      
+      <!-- 空白区域尺寸（只读） -->
+      <div class="setting-group">
+        <label>区域尺寸:</label>
+        <div class="size-display">
+          <div class="size-item">
+            <span>宽度: {{ emptyAreaWidth }}mm</span>
+          </div>
+          <div class="size-item">
+            <span>高度: {{ emptyAreaHeight }}mm</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 窗扇类型选择 -->
+      <div class="setting-group">
+        <label>安装窗扇类型:</label>
+        <select v-model="selectedSashType" class="select-input">
+          <option value="fixed">固定窗</option>
+          <option value="left">左开窗</option>
+          <option value="right">右开窗</option>
+          <option value="tiltLeft">倾斜左开</option>
+          <option value="tiltRight">倾斜右开</option>
+        </select>
+      </div>
+      
+      <!-- 安装窗扇按钮 -->
+      <div class="setting-actions">
+        <button class="install-button" @click="installSash">
+          安装窗扇
+        </button>
+      </div>
+      
+      <!-- 提示信息 -->
+      <div class="setting-tips">
+        <p>提示: 安装窗扇后，此区域将不能再进行分割</p>
+        <p>安装后可以通过窗扇设置面板调整窗扇属性</p>
+      </div>
+    </div>
+
     <!-- 其他元素设置面板可以在这里添加 -->
     <div v-else>
       <h3>元素设置</h3>
@@ -142,6 +185,12 @@ const isMuntinSelected = computed(() => {
 const isSashSelected = computed(() => {
   if (!windowStore.selectedElement) return false;
   return windowStore.selectedElement.ele?.includes('window-sash');
+});
+
+// 判断是否选中了空白区域
+const isEmptyAreaSelected = computed(() => {
+  if (!windowStore.selectedElement) return false;
+  return windowStore.selectedElement.ele === 'window-empty-area';
 });
 
 // 获取中挺方向
@@ -313,10 +362,56 @@ const sashType = computed({
   }
 });
 
+// 空白区域宽度
+const emptyAreaWidth = computed(() => {
+  if (!isEmptyAreaSelected.value || !windowStore.selectedElement) return 0;
+  return windowStore.selectedElement.width || 0;
+});
+
+// 空白区域高度
+const emptyAreaHeight = computed(() => {
+  if (!isEmptyAreaSelected.value || !windowStore.selectedElement) return 0;
+  return windowStore.selectedElement.height || 0;
+});
+
+// 选择的窗扇类型
+const selectedSashType = ref('fixed');
+
+// 安装窗扇
+function installSash() {
+  if (!isEmptyAreaSelected.value || !windowStore.selectedElement) return;
+  
+  const area = windowStore.selectedElement;
+  
+  // 检查区域是否已有内容
+  if (area.children && area.children.length > 0) {
+    alert('此区域已被分割，无法安装窗扇');
+    return;
+  }
+  
+  if (area.sash) {
+    alert('此区域已有窗扇，无法重复安装');
+    return;
+  }
+  
+  // 在空白区域添加窗扇
+  if (area.addSash) {
+    area.addSash(selectedSashType.value);
+    // 选中新安装的窗扇
+    if (area.sash) {
+      windowStore.selectedElement = area.sash;
+    }
+  } else {
+    alert('安装失败，请重试');
+  }
+}
+
 // 当选中元素变化时，更新中挺属性
 watch(() => windowStore.selectedElement, (newElement) => {
   if (newElement && newElement.ele === 'window-muntin') {
     console.log('选中了中挺:', newElement);
+  } else if (newElement && newElement.ele === 'window-empty-area') {
+    console.log('选中了空白区域:', newElement);
   }
 }, { immediate: true });
 
@@ -479,5 +574,16 @@ button:hover {
 .select-input:focus {
   border-color: #4a6bff;
   outline: none;
+}
+
+.install-button {
+  background: #4a6bff;
+  color: white;
+  border-color: #3551d1;
+  width: 100%;
+}
+
+.install-button:hover {
+  background: #3551d1;
 }
 </style> 
