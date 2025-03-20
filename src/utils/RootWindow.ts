@@ -82,7 +82,9 @@ class WindowComponent {
       height: this.height,
       id: this.id,
       ele: this.ele,
-      tag: this.tag
+      tag: this.tag,
+      parentId: this.parentId || '' ,
+      parent: this.parent || null
     };
   }
   
@@ -601,20 +603,20 @@ export class WindowSash extends WindowComponent {
   frame: WindowSashFrame;
   glass: WindowSashGlass;
   handle: WindowSashHandle | null;
-  
+  frameSize: number;
   constructor(config: IDimension & { type: SashType }) {
     super(config);
     this.type = config.type;
     
-    const frameSize = this.type === 'fixed' ? 0 : 40;
-    
+    this.frameSize = config.type === 'fixed' ? 0 : 40;
+
     // 创建窗扇框架
     this.frame = new WindowSashFrame({
       x: this.x,
       y: this.y,
       width: this.width,
       height: this.height,
-      thickness: frameSize,
+      thickness: this.frameSize,
       ele: 'window-sash-frame',
       tag: 'window-sash-frame',
       parentId: this.id
@@ -622,10 +624,10 @@ export class WindowSash extends WindowComponent {
     
     // 创建窗扇玻璃
     this.glass = new WindowSashGlass({
-      x: this.x + frameSize,
-      y: this.y + frameSize,
-      width: this.width - frameSize * 2,
-      height: this.height - frameSize * 2,
+      x: this.x + this.frameSize,
+      y: this.y + this.frameSize,
+      width: this.width - this.frameSize * 2,
+      height: this.height - this.frameSize * 2,
       ele: 'window-sash-glass',
       tag: 'window-sash-glass',
       parentId: this.id
@@ -643,6 +645,16 @@ export class WindowSash extends WindowComponent {
       parentId: this.id
     }) : null;
   }
+
+  updateFrameSize(frameSize: number) {
+    this.frameSize = frameSize;
+    this.frame.thickness = frameSize;
+    this.glass.x = this.x + frameSize;
+    this.glass.y = this.y + frameSize;
+    this.glass.width = this.width - frameSize * 2;
+    this.glass.height = this.height - frameSize * 2;
+    this.render();
+  }
   
   render(): KonvaRenderConfig {
     const children: KonvaRenderConfig[] = [
@@ -656,7 +668,9 @@ export class WindowSash extends WindowComponent {
     
     return {
       component: 'v-group',
-      config: this.getKonvaConfig(),
+      config: Object.assign({}, this.getKonvaConfig(), {
+        frameSize: this.frameSize
+      }),
       children
     };
   }
@@ -669,6 +683,7 @@ export class WindowSashFrame extends WindowComponent {
   
   constructor(config: IDimension & { thickness: number, color?: string }) {
     super(config);
+    console.log(987987,this.parentId);
     this.thickness = config.thickness;
     this.color = config.color || '#A0522D'; // 默认深棕色
   }
@@ -684,8 +699,9 @@ export class WindowSashFrame extends WindowComponent {
         height: this.thickness,
         fill: this.color,
         id: this.id,
-        type: 'top-sash-frame',
-        name: 'top-sash-frame'
+        parentId: this.parentId,
+        ele: 'window-sash-top-frame',
+        tag: 'window-sash-top-frame'
       }
     };
     
@@ -698,8 +714,9 @@ export class WindowSashFrame extends WindowComponent {
         height: this.height,
         fill: this.color,
         id: this.id,
-        type: 'right-sash-frame',
-        name: 'right-sash-frame'
+        parentId: this.parentId,
+        ele: 'window-sash-right-frame',
+        tag: 'window-sash-right-frame'
       }
     };
     
@@ -712,8 +729,9 @@ export class WindowSashFrame extends WindowComponent {
         height: this.thickness,
         fill: this.color,
         id: this.id,
-        type: 'bottom-sash-frame',
-        name: 'bottom-sash-frame'
+        parentId: this.parentId,
+        ele: 'window-sash-bottom-frame',
+        tag: 'window-sash-bottom-frame'
       }
     };
     
@@ -726,8 +744,9 @@ export class WindowSashFrame extends WindowComponent {
         height: this.height,
         fill: this.color,
         id: this.id,
-        type: 'left-sash-frame',
-        name: 'left-sash-frame'
+        parentId: this.parentId,
+        ele: 'window-sash-left-frame',
+        tag: 'window-sash-left-frame'
       }
     };
     
@@ -792,7 +811,11 @@ export class WindowSashHandle extends WindowComponent {
             width: this.width,
             height: this.height,
             fill: this.color,
-            cornerRadius: 2
+            cornerRadius: 2,
+            id: this.id,
+            parentId: this.parentId,
+            ele: 'window-sash-handle',
+            tag: 'window-sash-handle'
           }
         },
         {
@@ -801,7 +824,11 @@ export class WindowSashHandle extends WindowComponent {
             x: this.width / 2,
             y: this.height / 4,
             radius: this.width / 3,
-            fill: '#A9A9A9'
+            fill: '#A9A9A9',
+            id: this.id,
+            parentId: this.parentId,
+            ele: 'window-sash-handle',
+            tag: 'window-sash-handle'
           }
         }
       ]

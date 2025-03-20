@@ -59,6 +59,54 @@
       </div>
     </div>
     
+    <!-- 窗扇设置面板 -->
+    <div v-if="isSashSelected" class="sash-settings">
+      <h3>窗扇设置</h3>
+      
+      <!-- 窗扇整体尺寸（只读） -->
+      <div class="setting-group">
+        <label>窗扇整体尺寸:</label>
+        <div class="size-display">
+          <div class="size-item">
+            <span>宽度: {{ sashWidth }}mm</span>
+          </div>
+          <div class="size-item">
+            <span>高度: {{ sashHeight }}mm</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 窗框大小设置（可编辑） -->
+      <div class="setting-group">
+        <label>窗框大小 (mm):</label>
+        <input 
+          type="number" 
+          v-model.number="frameSize" 
+          min="20" 
+          max="100" 
+          step="2"
+        />
+      </div>
+      
+      <!-- 玻璃尺寸（只读） -->
+      <div class="setting-group">
+        <label>玻璃尺寸:</label>
+        <div class="size-display">
+          <div class="size-item">
+            <span>宽度: {{ glassWidth }}mm</span>
+          </div>
+          <div class="size-item">
+            <span>高度: {{ glassHeight }}mm</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 提示信息 -->
+      <div class="setting-tips">
+        <p>提示: 调整窗框大小会自动更新玻璃尺寸</p>
+      </div>
+    </div>
+    
     <!-- 其他元素设置面板可以在这里添加 -->
     <div v-else>
       <h3>元素设置</h3>
@@ -92,6 +140,12 @@ const selectedElementType = computed(() => {
 const isMuntinSelected = computed(() => {
   if (!windowStore.selectedElement) return false;
   return windowStore.selectedElement.ele === 'window-muntin';
+});
+
+// 判断是否选中了窗扇
+const isSashSelected = computed(() => {
+  if (!windowStore.selectedElement) return false;
+  return windowStore.selectedElement.ele?.includes('window-sash');
 });
 
 // 获取中挺方向
@@ -195,6 +249,54 @@ const maxPosition = computed(() => {
   } else {
     return parent.width - minPosition.value;
   }
+});
+
+// 窗扇整体宽度
+const sashWidth = computed(() => {
+  if (!isSashSelected.value || !windowStore.selectedElement) return 0;
+  return windowStore.selectedElement.width || 0;
+});
+
+// 窗扇整体高度
+const sashHeight = computed(() => {
+  if (!isSashSelected.value || !windowStore.selectedElement) return 0;
+  return windowStore.selectedElement.height || 0;
+});
+
+// 窗框大小
+const frameSize = computed({
+  get: () => {
+    if (!isSashSelected.value || !windowStore.selectedElement) return 40;
+
+    const a = windowStore.selectedElement;
+    debugger;
+    return windowStore.selectedElement.frameSize || 0;
+  },
+  set: (value) => {
+    if (!isSashSelected.value || !windowStore.selectedElement) return;
+    
+    // 更新窗框大小
+    windowStore.selectedElement.frameSize = value;
+
+    debugger;
+    
+    // 触发重新渲染
+    if (windowStore.selectedElement.updateFrameSize) {
+      windowStore.selectedElement.updateFrameSize(value);
+    }
+  }
+});
+
+// 玻璃宽度
+const glassWidth = computed(() => {
+  if (!isSashSelected.value || !windowStore.selectedElement) return 0;
+  return sashWidth.value - (frameSize.value * 2);
+});
+
+// 玻璃高度
+const glassHeight = computed(() => {
+  if (!isSashSelected.value || !windowStore.selectedElement) return 0;
+  return sashHeight.value - (frameSize.value * 2);
 });
 
 // 当选中元素变化时，更新中挺属性
@@ -311,5 +413,25 @@ button:hover {
 
 .setting-tips p {
   margin: 5px 0;
+}
+
+/* 添加新的样式 */
+.size-display {
+  background: #f8f8f8;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.size-item {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.size-item span {
+  font-family: monospace;
 }
 </style> 

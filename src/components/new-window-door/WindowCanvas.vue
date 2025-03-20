@@ -255,8 +255,10 @@ function handleStageClick(e: any) {
     }
   }
 
-  // 尽是使用Konva api提供的方法：getRelativePointerPosition getSize id()等
-  const id = clickedNode.id();
+  let id = clickedNode.id();
+  if (clickedNode && clickedNode.attrs && (clickedNode.attrs.ele || '').includes('window-sash')) {
+    id = clickedNode.attrs.parentId;
+  }
   if (id) {
     windowStore.setSelectedElement(id);
   } else {
@@ -302,7 +304,6 @@ watch(() => windowStore.activeTool, (newTool) => {
 
 // 选择元素
 function selectElement(node: any) {
-  debugger;
   // 如果没有点击到任何元素，或点击到的是舞台，清除选择
   if (!node || node.getClassName() === 'Stage') {
     console.log('清除选择');
