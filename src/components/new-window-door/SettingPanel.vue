@@ -3,66 +3,60 @@
     <!-- 中挺设置面板 -->
     <div v-if="isMuntinSelected" class="muntin-settings">
       <h3>中挺设置</h3>
-      
+
       <!-- 中挺方向 (只读) -->
       <div class="setting-group">
         <label>中挺方向:</label>
         <span>{{ muntinDirection === 'horizontal' ? '水平' : '垂直' }}</span>
       </div>
-      
+
       <!-- 中挺厚度设置 -->
       <div class="setting-group">
         <label>厚度 (mm):</label>
-        <input 
-          type="number" 
-          v-model.number="muntinThickness" 
-          min="20" 
-          max="100" 
-          step="2"
-        />
+        <input type="number" v-model.number="muntinThickness" min="20" max="100" step="2" />
       </div>
-      
+
       <!-- 中挺位置设置 -->
       <div class="setting-group" v-if="muntinDirection === 'horizontal'">
         <label>上边距 (mm):</label>
-        <input 
-          type="number" 
-          v-model.number="muntinPosition" 
-          :min="minPosition" 
-          :max="maxPosition" 
-          step="5"
-        />
+        <input type="number" v-model.number="muntinPosition" :min="minPosition" :max="maxPosition" step="5" />
       </div>
-      
+
       <div class="setting-group" v-if="muntinDirection === 'vertical'">
         <label>左边距 (mm):</label>
-        <input 
-          type="number" 
-          v-model.number="muntinPosition" 
-          :min="minPosition" 
-          :max="maxPosition" 
-          step="5"
-        />
+        <input type="number" v-model.number="muntinPosition" :min="minPosition" :max="maxPosition" step="5" />
       </div>
-      
+
       <!-- 删除中挺按钮 -->
       <div class="setting-actions">
         <button class="delete-button" @click="deleteMuntin">
           删除中挺
         </button>
       </div>
-      
+
       <!-- 提示信息 -->
       <div class="setting-tips">
         <p>提示: 水平中挺只能上下移动，垂直中挺只能左右移动</p>
         <p>有效范围: {{ minPosition }}mm - {{ maxPosition }}mm</p>
       </div>
     </div>
-    
+
     <!-- 窗扇设置面板 -->
     <div v-if="isSashSelected" class="sash-settings">
       <h3>窗扇设置</h3>
-      
+
+      <!-- 窗扇类型选择 'fixed' | 'left' | 'right' | 'tiltLeft' | 'tiltRight'; -->
+      <div class="setting-group">
+        <label>窗扇类型:</label>
+        <select v-model="sashType" class="select-input">
+          <option value="fixed">固定窗</option>
+          <option value="left">左开窗</option>
+          <option value="right">右开窗</option>
+          <option value="tiltLeft">倾斜左开</option>
+          <option value="tiltRight">倾斜右开</option>
+        </select>
+      </div>
+
       <!-- 窗扇整体尺寸（只读） -->
       <div class="setting-group">
         <label>窗扇整体尺寸:</label>
@@ -75,19 +69,13 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 窗框大小设置（可编辑） -->
       <div class="setting-group">
         <label>窗框大小 (mm):</label>
-        <input 
-          type="number" 
-          v-model.number="frameSize" 
-          min="20" 
-          max="100" 
-          step="2"
-        />
+        <input type="number" v-model.number="frameSize" min="20" max="100" step="2" />
       </div>
-      
+
       <!-- 玻璃尺寸（只读） -->
       <div class="setting-group">
         <label>玻璃尺寸:</label>
@@ -100,13 +88,21 @@
           </div>
         </div>
       </div>
-      
+
+      <!-- 删除窗扇按钮 -->
+      <div class="setting-actions">
+        <button class="delete-button" @click="deleteSash">
+          删除窗扇
+        </button>
+      </div>
+
       <!-- 提示信息 -->
       <div class="setting-tips">
         <p>提示: 调整窗框大小会自动更新玻璃尺寸</p>
+        <p>更改窗扇类型会影响窗扇的外观和功能</p>
       </div>
     </div>
-    
+
     <!-- 其他元素设置面板可以在这里添加 -->
     <div v-else>
       <h3>元素设置</h3>
@@ -193,7 +189,6 @@ const muntinPosition = computed({
   get: () => {
     if (!isMuntinSelected.value || !windowStore.selectedElement) return 0;
     const a = windowStore.selectedElement;
-    debugger;
     // 根据方向返回对应的位置
     if (muntinDirection.value === 'horizontal') {
       return windowStore.selectedElement.y || 0;
@@ -269,7 +264,6 @@ const frameSize = computed({
     if (!isSashSelected.value || !windowStore.selectedElement) return 40;
 
     const a = windowStore.selectedElement;
-    debugger;
     return windowStore.selectedElement.frameSize || 0;
   },
   set: (value) => {
@@ -278,7 +272,6 @@ const frameSize = computed({
     // 更新窗框大小
     windowStore.selectedElement.frameSize = value;
 
-    debugger;
     
     // 触发重新渲染
     if (windowStore.selectedElement.updateFrameSize) {
@@ -297,6 +290,27 @@ const glassWidth = computed(() => {
 const glassHeight = computed(() => {
   if (!isSashSelected.value || !windowStore.selectedElement) return 0;
   return sashHeight.value - (frameSize.value * 2);
+});
+
+// 窗扇类型
+const sashType = computed({
+  get: () => {
+    if (!isSashSelected.value || !windowStore.selectedElement) return 'fixed';
+    return windowStore.selectedElement.sashType || 'fixed';
+  },
+  set: (value) => {
+    if (!isSashSelected.value || !windowStore.selectedElement) return;
+    
+    // 更新窗扇类型
+    windowStore.selectedElement.sashType = value;
+    
+    // 如果有更新窗扇类型的方法，调用它
+    if (windowStore.selectedElement.updateSashType) {
+      nextTick(() => {
+        windowStore.selectedElement.updateSashType(value);
+      });
+    }
+  }
 });
 
 // 当选中元素变化时，更新中挺属性
@@ -322,11 +336,29 @@ function deleteMuntin() {
   }
 }
 
+// 删除窗扇
+function deleteSash() {
+  if (!isSashSelected.value || !windowStore.selectedElement) return;
+  
+  if (confirm('确定要删除这个窗扇吗？')) {
+    // 获取父元素
+    const parent = windowStore.selectedElement.parent;
+    
+    // 实现删除逻辑 - 需要父组件提供删除方法
+    if (parent && parent.removeSash) {
+      parent.removeSash(windowStore.selectedElement.id);
+      windowStore.selectedElement = null;
+    }
+  }
+}
+
 // 使用VueUse的onKeyStroke替代原生的键盘事件监听
 // 同时监听Delete和Backspace键，兼容Windows和Mac
 onKeyStroke(['Delete', 'Backspace'], (e) => {
   if (isMuntinSelected.value) {
     deleteMuntin();
+  } else if (isSashSelected.value) {
+    deleteSash();
   }
 });
 </script>
@@ -433,5 +465,19 @@ button:hover {
 
 .size-item span {
   font-family: monospace;
+}
+
+.select-input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  background: white;
+  width: 100%;
+}
+
+.select-input:focus {
+  border-color: #4a6bff;
+  outline: none;
 }
 </style> 

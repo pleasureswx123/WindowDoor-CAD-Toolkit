@@ -268,10 +268,11 @@ export class WindowEmptyArea extends WindowComponent {
       y: 0,
       width: this.width,
       height: this.height,
-      type: type,
+      sashType: type,
       ele: 'window-sash',
       tag: 'window-sash',
-      parentId: this.id
+      parentId: this.id,
+      parent: this
     });
   }
   
@@ -300,7 +301,8 @@ export class WindowEmptyArea extends WindowComponent {
         height: this.height,
         ele: 'window-empty-area',
         tag: 'window-empty-area',
-        parentId: this.id
+        parentId: this.id,
+        parent: this
       });
       
       muntin = new WindowMuntin({
@@ -323,7 +325,8 @@ export class WindowEmptyArea extends WindowComponent {
         height: this.height,
         ele: 'window-empty-area',
         tag: 'window-empty-area',
-        parentId: this.id
+        parentId: this.id,
+        parent: this
       });
     } else {
       // 水平分割 - 创建上下两个区域
@@ -334,7 +337,8 @@ export class WindowEmptyArea extends WindowComponent {
         height: pointerPosition.y - this.thickness/2,
         ele: 'window-empty-area',
         tag: 'window-empty-area',
-        parentId: this.id
+        parentId: this.id,
+        parent: this
       });
       
       muntin = new WindowMuntin({
@@ -357,7 +361,8 @@ export class WindowEmptyArea extends WindowComponent {
         height: this.height - pointerPosition.y - this.thickness/2,
         ele: 'window-empty-area',
         tag: 'window-empty-area',
-        parentId: this.id
+        parentId: this.id,
+        parent: this
       });
     }
     
@@ -420,6 +425,12 @@ export class WindowEmptyArea extends WindowComponent {
     this.sash = null;
     
     return true;
+  }
+
+  removeSash(sashId: string) {
+    debugger;
+    this.sash = null;
+    this.render();
   }
   
   render(): KonvaRenderConfig {
@@ -599,16 +610,23 @@ type SashType = 'fixed' | 'left' | 'right' | 'tiltLeft' | 'tiltRight';
 
 // 窗户窗扇类
 export class WindowSash extends WindowComponent {
-  type: SashType;
-  frame: WindowSashFrame;
-  glass: WindowSashGlass;
+  sashType: SashType;
+  frame: WindowSashFrame | null;
+  glass: WindowSashGlass | null;
   handle: WindowSashHandle | null;
   frameSize: number;
-  constructor(config: IDimension & { type: SashType }) {
+  constructor(config: IDimension & { sashType: SashType }) {
     super(config);
-    this.type = config.type;
-    
-    this.frameSize = config.type === 'fixed' ? 0 : 40;
+    this.sashType = config.sashType;
+    this.frameSize = 0;
+    this.frame = null;
+    this.glass = null;
+    this.handle = null;
+    this.initData();
+  }
+
+  initData() {
+    this.frameSize = this.sashType === 'fixed' ? 0 : 40;
 
     // 创建窗扇框架
     this.frame = new WindowSashFrame({
@@ -630,36 +648,48 @@ export class WindowSash extends WindowComponent {
       height: this.height - this.frameSize * 2,
       ele: 'window-sash-glass',
       tag: 'window-sash-glass',
-      parentId: this.id
+      parentId: this.id,
+      parent: this
     });
     
     // 如果不是固定窗，添加把手
-    this.handle = this.type !== 'fixed' ? new WindowSashHandle({
-      x: this.type.includes('left') ? this.x + this.width - 20 : this.x + 10,
+    this.handle = this.sashType !== 'fixed' ? new WindowSashHandle({
+      x: this.sashType.includes('left') ? this.x + this.width - 20 : this.x + 10,
       y: this.y + this.height / 2 - 15,
       width: 10,
       height: 30,
-      type: this.type,
+      type: this.sashType,
       ele: 'window-sash-handle',
       tag: 'window-sash-handle',
-      parentId: this.id
+      parentId: this.id,
+      parent: this
     }) : null;
   }
 
   updateFrameSize(frameSize: number) {
     this.frameSize = frameSize;
-    this.frame.thickness = frameSize;
-    this.glass.x = this.x + frameSize;
-    this.glass.y = this.y + frameSize;
-    this.glass.width = this.width - frameSize * 2;
-    this.glass.height = this.height - frameSize * 2;
+    if (this.frame) {
+      this.frame.thickness = frameSize;
+    }
+    if (this.glass) {
+      this.glass.x = this.x + frameSize;
+      this.glass.y = this.y + frameSize;
+      this.glass.width = this.width - frameSize * 2;
+      this.glass.height = this.height - frameSize * 2;
+    }
+    this.render();
+  }
+
+  updateSashType(sashType: SashType) {
+    this.sashType = sashType;
+    this.initData();
     this.render();
   }
   
   render(): KonvaRenderConfig {
-    const children: KonvaRenderConfig[] = [
-      this.frame.render(),
-      this.glass.render()
+    const children: any[] = [
+      this.frame ? this.frame.render() : null,
+      this.glass ? this.glass.render() : null
     ];
     
     if (this.handle) {
