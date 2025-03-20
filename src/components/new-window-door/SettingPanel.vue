@@ -120,6 +120,43 @@
         </div>
       </div>
       
+      <!-- 空白区域可分割 -->
+      <div class="setting-group">
+        <label>区域分割:</label>
+        <div class="split-buttons">
+          <button 
+            class="split-button" 
+            :class="{ active: splitDirection === 'vertical' }"
+            @click="splitDirection = 'vertical'"
+          >
+            垂直分割
+          </button>
+          <button 
+            class="split-button" 
+            :class="{ active: splitDirection === 'horizontal' }"
+            @click="splitDirection = 'horizontal'"
+          >
+            水平分割
+          </button>
+        </div>
+      </div>
+      
+      <!-- 中挺厚度设置 -->
+      <div class="setting-group" v-if="splitDirection">
+        <label>中挺厚度 (mm):</label>
+        <input type="number" v-model.number="splitThickness" min="20" max="100" step="2" />
+      </div>
+      
+      <!-- 确认分割按钮 -->
+      <div class="setting-actions" v-if="splitDirection">
+        <button class="split-confirm-button" @click="confirmSplit">
+          确认分割
+        </button>
+      </div>
+      
+      <!-- 分割线 -->
+      <div class="separator" v-if="splitDirection"></div>
+      
       <!-- 窗扇类型选择 -->
       <div class="setting-group">
         <label>安装窗扇类型:</label>
@@ -142,7 +179,7 @@
       <!-- 提示信息 -->
       <div class="setting-tips">
         <p>提示: 安装窗扇后，此区域将不能再进行分割</p>
-        <p>安装后可以通过窗扇设置面板调整窗扇属性</p>
+        <p>分割区域后，将创建中挺和两个新的空白区域</p>
       </div>
     </div>
 
@@ -406,8 +443,49 @@ function installSash() {
   }
 }
 
-// 当选中元素变化时，更新中挺属性
+// 空白区域分割方向
+const splitDirection = ref<'horizontal' | 'vertical' | null>(null);
+
+// 中挺厚度
+const splitThickness = ref(40);
+
+// 空白区域分割
+function confirmSplit() {
+  if (!isEmptyAreaSelected.value || !windowStore.selectedElement) return;
+  
+  const area = windowStore.selectedElement;
+  
+  // 检查区域是否已有内容
+  if (area.children && area.children.length > 0) {
+    alert('此区域已被分割，无法再次分割');
+    return;
+  }
+  
+  if (area.sash) {
+    alert('此区域已有窗扇，无法分割');
+    return;
+  }
+
+  // 计算分割位置 - 默认在中间位置分割
+  const position = {
+    x: splitDirection.value === 'vertical' ? area.width / 2 : 0,
+    y: splitDirection.value === 'horizontal' ? area.height / 2 : 0
+  };
+  
+  // 执行分割
+  if (area.splitArea && splitDirection.value) {
+    area.splitArea(splitDirection.value, position, splitThickness.value);
+    
+    // 重置分割方向
+    splitDirection.value = null;
+  }
+}
+
+// 当选中元素变化时，重置分割设置
 watch(() => windowStore.selectedElement, (newElement) => {
+  // 重置分割方向
+  splitDirection.value = null;
+  
   if (newElement && newElement.ele === 'window-muntin') {
     console.log('选中了中挺:', newElement);
   } else if (newElement && newElement.ele === 'window-empty-area') {
@@ -585,5 +663,38 @@ button:hover {
 
 .install-button:hover {
   background: #3551d1;
+}
+
+.separator {
+  margin: 20px 0;
+  border-top: 1px dashed #ccc;
+}
+
+.split-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.split-button {
+  flex: 1;
+  background: #f5f5f5;
+  border: 1px solid #ccc;
+}
+
+.split-button.active {
+  background: #e0e0ff;
+  border-color: #4a6bff;
+  font-weight: bold;
+}
+
+.split-confirm-button {
+  background: #4a9bff;
+  color: white;
+  border-color: #3581d1;
+  width: 100%;
+}
+
+.split-confirm-button:hover {
+  background: #3581d1;
 }
 </style> 
