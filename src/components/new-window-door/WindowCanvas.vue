@@ -17,6 +17,25 @@
           <v-group :config="{ x: 0, y: 0 }">
             <template v-for="(component, index) in flattenComponents" :key="index">
               <component :is="component.component" :config="component.config" />
+              
+              <!-- 选中元素的高亮指示 -->
+              <v-rect 
+                v-if="isElementSelected(component.config.id)"
+                :config="{
+                  x: component.config.x,
+                  y: component.config.y,
+                  width: component.config.width,
+                  height: component.config.height,
+                  ...selectedBorderStyle,
+                  cornerRadius: 2,
+                  listening: false,
+                  shadowEnabled: true,
+                  shadowColor: 'rgba(0,0,0,0.3)',
+                  shadowBlur: 10,
+                  shadowOffset: { x: 0, y: 0 },
+                  shadowOpacity: 1
+                }"
+              />
             </template>
           </v-group>
         </template>
@@ -320,6 +339,9 @@ function selectElement(node: any) {
   console.log("选中元素:", id, nodeType);
   console.log("元素类型:", nodeElement);
 
+  // 设置选中元素的ID
+  windowStore.setSelectedElement(id);
+
   // 处理中挺选择逻辑
   if (nodeElement === 'window-muntin') {
     console.log("选中了中挺元素:", node.attrs);
@@ -424,6 +446,53 @@ watch(() => windowStore.selectedElement, (newVal, oldVal) => {
 // 添加窗扇
 function addSash() {
   if (!windowStore.windowStructure) return;
+}
+
+// 计算选中元素的边框样式
+const selectedBorderStyle = computed(() => {
+  if (!windowStore.selectedElement) return {};
+  
+  const elementType = windowStore.selectedElement.ele || '';
+  
+  // 根据元素类型返回不同的边框样式
+  if (elementType === 'window-muntin') {
+    return {
+      stroke: 'red',
+      strokeWidth: 3,
+      dash: [10, 10]
+    };
+  } else if (elementType.includes('window-sash')) {
+    return {
+      stroke: 'red', // 绿色
+      strokeWidth: 5,
+      dash: [8, 3]
+    };
+  } else if (elementType === 'window-empty-area') {
+    return {
+      stroke: 'red',
+      strokeWidth: 3,
+      dash: [10, 10]
+    };
+  } else {
+    return {
+      stroke: 'red', // 紫色
+      strokeWidth: 5,
+      dash: [2, 2]
+    };
+  }
+});
+
+// 判断元素是否被选中
+function isElementSelected(id: string): boolean {
+  return windowStore.selectedElement && windowStore.selectedElement.id === id;
+}
+
+// 获取选中元素的样式
+function getSelectedElementStyle(id: string) {
+  if (isElementSelected(id)) {
+    return selectedBorderStyle.value;
+  }
+  return null;
 }
 
 // 初始化
