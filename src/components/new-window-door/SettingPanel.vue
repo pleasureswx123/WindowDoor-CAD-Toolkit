@@ -13,7 +13,7 @@
       </div>
       <div class="setting-group">
         <label>框架厚度 (mm):</label>
-        <input type="number" v-model.number="frameSize" @change="updateFrameSize" min="20" max="200" />
+        <input type="number" v-model.number="frameSize" min="20" max="200" />
       </div>
       
       <!-- 提示信息 -->
@@ -38,6 +38,15 @@
         <label>厚度 (mm):</label>
         <input type="number" v-model.number="muntinThickness" min="20" max="100" step="2" />
       </div>
+      
+      <!-- 中挺颜色设置 -->
+      <div class="setting-group">
+        <label>中挺颜色:</label>
+        <div class="color-picker-container">
+          <input type="color" v-model="muntinColor" class="color-input" />
+          <input type="text" v-model="muntinColor" class="color-text" placeholder="#颜色代码" />
+        </div>
+      </div>
 
       <!-- 中挺位置设置 -->
       <div class="setting-group" v-if="muntinDirection === 'horizontal'">
@@ -61,6 +70,7 @@
       <div class="setting-tips">
         <p>提示: 水平中挺只能上下移动，垂直中挺只能左右移动</p>
         <p>有效范围: {{ minPosition }}mm - {{ maxPosition }}mm</p>
+        <p>可以自定义中挺颜色和边框样式使其更加美观</p>
       </div>
     </div>
 
@@ -855,6 +865,26 @@ const glassOpacity = computed({
     }
   }
 });
+
+// 中挺颜色
+const muntinColor = computed({
+  get: () => {
+    if (!isMuntinSelected.value || !windowStore.selectedElement) return '#8B4513';
+    return windowStore.selectedElement.color || '#8B4513';
+  },
+  set: (value) => {
+    if (!isMuntinSelected.value || !windowStore.selectedElement) return;
+    
+    // 如果有changeColor方法，调用它
+    if (typeof windowStore.selectedElement.updateColor === 'function') {
+      nextTick(() => {
+        windowStore.selectedElement.updateColor(value);
+      });
+    }
+  }
+});
+
+
 </script>
 
 <style scoped>

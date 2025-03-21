@@ -573,14 +573,20 @@ export class WindowMuntin extends WindowComponent {
     this.color = color;
   }
   
+  // 更新颜色和边框样式
+  updateColor(color: string) {
+    this.color = color;
+    this.render();
+  }
+  
   render(): KonvaRenderConfig {
     return {
       component: 'v-rect',
       config: {
         ...this.getKonvaConfig(),
         fill: this.color,
-        // stroke: '#666666',
-        // strokeWidth: 1,
+        // stroke: this.frameStrokeColor,
+        // strokeWidth: this.frameStrokeWidth,
         direction: this.direction,
         thickness: this.thickness,
         width: this.width,
