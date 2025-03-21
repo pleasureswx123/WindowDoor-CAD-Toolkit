@@ -76,6 +76,30 @@
         <input type="number" v-model.number="frameSize" min="20" max="100" step="2" />
       </div>
 
+      <!-- 窗扇颜色设置 -->
+      <div class="setting-group">
+        <label>窗扇颜色:</label>
+        <div class="color-picker-container">
+          <input type="color" v-model="sashColor" class="color-input" />
+          <input type="text" v-model="sashColor" class="color-text" placeholder="#颜色代码" />
+        </div>
+      </div>
+
+      <!-- 窗扇边线颜色设置 -->
+      <div class="setting-group">
+        <label>边线颜色:</label>
+        <div class="color-picker-container">
+          <input type="color" v-model="sashStrokeColor" class="color-input" />
+          <input type="text" v-model="sashStrokeColor" class="color-text" placeholder="#颜色代码" />
+        </div>
+      </div>
+      
+      <!-- 窗扇边线宽度设置 -->
+      <div class="setting-group">
+        <label>边线粗细 (px):</label>
+        <input type="number" v-model.number="sashStrokeWidth" min="0" max="5" step="0.5" />
+      </div>
+
       <!-- 玻璃尺寸（只读） -->
       <div class="setting-group">
         <label>玻璃尺寸:</label>
@@ -86,6 +110,25 @@
           <div class="size-item">
             <span>高度: {{ glassHeight }}mm</span>
           </div>
+        </div>
+      </div>
+      
+      <!-- 玻璃颜色设置 -->
+      <div class="setting-group">
+        <label>玻璃颜色:</label>
+        <div class="color-picker-container">
+          <input type="color" v-model="glassColor" class="color-input" />
+          <input type="text" v-model="glassColor" class="color-text" placeholder="#颜色代码" />
+        </div>
+      </div>
+      
+      <!-- 玻璃透明度设置 -->
+      <div class="setting-group">
+        <label>透明度: {{ (glassOpacity * 100).toFixed(0) }}%</label>
+        <input type="range" v-model.number="glassOpacity" min="0" max="1" step="0.05" class="slider" />
+        <div class="opacity-hint">
+          <span>不透明</span>
+          <span>透明</span>
         </div>
       </div>
 
@@ -100,6 +143,7 @@
       <div class="setting-tips">
         <p>提示: 调整窗框大小会自动更新玻璃尺寸</p>
         <p>更改窗扇类型会影响窗扇的外观和功能</p>
+        <p>可以自定义窗扇颜色和玻璃透明度以获得不同视觉效果</p>
       </div>
     </div>
 
@@ -662,6 +706,119 @@ const frameStrokeWidth = computed({
     }
   }
 });
+
+// 窗扇颜色
+const sashColor = computed({
+  get: () => {
+    if (!isSashSelected.value || !windowStore.selectedElement) return '#A0522D';
+    // 窗扇颜色存储在frame对象中
+    return windowStore.selectedElement.frame?.frameColor || '#A0522D';
+  },
+  set: (value) => {
+    if (!isSashSelected.value || !windowStore.selectedElement) return;
+    
+    // 如果有更新窗扇颜色的方法，调用它
+    if (windowStore.selectedElement.frame.updateData) {
+      nextTick(() => {
+        windowStore.selectedElement.frame.updateData(
+          value,
+          sashStrokeColor.value,
+          sashStrokeWidth.value
+        );
+      });
+    }
+  }
+});
+
+// 窗扇边线颜色
+const sashStrokeColor = computed({
+  get: () => {
+    if (!isSashSelected.value || !windowStore.selectedElement) return '#000';
+    // 窗扇边线颜色存储在frame对象中
+    return windowStore.selectedElement.frame?.frameStrokeColor || '#000';
+  },
+  set: (value) => {
+    if (!isSashSelected.value || !windowStore.selectedElement) return;
+    
+    // 如果有更新窗扇的方法，调用它
+    if (windowStore.selectedElement.frame.updateData) {
+      nextTick(() => {
+        windowStore.selectedElement.frame.updateData(
+          sashColor.value,
+          value,
+          sashStrokeWidth.value
+        );
+      });
+    }
+  }
+});
+
+// 窗扇边线宽度
+const sashStrokeWidth = computed({
+  get: () => {
+    if (!isSashSelected.value || !windowStore.selectedElement) return 1;
+    // 窗扇边线宽度存储在frame对象中
+    return windowStore.selectedElement.frame?.frameStrokeWidth || 1;
+  },
+  set: (value) => {
+    if (!isSashSelected.value || !windowStore.selectedElement) return;
+    
+    // 如果有更新窗扇的方法，调用它
+    if (windowStore.selectedElement.frame.updateData) {
+      nextTick(() => {
+        windowStore.selectedElement.frame.updateData(
+          sashColor.value,
+          sashStrokeColor.value,
+          value
+        );
+      });
+    }
+  }
+});
+
+// 玻璃颜色
+const glassColor = computed({
+  get: () => {
+    if (!isSashSelected.value || !windowStore.selectedElement) return '#ADD8E6';
+    // 玻璃颜色存储在glass对象中
+    return windowStore.selectedElement.glass?.color || '#ADD8E6';
+  },
+  set: (value) => {
+    if (!isSashSelected.value || !windowStore.selectedElement) return;
+    
+    // 如果有玻璃，更新其颜色
+    if (windowStore.selectedElement.glass) {
+      // 如果有更新玻璃颜色的方法，调用它
+      if (windowStore.selectedElement.glass.updateData) {
+        nextTick(() => {
+          windowStore.selectedElement.glass.updateData(value, glassOpacity.value);
+        });
+      }
+    }
+  }
+});
+
+// 玻璃透明度
+const glassOpacity = computed({
+  get: () => {
+    if (!isSashSelected.value || !windowStore.selectedElement) return 0.7;
+    // 透明度存储在glass对象中
+    return windowStore.selectedElement.glass?.opacity || 0.7;
+  },
+  set: (value) => {
+    if (!isSashSelected.value || !windowStore.selectedElement) return;
+    
+    // 如果有玻璃，更新其透明度
+    if (windowStore.selectedElement.glass) {
+      // 如果有更新玻璃颜色的方法，调用它
+      if (windowStore.selectedElement.glass.updateData) {
+        nextTick(() => {
+          windowStore.selectedElement.glass.updateData(glassColor.value, value);
+        });
+      }
+    }
+  }
+});
 </script>
 
 <style scoped>
@@ -842,5 +999,17 @@ button:hover {
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
+}
+
+.slider {
+  width: 100%;
+}
+
+.opacity-hint {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #666;
 }
 </style> 

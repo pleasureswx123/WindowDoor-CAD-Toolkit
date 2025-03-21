@@ -37,6 +37,9 @@ interface IDimension {
   parentId?: string;
   parent?: WindowComponent;
   thickness?: number;
+  frameStrokeWidth?: number | string;
+  frameStrokeColor?: string; // 边框颜色
+  frameColor?: string; // 边框颜色
 }
 
 export const elementIdMap = reactive(new Map());
@@ -169,7 +172,7 @@ export class WindowFrame extends WindowComponent {
     this.thickness = config.thickness || 50;
     this.color = config.color || '#8B4513'; // 默认棕色
     this.frameStrokeWidth = 2;
-    this.frameStrokeColor = '#000';
+    this.frameStrokeColor = '#000000';
   }
   
   // 更新窗框颜色
@@ -700,6 +703,9 @@ export class WindowSash extends WindowComponent {
   glass: WindowSashGlass | null;
   handle: WindowSashHandle | null;
   frameSize: number;
+  frameStrokeWidth: number;
+  frameStrokeColor: string;
+  frameColor: string;
   constructor(config: IDimension & { sashType: SashType }) {
     super(config);
     this.sashType = config.sashType;
@@ -707,6 +713,9 @@ export class WindowSash extends WindowComponent {
     this.frame = null;
     this.glass = null;
     this.handle = null;
+    this.frameStrokeWidth = 1;
+    this.frameStrokeColor = '#000000';
+    this.frameColor = '#A0522D';
     this.initData();
   }
 
@@ -720,6 +729,9 @@ export class WindowSash extends WindowComponent {
       width: this.width,
       height: this.height,
       thickness: this.frameSize,
+      frameStrokeColor: this.frameStrokeColor,
+      frameStrokeWidth: this.frameStrokeWidth,
+      frameColor: this.frameColor,
       ele: 'window-sash-frame',
       tag: 'window-sash-frame',
       parentId: this.id
@@ -770,6 +782,18 @@ export class WindowSash extends WindowComponent {
     this.initData();
     this.render();
   }
+
+  updateFrameData(color: string, strokeColor?: string, strokeWidth?: number) {
+    if (this.frame && typeof this.frame.updateData === 'function') {
+      this.frame.updateData(color, strokeColor, strokeWidth);
+    }
+  }
+
+  updateGlassData(color: string, opacity?: number) {
+    if (this.glass && typeof this.glass.updateData === 'function') {
+      this.glass.updateData(color, opacity);
+    }
+  }
   
   render(): KonvaRenderConfig {
     const children: any[] = [
@@ -794,12 +818,33 @@ export class WindowSash extends WindowComponent {
 // 窗户窗扇边框类
 export class WindowSashFrame extends WindowComponent {
   thickness: number;
-  color: string;
+  frameStrokeWidth: number | string;
+  frameStrokeColor: string;
+  frameColor: string;
+
   
   constructor(config: IDimension & { thickness: number, color?: string}) {
     super(config);
     this.thickness = config.thickness;
-    this.color = config.color || '#A0522D'; // 默认深棕色
+    this.frameColor = config.frameColor || '#A0522D'; // 默认深棕色
+    this.frameStrokeWidth = config.frameStrokeWidth || 1;
+    this.frameStrokeColor = config.frameStrokeColor || '#000000';
+  }
+  
+  // 更新窗扇边框颜色
+  updateData(color: string, strokeColor?: string, strokeWidth?: number) {
+    this.frameColor = color;
+    
+    // 如果提供了边线颜色，更新它
+    if (strokeColor !== undefined) {
+      this.frameStrokeColor = strokeColor;
+    }
+    
+    // 如果提供了边线宽度，更新它
+    if (strokeWidth !== undefined) {
+      this.frameStrokeWidth = strokeWidth;
+    }
+    this.render();
   }
   
   render(): KonvaRenderConfig {
@@ -819,9 +864,9 @@ export class WindowSashFrame extends WindowComponent {
               this.thickness, this.thickness        // 左上内角
             ],
             closed: true,
-            fill: this.color,
-            stroke: '#333333',
-            strokeWidth: 1,
+            fill: this.frameColor,
+            stroke: this.frameStrokeColor,
+            strokeWidth: this.frameStrokeWidth,
             id: this.id,
             parentId: this.parentId,
             ele: 'window-sash-top-frame',
@@ -839,9 +884,9 @@ export class WindowSashFrame extends WindowComponent {
               0, this.height                         // 左下角
             ],
             closed: true,
-            fill: this.color,
-            stroke: '#333333',
-            strokeWidth: 1,
+            fill: this.frameColor,
+            stroke: this.frameStrokeColor,
+            strokeWidth: this.frameStrokeWidth,
             id: this.id,
             parentId: this.parentId,
             ele: 'window-sash-left-frame',
@@ -859,9 +904,9 @@ export class WindowSashFrame extends WindowComponent {
               this.thickness, this.height - this.thickness // 左下内角
             ],
             closed: true,
-            fill: this.color,
-            stroke: '#333333',
-            strokeWidth: 1,
+            fill: this.frameColor,
+            stroke: this.frameStrokeColor,
+            strokeWidth: this.frameStrokeWidth,
             id: this.id,
             parentId: this.parentId,
             ele: 'window-sash-bottom-frame',
@@ -879,9 +924,9 @@ export class WindowSashFrame extends WindowComponent {
               this.width - this.thickness, this.thickness // 右上内角
             ],
             closed: true,
-            fill: this.color,
-            stroke: '#333333',
-            strokeWidth: 1,
+            fill: this.frameColor,
+            stroke: this.frameStrokeColor,
+            strokeWidth: this.frameStrokeWidth,
             id: this.id,
             parentId: this.parentId,
             ele: 'window-sash-right-frame',
@@ -918,6 +963,18 @@ export class WindowSashGlass extends WindowComponent {
     super(config);
     this.color = config.color || '#ADD8E6'; // 默认浅蓝色
     this.opacity = config.opacity || 0.7;
+  }
+  
+  // 更新玻璃颜色和透明度
+  updateData(color: string, opacity?: number) {
+    this.color = color;
+    
+    // 如果提供了透明度，更新它
+    if (opacity !== undefined) {
+      this.opacity = opacity;
+    }
+    
+    this.render();
   }
   
   render(): KonvaRenderConfig {
