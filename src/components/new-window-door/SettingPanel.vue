@@ -528,6 +528,19 @@ function deleteSash() {
 // 使用VueUse的onKeyStroke替代原生的键盘事件监听
 // 同时监听Delete和Backspace键，兼容Windows和Mac
 onKeyStroke(['Delete', 'Backspace'], (e) => {
+  // 检查当前焦点是否在输入框、文本框或其他可输入元素中
+  const activeElement = document.activeElement;
+  const isInputActive = activeElement instanceof HTMLInputElement || 
+                       activeElement instanceof HTMLTextAreaElement || 
+                       activeElement instanceof HTMLSelectElement ||
+                       (activeElement && 'isContentEditable' in activeElement && activeElement.isContentEditable);
+  
+  // 如果焦点在输入元素中，不执行删除操作
+  if (isInputActive) {
+    return;
+  }
+  
+  // 仅当焦点不在输入元素中时，执行删除操作
   if (isMuntinSelected.value) {
     deleteMuntin();
   } else if (isSashSelected.value) {
