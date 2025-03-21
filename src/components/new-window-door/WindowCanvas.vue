@@ -1,5 +1,8 @@
 <template>
-  <div class="window-canvas" ref="canvasContainer">
+  <div 
+    class="window-canvas" 
+    ref="canvasContainer"
+  >
     <v-stage ref="stageRef" :config="stageConfig" @click="handleStageClick" @mousemove="handleMouseMove"
       @mouseleave="handleMouseLeave">
       <v-layer ref="layerRef">
@@ -127,6 +130,31 @@ const stageConfig = computed(() => {
 // 缩放比例
 const scale = ref(0.5);
 
+// 根据activeTool返回对应的鼠标样式名称
+const getCursorStyle = (tool?: string) => {
+  const toolType = tool || windowStore.activeTool;
+  switch (toolType) {
+    case 'select':
+      return 'pointer';
+    case 'split':
+      return 'crosshair';
+    case 'sash':
+      return 'cell';
+    default:
+      return 'default';
+  }
+};
+
+// 更新鼠标样式
+const updateCursorStyle = () => {
+  if (stageRef.value) {
+    const stage = stageRef.value.getStage();
+    if (stage && stage.container()) {
+      stage.container().style.cursor = getCursorStyle();
+    }
+  }
+};
+
 // 选中的中挺
 const selectedMuntin = computed(() => {
   if (!windowStore.selectedElement || windowStore.selectedElement.ele !== 'window-muntin') {
@@ -209,6 +237,16 @@ const nodeAttrs = ref({
   y: 0,
 });
 
+// 监听工具变化以更新鼠标样式
+watch(() => windowStore.activeTool, (newTool) => {
+  // 更新鼠标样式
+  updateCursorStyle();
+  
+  // 处理分割工具预览线
+  if (newTool !== 'split') {
+    showPreviewLine.value = false;
+  }
+});
 
 // 点击事件处理
 function handleStageClick(e: any) {
@@ -286,13 +324,6 @@ function handleMouseMove(e: any) {
 function handleMouseLeave() {
   showPreviewLine.value = false;
 }
-
-watch(() => windowStore.activeTool, (newTool) => {
-  if (newTool !== 'split') {
-    showPreviewLine.value = false;
-  }
-});
-
 
 // 选择元素
 function selectElement(node: any) {
@@ -510,6 +541,9 @@ onMounted(() => {
     if (layerRef.value) {
       layerRef.value.getNode().batchDraw();
     }
+    
+    // 初始化鼠标样式
+    updateCursorStyle();
   });
 });
 

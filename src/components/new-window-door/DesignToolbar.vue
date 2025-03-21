@@ -101,6 +101,9 @@ function updateFrameSize() {
 
 // 选择工具
 function selectTool(tool: 'select' | 'split' | 'sash') {
+  if(tool === 'select') {
+    windowStore.selectedElement = null;
+  }
   windowStore.activeTool = tool;
 }
 
