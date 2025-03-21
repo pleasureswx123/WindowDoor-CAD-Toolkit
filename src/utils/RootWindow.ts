@@ -172,6 +172,26 @@ export class WindowFrame extends WindowComponent {
     this.frameStrokeColor = '#000';
   }
   
+  // 更新窗框颜色
+  updateColor(color: string, strokeColor?: string, strokeWidth?: number) {
+    this.color = color;
+    
+    // 如果提供了边线颜色，更新它
+    if (strokeColor !== undefined) {
+      this.frameStrokeColor = strokeColor;
+    }
+    
+    // 如果提供了边线宽度，更新它
+    if (strokeWidth !== undefined) {
+      this.frameStrokeWidth = strokeWidth;
+    }
+    
+    // 如果有父节点，告知其需要重新渲染
+    if (this.parent && typeof this.parent.render === 'function') {
+      this.parent.render();
+    }
+  }
+  
   render(): KonvaRenderConfig {
     // 创建四个边框线条，形成立体效果
     const topFrame: KonvaRenderConfig = {

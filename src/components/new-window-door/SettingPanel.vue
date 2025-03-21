@@ -184,6 +184,40 @@
     </div>
 
     <!-- 其他元素设置面板可以在这里添加 -->
+    <div v-else-if="isFrameSelected" class="frame-settings">
+      <h3>窗框设置</h3>
+      
+      <!-- 窗框颜色设置 -->
+      <div class="setting-group">
+        <label>窗框颜色:</label>
+        <div class="color-picker-container">
+          <input type="color" v-model="frameColor" class="color-input" />
+          <input type="text" v-model="frameColor" class="color-text" placeholder="#颜色代码" />
+        </div>
+      </div>
+
+      <!-- 窗框边线颜色设置 -->
+      <div class="setting-group">
+        <label>边线颜色:</label>
+        <div class="color-picker-container">
+          <input type="color" v-model="frameStrokeColor" class="color-input" />
+          <input type="text" v-model="frameStrokeColor" class="color-text" placeholder="#颜色代码" />
+        </div>
+      </div>
+      
+      <!-- 窗框边线宽度设置 -->
+      <div class="setting-group">
+        <label>边线粗细 (px):</label>
+        <input type="number" v-model.number="frameStrokeWidth" min="0" max="5" step="0.5" />
+      </div>
+
+      <!-- 提示信息 -->
+      <div class="setting-tips">
+        <p>提示: 修改窗框颜色可以改变整体窗户外观</p>
+        <p>默认颜色: #8B4513 (棕色)</p>
+      </div>
+    </div>
+    
     <div v-else>
       <h3>元素设置</h3>
       <p>已选中: {{ selectedElementType }}</p>
@@ -228,6 +262,12 @@ const isSashSelected = computed(() => {
 const isEmptyAreaSelected = computed(() => {
   if (!windowStore.selectedElement) return false;
   return windowStore.selectedElement.ele === 'window-empty-area';
+});
+
+// 判断是否选中了窗框
+const isFrameSelected = computed(() => {
+  if (!windowStore.selectedElement) return false;
+  return windowStore.selectedElement.ele === 'window-frame';
 });
 
 // 获取中挺方向
@@ -547,6 +587,81 @@ onKeyStroke(['Delete', 'Backspace'], (e) => {
     deleteSash();
   }
 });
+
+// 窗框颜色
+const frameColor = computed({
+  get: () => {
+    if (!isFrameSelected.value || !windowStore.selectedElement) return '#8B4513';
+    return windowStore.selectedElement.color || '#8B4513';
+  },
+  set: (value) => {
+    if (!isFrameSelected.value || !windowStore.selectedElement) return;
+    
+    // 更新窗框颜色
+    windowStore.selectedElement.color = value;
+    
+    // 如果有更新窗框颜色的方法，调用它
+    if (windowStore.selectedElement.updateColor) {
+      nextTick(() => {
+        windowStore.selectedElement.updateColor(
+          value,
+          windowStore.selectedElement.frameStrokeColor,
+          windowStore.selectedElement.frameStrokeWidth
+        );
+      });
+    }
+  }
+});
+
+// 窗框边线颜色
+const frameStrokeColor = computed({
+  get: () => {
+    if (!isFrameSelected.value || !windowStore.selectedElement) return '#000';
+    return windowStore.selectedElement.frameStrokeColor || '#000';
+  },
+  set: (value) => {
+    if (!isFrameSelected.value || !windowStore.selectedElement) return;
+    
+    // 更新窗框边线颜色
+    windowStore.selectedElement.frameStrokeColor = value;
+    
+    // 如果有更新窗框的方法，调用它
+    if (windowStore.selectedElement.updateColor) {
+      nextTick(() => {
+        windowStore.selectedElement.updateColor(
+          windowStore.selectedElement.color,
+          value,
+          windowStore.selectedElement.frameStrokeWidth
+        );
+      });
+    }
+  }
+});
+
+// 窗框边线宽度
+const frameStrokeWidth = computed({
+  get: () => {
+    if (!isFrameSelected.value || !windowStore.selectedElement) return 0.5;
+    return windowStore.selectedElement.frameStrokeWidth || 0.5;
+  },
+  set: (value) => {
+    if (!isFrameSelected.value || !windowStore.selectedElement) return;
+    
+    // 更新窗框边线宽度
+    windowStore.selectedElement.frameStrokeWidth = value;
+    
+    // 如果有更新窗框的方法，调用它
+    if (windowStore.selectedElement.updateColor) {
+      nextTick(() => {
+        windowStore.selectedElement.updateColor(
+          windowStore.selectedElement.color,
+          windowStore.selectedElement.frameStrokeColor,
+          value
+        );
+      });
+    }
+  }
+});
 </script>
 
 <style scoped>
@@ -709,5 +824,23 @@ button:hover {
 
 .split-confirm-button:hover {
   background: #3581d1;
+}
+
+.color-picker-container {
+  display: flex;
+  align-items: center;
+}
+
+.color-input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-right: 8px;
+}
+
+.color-text {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 </style> 
