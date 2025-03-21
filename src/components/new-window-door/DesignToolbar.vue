@@ -71,16 +71,108 @@
       <h3>操作</h3>
       <div class="action-buttons">
         <button @click="resetWindow">重置</button>
-        <button @click="exportWindow">导出</button>
+        <el-dropdown>
+          <el-button type="primary" class="export-button">
+            导出<el-icon class="el-icon--right"><arrow-down /></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item @click="exportWindowImage">导出图片</el-dropdown-item>
+              <el-dropdown-item @click="exportWindowConfig">导出配置</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
         <button @click="importWindow">导入</button>
       </div>
+      
+      <!-- 导出图片弹出层 -->
+      <el-dialog
+        v-model="showExportDialog"
+        title="导出图片"
+        width="500px"
+        center
+        destroy-on-close
+      >
+        <div class="export-options">
+          <div class="export-option">
+            <label>格式:</label>
+            <el-select v-model="exportFormat" class="export-format-select">
+              <el-option value="png" label="PNG (透明背景)" />
+              <el-option value="jpeg" label="JPEG (高压缩率)" />
+              <el-option value="webp" label="WebP (最佳质量/大小比)" />
+            </el-select>
+          </div>
+          <div class="export-option">
+            <label>质量:</label>
+            <el-slider 
+              v-model="exportQuality" 
+              :min="0.1" 
+              :max="1" 
+              :step="0.1" 
+              show-tooltip
+              :format-tooltip="(value: number) => `${Math.round(value * 100)}%`"
+            />
+          </div>
+          <div class="export-option">
+            <label>像素比例:</label>
+            <el-radio-group v-model="exportPixelRatio">
+              <el-radio label="1">1x (标准)</el-radio>
+              <el-radio label="2">2x (高清)</el-radio>
+              <el-radio label="3">3x (超高清)</el-radio>
+            </el-radio-group>
+          </div>
+          <div class="export-option">
+            <label>保留背景:</label>
+            <el-switch v-model="exportWithBackground" />
+          </div>
+        </div>
+        
+        <div class="export-preview">
+          <el-image 
+            v-if="exportPreviewUrl" 
+            :src="exportPreviewUrl"
+            fit="contain"
+            style="max-height: 250px;"
+          />
+          <div v-else class="export-preview-placeholder">
+            生成预览图...
+          </div>
+        </div>
+        
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="cancelExport">取消</el-button>
+            <el-button type="primary" @click="confirmExport">
+              导出图片
+            </el-button>
+          </span>
+        </template>
+      </el-dialog>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRootWindowStore } from '../../stores/rootWindowStore';
+import { 
+  ElDropdown, 
+  ElDropdownMenu, 
+  ElDropdownItem, 
+  ElButton,
+  ElDialog,
+  ElSelect,
+  ElOption,
+  ElImage,
+  ElSlider,
+  ElRadioGroup,
+  ElRadio,
+  ElSwitch,
+  ElIcon 
+} from 'element-plus';
+import { 
+  ArrowDown 
+} from '@element-plus/icons-vue';
 
 const windowStore = useRootWindowStore();
 
@@ -88,9 +180,17 @@ const windowStore = useRootWindowStore();
 const width = ref(windowStore.windowConfig.width);
 const height = ref(windowStore.windowConfig.height);
 const frameSize = ref(windowStore.windowConfig.frameSize);
-const activeTool = computed(() => windowStore.activeTool);
-const splitDirection = computed(() => windowStore.splitDirection);
-const sashType = computed(() => windowStore.sashType);
+const activeTool = ref('select');
+const splitDirection = ref('vertical');
+const sashType = ref('fixed');
+
+// 导出图片相关状态
+const showExportDialog = ref(false);
+const exportFormat = ref('png');
+const exportQuality = ref(0.9);
+const exportPixelRatio = ref('2');
+const exportWithBackground = ref(true);
+const exportPreviewUrl = ref('');
 
 // 更新尺寸
 function updateSize() {
@@ -107,16 +207,19 @@ function selectTool(tool: 'select' | 'split' | 'sash' | 'pan' | 'zoomIn' | 'zoom
   if(tool === 'select') {
     windowStore.selectedElement = null;
   }
+  activeTool.value = tool;
   windowStore.activeTool = tool;
 }
 
 // 设置分割方向
 function setSplitDirection(direction: 'horizontal' | 'vertical') {
+  splitDirection.value = direction;
   windowStore.splitDirection = direction;
 }
 
 // 设置窗扇类型
 function setSashType(type: 'fixed' | 'left' | 'right' | 'tiltLeft' | 'tiltRight') {
+  sashType.value = type;
   windowStore.sashType = type;
 }
 
@@ -130,7 +233,7 @@ function resetWindow() {
 }
 
 // 导出窗户配置
-function exportWindow() {
+function exportWindowConfig() {
   const config = windowStore.exportWindowConfig();
   if (config) {
     const dataStr = JSON.stringify(config, null, 2);
@@ -143,6 +246,72 @@ function exportWindow() {
     linkElement.click();
   }
 }
+
+// 导出窗户图片
+function exportWindowImage() {
+  showExportDialog.value = true;
+  // 生成预览图
+  generateExportPreview();
+}
+
+// 生成导出预览图
+function generateExportPreview() {
+  try {
+    // 使用自定义事件通信，请求WindowCanvas组件导出图片
+    window.dispatchEvent(new CustomEvent('export-canvas-image', {
+      detail: {
+        mimeType: `image/${exportFormat.value}`,
+        quality: exportQuality.value,
+        pixelRatio: Number(exportPixelRatio.value),
+        backgroundColor: exportWithBackground.value ? '#e0e0e0' : undefined
+      }
+    }));
+  } catch (error) {
+    console.error('请求导出图片失败:', error);
+  }
+}
+
+// 取消导出
+function cancelExport() {
+  showExportDialog.value = false;
+  exportPreviewUrl.value = '';
+}
+
+// 确认导出图片
+function confirmExport() {
+  if (!exportPreviewUrl.value) {
+    generateExportPreview();
+    
+    // 如果仍然没有预览图，则返回
+    if (!exportPreviewUrl.value) {
+      alert('导出失败，请重试');
+      return;
+    }
+  }
+  
+  // 创建下载链接
+  const link = document.createElement('a');
+  link.download = `窗户设计_${new Date().getTime()}.${exportFormat.value}`;
+  link.href = exportPreviewUrl.value;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  // 关闭导出对话框
+  showExportDialog.value = false;
+}
+
+// 修改导出参数时重新生成预览
+function updateExportPreview() {
+  if (showExportDialog.value) {
+    generateExportPreview();
+  }
+}
+
+// 监听导出参数变化
+watch([exportFormat, exportQuality, exportPixelRatio, exportWithBackground], () => {
+  updateExportPreview();
+});
 
 // 导入窗户配置
 function importWindow() {
@@ -170,9 +339,31 @@ function importWindow() {
 
 // 重置视图
 function resetView() {
-  // 发送重置视图事件
-  windowStore.resetView();
+  // 重置视图
+  windowStore.viewState.resetRequested = true;
 }
+
+// 在onMounted中添加事件监听
+onMounted(() => {
+  // 监听WindowCanvas组件返回的图片数据
+  window.addEventListener('canvas-image-ready', (e: any) => {
+    if (e.detail && e.detail.dataURL) {
+      exportPreviewUrl.value = e.detail.dataURL;
+    }
+  });
+  
+  // 监听导出图片错误
+  window.addEventListener('canvas-image-error', (e: any) => {
+    console.error('导出图片失败:', e.detail?.error);
+    alert(`导出图片失败: ${e.detail?.error || '未知错误'}`);
+  });
+});
+
+// 在onUnmounted中移除事件监听
+onUnmounted(() => {
+  window.removeEventListener('canvas-image-ready', () => {});
+  window.removeEventListener('canvas-image-error', () => {});
+});
 </script>
 
 <style scoped>
@@ -241,5 +432,78 @@ button.active {
   background: #4a6bff;
   color: white;
   border-color: #3351d8;
+}
+
+/* 导出对话框样式 */
+.export-options {
+  margin-bottom: 20px;
+}
+
+.export-option {
+  display: flex;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.export-option label {
+  width: 90px;
+  font-size: 14px;
+  color: #555;
+}
+
+.export-format-select {
+  width: 100%;
+}
+
+.export-preview {
+  margin-bottom: 20px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+  min-height: 150px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f5f5f5;
+}
+
+.export-preview-placeholder {
+  padding: 30px;
+  color: #999;
+  font-size: 14px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.export-preview-placeholder .el-icon {
+  font-size: 24px;
+  color: #4285f4;
+}
+
+/* Element Plus 样式覆盖 */
+.export-button {
+  margin: 0 8px; /* 保持与其他按钮一致的间距 */
+}
+
+/* 确保下拉菜单样式与应用整体风格一致 */
+:deep(.el-dropdown-menu) {
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.el-dropdown-item) {
+  font-size: 14px;
+  padding: 8px 12px;
+}
+
+:deep(.el-dialog) {
+  border-radius: 8px;
+}
+
+:deep(.el-radio) {
+  margin-right: 15px;
 }
 </style>

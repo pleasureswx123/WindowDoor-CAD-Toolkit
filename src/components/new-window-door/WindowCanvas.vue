@@ -920,6 +920,33 @@ onMounted(() => {
     
     // 生成初始预览图
     updatePreview();
+    
+    // 添加导出图片功能
+    // 监听由ToolBar组件发出的导出图片事件
+    window.addEventListener('export-canvas-image', (e: any) => {
+      if (stageRef.value) {
+        try {
+          // 使用e.detail中提供的参数生成图片
+          const exportOptions = e.detail || {};
+          const dataURL = stageRef.value.getNode().toDataURL({
+            mimeType: exportOptions.mimeType || 'image/png',
+            quality: exportOptions.quality || 0.9,
+            pixelRatio: exportOptions.pixelRatio || 1,
+            backgroundColor: exportOptions.backgroundColor
+          });
+          
+          // 将生成的图片URL发送回去
+          window.dispatchEvent(new CustomEvent('canvas-image-ready', {
+            detail: { dataURL }
+          }));
+        } catch (error) {
+          console.error('生成图片失败:', error);
+          window.dispatchEvent(new CustomEvent('canvas-image-error', {
+            detail: { error: error instanceof Error ? error.message : String(error) }
+          }));
+        }
+      }
+    });
   });
 });
 
