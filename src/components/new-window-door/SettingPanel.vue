@@ -2,7 +2,7 @@
   <div class="setting-panel">
     <!-- 默认显示窗口尺寸设置 -->
     <div v-if="!hasSelectedElement" class="window-settings">
-      <h3>窗户尺寸</h3>
+      <h3>窗户基础属性</h3>
       <div class="setting-group">
         <label>窗户宽度 (mm):</label>
         <input type="number" v-model.number="width" @change="updateSize" min="300" max="5000" />
@@ -16,10 +16,99 @@
         <input type="number" v-model.number="frameSize" min="20" max="200" />
       </div>
       
+      <!-- 全局默认配置 -->
+      <div class="global-settings">
+        <h4>全局默认配置</h4>
+        <p class="setting-desc">设置下列项目后，新创建的元素将使用这些默认值</p>
+        
+        <!-- 默认颜色配置 -->
+        <div class="setting-section">
+          <h5>窗框配置</h5>
+          <div class="setting-group">
+            <label>窗框颜色:</label>
+            <div class="color-picker-container">
+              <input type="color" v-model="defaultConfigValue.frameColor" class="color-input" />
+              <input type="text" v-model="defaultConfigValue.frameColor" class="color-text" placeholder="#颜色代码" />
+            </div>
+          </div>
+          <div class="setting-group">
+            <label>窗框边线颜色:</label>
+            <div class="color-picker-container">
+              <input type="color" v-model="defaultConfigValue.frameStrokeColor" class="color-input" />
+              <input type="text" v-model="defaultConfigValue.frameStrokeColor" class="color-text" placeholder="#颜色代码" />
+            </div>
+          </div>
+          <div class="setting-group">
+            <label>窗框边线宽度 (px):</label>
+            <input type="number" v-model.number="defaultConfigValue.frameStrokeWidth" min="0" max="5" step="0.5" />
+          </div>
+        </div>
+        
+        <div class="setting-section">
+          <h5>中挺配置</h5>
+          <div class="setting-group">
+            <label>中挺颜色:</label>
+            <div class="color-picker-container">
+              <input type="color" v-model="defaultConfigValue.muntinColor" class="color-input" />
+              <input type="text" v-model="defaultConfigValue.muntinColor" class="color-text" placeholder="#颜色代码" />
+            </div>
+          </div>
+        </div>
+        
+        <div class="setting-section">
+          <h5>窗扇配置</h5>
+          <div class="setting-group">
+            <label>窗扇颜色:</label>
+            <div class="color-picker-container">
+              <input type="color" v-model="defaultConfigValue.sashColor" class="color-input" />
+              <input type="text" v-model="defaultConfigValue.sashColor" class="color-text" placeholder="#颜色代码" />
+            </div>
+          </div>
+          <div class="setting-group">
+            <label>窗扇边线颜色:</label>
+            <div class="color-picker-container">
+              <input type="color" v-model="defaultConfigValue.sashStrokeColor" class="color-input" />
+              <input type="text" v-model="defaultConfigValue.sashStrokeColor" class="color-text" placeholder="#颜色代码" />
+            </div>
+          </div>
+          <div class="setting-group">
+            <label>窗扇边线宽度 (px):</label>
+            <input type="number" v-model.number="defaultConfigValue.sashStrokeWidth" min="0" max="5" step="0.5" />
+          </div>
+        </div>
+        
+        <div class="setting-section">
+          <h5>玻璃配置</h5>
+          <div class="setting-group">
+            <label>玻璃颜色:</label>
+            <div class="color-picker-container">
+              <input type="color" v-model="defaultConfigValue.glassColor" class="color-input" />
+              <input type="text" v-model="defaultConfigValue.glassColor" class="color-text" placeholder="#颜色代码" />
+            </div>
+          </div>
+          <div class="setting-group">
+            <label>玻璃透明度: {{ (defaultConfigValue.glassOpacity * 100).toFixed(0) }}%</label>
+            <input type="range" v-model.number="defaultConfigValue.glassOpacity" min="0" max="1" step="0.05" class="slider" />
+            <div class="opacity-hint">
+              <span>不透明</span>
+              <span>透明</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 应用默认配置按钮 -->
+        <div class="setting-actions">
+          <button class="apply-all-button" @click="applyToAllElements">
+            应用到所有元素
+          </button>
+        </div>
+      </div>
+      
       <!-- 提示信息 -->
       <div class="setting-tips">
         <p>提示: 调整窗户尺寸将重新绘制整个窗户</p>
-        <p>选中具体元素可以进行更详细的设置</p>
+        <p>全局默认配置将影响新创建的元素</p>
+        <p>点击"应用到所有元素"可将当前配置应用到所有现有元素</p>
       </div>
     </div>
 
@@ -306,10 +395,20 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRootWindowStore } from '../../stores/rootWindowStore';
-import { WindowMuntin } from '../../utils/RootWindow';
+import { WindowMuntin, defaultConfigValue } from '../../utils/RootWindow';
 import { useEventListener, onKeyStroke } from '@vueuse/core';
 
 const windowStore = useRootWindowStore();
+
+
+watch(defaultConfigValue, (newVal) => {
+  console.log('defaultConfig 111', newVal);
+  const { frameColor, frameStrokeColor, frameStrokeWidth, glassColor, glassOpacity } = newVal;
+  nextTick(() => {
+    windowStore.windowStructure?.frame?.updateColor(frameColor, frameStrokeColor, frameStrokeWidth);
+
+  });
+}, { deep: true });
 
 // 窗户尺寸设置
 const width = ref(windowStore.windowConfig.width);
@@ -884,6 +983,13 @@ const muntinColor = computed({
   }
 });
 
+// 应用到所有元素
+function applyToAllElements() {
+  // 应用到所有元素
+  if (windowStore.windowStructure) {
+    windowStore.windowStructure.applyDefaultConfigToAll();
+  }
+}
 
 </script>
 
@@ -1088,5 +1194,62 @@ button:hover {
   margin-top: 8px;
   font-size: 12px;
   color: #666;
+}
+
+.global-settings {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  border-top: 1px dashed #ccc;
+  padding-top: 15px;
+}
+
+.global-settings h4 {
+  margin-top: 5px;
+  margin-bottom: 10px;
+  font-size: 15px;
+  color: #4a6bff;
+}
+
+.setting-desc {
+  margin-bottom: 15px;
+  font-size: 13px;
+  color: #666;
+  font-style: italic;
+}
+
+.setting-section {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  border-left: 3px solid #4a6bff;
+}
+
+.setting-section h5 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #333;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 5px;
+}
+
+.apply-default-button, .apply-all-button {
+  width: 100%;
+  padding: 8px 0;
+  margin-top: 5px;
+}
+
+.apply-default-button {
+  background: #4a6bff;
+  color: white;
+  border-color: #3551d1;
+}
+
+.apply-all-button {
+  background: #ff6b4a;
+  color: white;
+  border-color: #d13535;
+  margin-left: 4%;
 }
 </style> 

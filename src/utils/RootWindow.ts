@@ -15,7 +15,7 @@
  * 请结合 /vue-konva.min.js 文件中的代码，将这些类写出来。
  */
 
-import { ref, computed } from 'vue';
+import { ref, computed, reactive } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import Konva from 'konva';
 
@@ -97,8 +97,46 @@ class WindowComponent {
   }
 }
 
+export const defaultConfigValue = reactive({
+  frameColor: '#8B4513', // 默认棕色
+  frameStrokeColor: '#000000',
+  frameStrokeWidth: 2,
+  muntinColor: '#8B4513', // 与窗框一致
+  sashColor: '#A0522D', // 默认深棕色
+  sashStrokeColor: '#000000',
+  sashStrokeWidth: 1,
+  glassColor: '#ADD8E6', // 默认浅蓝色
+  glassOpacity: 0.7,
+  muntinThickness: 50,
+  sashFrameThickness: 50,
+  frameSize: 50
+})
+
+class GlobalDefaultConfig extends WindowComponent {
+  // 全局默认配置
+  defaultConfig: {
+    frameSize: number; // 窗框宽度
+    frameColor: string; // 窗框默认颜色
+    frameStrokeColor: string; // 窗框边线颜色
+    frameStrokeWidth: number; // 窗框边线宽度
+    muntinColor: string; // 中挺默认颜色
+    sashColor: string; // 窗扇默认颜色
+    sashStrokeColor: string; // 窗扇边线颜色
+    sashStrokeWidth: number; // 窗扇边线宽度
+    glassColor: string; // 玻璃默认颜色
+    glassOpacity: number; // 玻璃默认透明度
+    muntinThickness: number; // 中挺宽度
+    sashFrameThickness: number; // 窗扇框架宽度
+  };
+  constructor(config: IDimension) {
+    super(config);
+    // 初始化默认配置
+    this.defaultConfig = defaultConfigValue
+  }
+}
+
 // 窗户结构类 - 整个窗户的根类
-export class WindowStructure extends WindowComponent {
+export class WindowStructure extends GlobalDefaultConfig {
   frame: WindowFrame;
   mainArea: WindowEmptyArea;
   frameSize: number;
@@ -109,7 +147,7 @@ export class WindowStructure extends WindowComponent {
     super({ x: 0, y: 0, width, height, tag: 'root-window', ele: 'root-window' });
     this.width = width;
     this.height = height;
-    this.frameSize = frameSize;
+    this.frameSize = frameSize || this.defaultConfig.frameSize;
     
     // 创建主框架
     this.frame = new WindowFrame({
@@ -117,7 +155,10 @@ export class WindowStructure extends WindowComponent {
       y: 0,
       width,
       height,
-      thickness: frameSize,
+      thickness: this.frameSize,
+      color: this.defaultConfig.frameColor,
+      frameStrokeColor: this.defaultConfig.frameStrokeColor,
+      frameStrokeWidth: this.defaultConfig.frameStrokeWidth,
       ele: 'window-frame',
       tag: 'window-frame',
       parentId: this.id
@@ -127,12 +168,65 @@ export class WindowStructure extends WindowComponent {
     this.mainArea = new WindowEmptyArea({
       x: 0,
       y: 0,
-      width: width - frameSize * 2,
-      height: height - frameSize * 2,
+      width: width - this.frameSize * 2,
+      height: height - this.frameSize * 2,
       ele: 'window-empty-area',
       tag: 'window-empty-area',
       parentId: this.id
     });
+  }
+  
+  // 应用默认配置到所有元素
+  applyDefaultConfigToAll() {
+    // 应用到窗框
+    if (this.frame) {
+      this.frame.color = this.defaultConfig.frameColor;
+      this.frame.frameStrokeColor = this.defaultConfig.frameStrokeColor;
+      this.frame.frameStrokeWidth = this.defaultConfig.frameStrokeWidth;
+    }
+    
+    // 递归应用到所有子元素
+    this.applyConfigToEmptyArea(this.mainArea);
+    
+    // 重新渲染
+    this.render();
+  }
+  
+  // 递归应用配置到空白区域及其子元素
+  private applyConfigToEmptyArea(area: WindowEmptyArea) {
+    // 如果有窗扇，应用配置
+    if (area.sash) {
+      // 应用到窗扇框架
+      if (area.sash.frame) {
+        area.sash.frame.frameColor = this.defaultConfig.sashColor;
+        area.sash.frame.frameStrokeColor = this.defaultConfig.sashStrokeColor;
+        area.sash.frame.frameStrokeWidth = this.defaultConfig.sashStrokeWidth;
+      }
+      
+      // 应用到玻璃
+      if (area.sash.glass) {
+        area.sash.glass.color = this.defaultConfig.glassColor;
+        area.sash.glass.opacity = this.defaultConfig.glassOpacity;
+      }
+    }
+    
+    // 如果有子元素，递归应用
+    if (area.children && area.children.length > 0) {
+      for (const child of area.children) {
+        // 应用到中挺
+        if (child instanceof WindowMuntin) {
+          child.color = this.defaultConfig.muntinColor;
+          if (typeof child.updateColor === 'function') {
+            child.updateColor(this.defaultConfig.muntinColor);
+          }
+        }
+        
+        // 递归应用到子空白区域
+        if (child instanceof WindowEmptyArea) {
+          this.applyConfigToEmptyArea(child);
+        }
+      }
+    }
   }
   
   // 渲染方法 - 返回vue-konva配置
@@ -162,17 +256,17 @@ export class WindowStructure extends WindowComponent {
 }
 
 // 窗户边框类
-export class WindowFrame extends WindowComponent {
+export class WindowFrame extends GlobalDefaultConfig {
   thickness: number;
   color: string;
   frameStrokeWidth: number;
   frameStrokeColor: string;
   constructor(config: IDimension & { thickness: number, color?: string }) {
     super(config);
-    this.thickness = config.thickness || 50;
-    this.color = config.color || '#8B4513'; // 默认棕色
-    this.frameStrokeWidth = 2;
-    this.frameStrokeColor = '#000000';
+    this.thickness = config.thickness || this.defaultConfig.frameSize;
+    this.color = config.color || this.defaultConfig.frameColor; // 默认棕色
+    this.frameStrokeWidth = this.defaultConfig.frameStrokeWidth;
+    this.frameStrokeColor = this.defaultConfig.frameStrokeColor;
   }
   
   // 更新窗框颜色
@@ -188,11 +282,7 @@ export class WindowFrame extends WindowComponent {
     if (strokeWidth !== undefined) {
       this.frameStrokeWidth = strokeWidth;
     }
-    
-    // 如果有父节点，告知其需要重新渲染
-    if (this.parent && typeof this.parent.render === 'function') {
-      this.parent.render();
-    }
+    this.render();
   }
   
   render(): KonvaRenderConfig {
@@ -287,7 +377,7 @@ export class WindowFrame extends WindowComponent {
 }
 
 // 窗户空白区域类
-export class WindowEmptyArea extends WindowComponent {
+export class WindowEmptyArea extends GlobalDefaultConfig {
   children: Array<WindowEmptyArea | WindowMuntin | WindowSash>;
   sash: WindowSash | null;
   splitDirection: 'horizontal' | 'vertical' | null;
@@ -298,7 +388,7 @@ export class WindowEmptyArea extends WindowComponent {
     this.children = [];
     this.sash = null;
     this.splitDirection = null;
-    this.thickness = 0;
+    this.thickness = this.defaultConfig.muntinThickness;
     this.pointerPosition = { x: 0, y: 0 };
   }
   
@@ -323,7 +413,7 @@ export class WindowEmptyArea extends WindowComponent {
   }
   
   // 分割区域
-  splitArea(direction: 'horizontal' | 'vertical', pointerPosition: { x: number, y: number }, thickness: number = 40) {
+  splitArea(direction: 'horizontal' | 'vertical', pointerPosition: { x: number, y: number }) {
     if (this.sash) {
       console.error('此区域已有窗扇，无法分割');
       return;
@@ -331,7 +421,7 @@ export class WindowEmptyArea extends WindowComponent {
     
     this.splitDirection = direction;
     this.pointerPosition = pointerPosition;
-    this.thickness = thickness;
+    this.thickness = this.defaultConfig.muntinThickness;
     
     let area1: WindowEmptyArea, area2: WindowEmptyArea, muntin: WindowMuntin;
 
@@ -557,7 +647,7 @@ export class WindowEmptyArea extends WindowComponent {
 }
 
 // 窗户中挺类
-export class WindowMuntin extends WindowComponent {
+export class WindowMuntin extends GlobalDefaultConfig {
   direction: 'horizontal' | 'vertical';
   thickness: number;
   color: string;
@@ -565,8 +655,8 @@ export class WindowMuntin extends WindowComponent {
   constructor(config: IDimension & { direction: 'horizontal' | 'vertical', thickness?: number, color?: string }) {
     super(config);
     this.direction = config.direction;
-    this.thickness = config.thickness || 40;
-    this.color = config.color || '#8B4513'; // 默认棕色
+    this.thickness = config.thickness || this.defaultConfig.muntinThickness;
+    this.color = config.color || this.defaultConfig.muntinColor; // 默认棕色
   }
 
   changeColor(color: string) {
@@ -585,8 +675,6 @@ export class WindowMuntin extends WindowComponent {
       config: {
         ...this.getKonvaConfig(),
         fill: this.color,
-        // stroke: this.frameStrokeColor,
-        // strokeWidth: this.frameStrokeWidth,
         direction: this.direction,
         thickness: this.thickness,
         width: this.width,
@@ -594,16 +682,7 @@ export class WindowMuntin extends WindowComponent {
         draggable: true,
         parent: this.parent,
         dragBoundFunc(pos: { x: number, y: number }) {
-          // const posInfo = this.getAbsolutePosition();
-          // const parentSize = this.parent.getSize();
-          // const parentSize = this.parent.getClientRect();
-          // this.getPosition()
-          // this.getAbsolutePosition()
-          // this.getRelativePointerPosition()
-          // this.getClientRect()
-          // console.log('posInfo', posInfo, pos, parentSize);
           const direction = this.getAttrs().direction;
-          // console.log('sss', this.absolutePosition(), this.position(), this.getClientRect());
           if (direction === 'horizontal') {
             return {
               x: this.absolutePosition().x,
@@ -617,32 +696,23 @@ export class WindowMuntin extends WindowComponent {
            }
         },
         onDragStart(e: any) {
-          // 记录拖动开始时的位置信息
           this.startPos = this.getPosition();
-          // 保存当前方向
           this.dragDirection = this.getAttrs().direction;; 
-          // 获取父容器尺寸
           this.parentWidth = this.getAttrs().parent.width;
           this.parentHeight = this.getAttrs().parent.height;
           this.thickness = this.getAttrs().thickness || 10;
         },
         onDragMove(e: any) {
-          // 获取当前位置
           const pos = this.getPosition();
-          // 获取舞台上的相对位置
           const stage = e.target.getStage();
           const pointerPos = stage.getPointerPosition();
           
-          // 根据中挺方向处理拖动
           if (this.dragDirection === 'horizontal') {
-            // 水平中挺只能上下拖动，锁定x坐标
             this.x(this.startPos.x);
             
-            // 计算新的y坐标，但不能小于最小安全距离或大于父容器高度减去安全距离
-            const minY = this.thickness * 1.5; // 安全距离
+            const minY = this.thickness * 1.5;
             const maxY = this.parentHeight - minY;
             
-            // 限制y的有效范围
             let newY = pos.y;
             if (newY < minY) {
               newY = minY;
@@ -650,22 +720,17 @@ export class WindowMuntin extends WindowComponent {
               newY = maxY;
             }
             
-            // 设置新的y坐标
             this.y(newY);
             
-            // 通知父元素更新分割区域
             if (typeof this.getAttrs().parent.splitArea === 'function') {
               this.dragPos = {x: 0, y: newY};
             }
           } else if (this.dragDirection === 'vertical') {
-            // 垂直中挺只能左右拖动，锁定y坐标
             this.y(this.startPos.y);
             
-            // 计算新的x坐标，但不能小于最小安全距离或大于父容器宽度减去安全距离
-            const minX = this.thickness * 1.5; // 安全距离
+            const minX = this.thickness * 1.5;
             const maxX = this.parentWidth - minX;
             
-            // 限制x的有效范围
             let newX = pos.x;
             if (newX < minX) {
               newX = minX;
@@ -673,21 +738,17 @@ export class WindowMuntin extends WindowComponent {
               newX = maxX;
             }
             
-            // 设置新的x坐标
             this.x(newX);
             
-            // 通知父元素更新分割区域
             if (typeof this.getAttrs().parent.splitArea === 'function') {
               this.dragPos = {x: newX, y: 0};
             }
           }
         },
         onDragEnd(e: any) {
-          // 最后一次更新分割区域，确保数据同步
           if (typeof this.getAttrs().parent.splitArea === 'function') {
             this.getAttrs().parent.splitArea(this.dragDirection, this.dragPos);
           }
-          // 清除临时状态
           delete this.startPos;
           delete this.dragDirection;
           delete this.parentWidth;
@@ -703,7 +764,7 @@ export class WindowMuntin extends WindowComponent {
 type SashType = 'fixed' | 'left' | 'right' | 'tiltLeft' | 'tiltRight';
 
 // 窗户窗扇类
-export class WindowSash extends WindowComponent {
+export class WindowSash extends GlobalDefaultConfig {
   sashType: SashType;
   frame: WindowSashFrame | null;
   glass: WindowSashGlass | null;
@@ -719,14 +780,14 @@ export class WindowSash extends WindowComponent {
     this.frame = null;
     this.glass = null;
     this.handle = null;
-    this.frameStrokeWidth = 1;
-    this.frameStrokeColor = '#000000';
-    this.frameColor = '#A0522D';
+    this.frameStrokeWidth = this.defaultConfig.sashStrokeWidth;
+    this.frameStrokeColor = this.defaultConfig.sashStrokeColor;
+    this.frameColor = this.defaultConfig.sashColor;
     this.initData();
   }
 
   initData() {
-    this.frameSize = this.sashType === 'fixed' ? 0 : 40;
+    this.frameSize = this.sashType === 'fixed' ? 0 : this.defaultConfig.muntinThickness;
 
     // 创建窗扇框架
     this.frame = new WindowSashFrame({
@@ -822,19 +883,18 @@ export class WindowSash extends WindowComponent {
 }
 
 // 窗户窗扇边框类
-export class WindowSashFrame extends WindowComponent {
+export class WindowSashFrame extends GlobalDefaultConfig {
   thickness: number;
   frameStrokeWidth: number | string;
   frameStrokeColor: string;
   frameColor: string;
-
   
   constructor(config: IDimension & { thickness: number, color?: string}) {
     super(config);
-    this.thickness = config.thickness;
-    this.frameColor = config.frameColor || '#A0522D'; // 默认深棕色
-    this.frameStrokeWidth = config.frameStrokeWidth || 1;
-    this.frameStrokeColor = config.frameStrokeColor || '#000000';
+    this.thickness = config.thickness || this.defaultConfig.sashFrameThickness;
+    this.frameColor = config.frameColor || this.defaultConfig.sashColor; // 默认深棕色
+    this.frameStrokeWidth = config.frameStrokeWidth || this.defaultConfig.sashStrokeWidth;
+    this.frameStrokeColor = config.frameStrokeColor || this.defaultConfig.sashStrokeColor;
   }
   
   // 更新窗扇边框颜色
@@ -961,14 +1021,14 @@ export class WindowSashFrame extends WindowComponent {
 }
 
 // 窗户窗扇玻璃类
-export class WindowSashGlass extends WindowComponent {
+export class WindowSashGlass extends GlobalDefaultConfig {
   color: string;
   opacity: number;
   
   constructor(config: IDimension & { color?: string, opacity?: number }) {
     super(config);
-    this.color = config.color || '#ADD8E6'; // 默认浅蓝色
-    this.opacity = config.opacity || 0.7;
+    this.color = config.color || this.defaultConfig.glassColor; // 默认浅蓝色
+    this.opacity = config.opacity || this.defaultConfig.glassOpacity;
   }
   
   // 更新玻璃颜色和透明度
