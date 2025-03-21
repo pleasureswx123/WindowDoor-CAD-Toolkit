@@ -1,22 +1,6 @@
 <template>
   <div class="design-toolbar">
     <div class="toolbar-section">
-      <h3>窗户尺寸</h3>
-      <div class="input-group">
-        <label>宽度:</label>
-        <input type="number" v-model.number="width" @change="updateSize" min="300" max="5000" />
-      </div>
-      <div class="input-group">
-        <label>高度:</label>
-        <input type="number" v-model.number="height" @change="updateSize" min="300" max="5000" />
-      </div>
-      <div class="input-group">
-        <label>框架厚度:</label>
-        <input type="number" v-model.number="frameSize" @change="updateFrameSize" min="20" max="200" />
-      </div>
-    </div>
-
-    <div class="toolbar-section">
       <h3>工具</h3>
       <div class="tool-buttons">
         <button @click="selectTool('select')" :class="{ active: activeTool === 'select' }">

@@ -1,7 +1,30 @@
 <template>
-  <div class="setting-panel" v-if="hasSelectedElement">
+  <div class="setting-panel">
+    <!-- 默认显示窗口尺寸设置 -->
+    <div v-if="!hasSelectedElement" class="window-settings">
+      <h3>窗户尺寸</h3>
+      <div class="setting-group">
+        <label>窗户宽度 (mm):</label>
+        <input type="number" v-model.number="width" @change="updateSize" min="300" max="5000" />
+      </div>
+      <div class="setting-group">
+        <label>窗户高度 (mm):</label>
+        <input type="number" v-model.number="height" @change="updateSize" min="300" max="5000" />
+      </div>
+      <div class="setting-group">
+        <label>框架厚度 (mm):</label>
+        <input type="number" v-model.number="frameSize" @change="updateFrameSize" min="20" max="200" />
+      </div>
+      
+      <!-- 提示信息 -->
+      <div class="setting-tips">
+        <p>提示: 调整窗户尺寸将重新绘制整个窗户</p>
+        <p>选中具体元素可以进行更详细的设置</p>
+      </div>
+    </div>
+
     <!-- 中挺设置面板 -->
-    <div v-if="isMuntinSelected" class="muntin-settings">
+    <div v-else-if="isMuntinSelected" class="muntin-settings">
       <h3>中挺设置</h3>
 
       <!-- 中挺方向 (只读) -->
@@ -278,6 +301,53 @@ import { useEventListener, onKeyStroke } from '@vueuse/core';
 
 const windowStore = useRootWindowStore();
 
+// 窗户尺寸设置
+const width = ref(windowStore.windowConfig.width);
+const height = ref(windowStore.windowConfig.height);
+
+// 窗框大小 - 集成两种情况
+const frameSize = computed({
+  get: () => {
+    // 如果选中了窗扇，则返回窗扇的frameSize
+    if (isSashSelected.value && windowStore.selectedElement) {
+      return windowStore.selectedElement.frameSize || 40;
+    }
+    // 否则返回全局窗框大小
+    return windowStore.windowConfig.frameSize;
+  },
+  set: (value) => {
+    // 如果选中了窗扇，更新窗扇的frameSize
+    if (isSashSelected.value && windowStore.selectedElement) {
+      windowStore.selectedElement.frameSize = value;
+      
+      // 触发窗扇框架大小重新渲染
+      if (typeof windowStore.selectedElement.updateFrameSize === 'function') {
+        windowStore.selectedElement.updateFrameSize(value);
+      }
+    } else {
+      // 否则更新全局窗框大小
+      windowStore.updateFrameSize(value);
+    }
+  }
+});
+
+// 更新尺寸
+function updateSize() {
+  windowStore.updateWindowSize(width.value, height.value);
+}
+
+// 玻璃宽度
+const glassWidth = computed(() => {
+  if (!isSashSelected.value || !windowStore.selectedElement) return 0;
+  return sashWidth.value - (frameSize.value * 2);
+});
+
+// 玻璃高度
+const glassHeight = computed(() => {
+  if (!isSashSelected.value || !windowStore.selectedElement) return 0;
+  return sashHeight.value - (frameSize.value * 2);
+});
+
 // 判断是否有选中元素
 const hasSelectedElement = computed(() => !!windowStore.selectedElement);
 
@@ -426,40 +496,6 @@ const sashWidth = computed(() => {
 const sashHeight = computed(() => {
   if (!isSashSelected.value || !windowStore.selectedElement) return 0;
   return windowStore.selectedElement.height || 0;
-});
-
-// 窗框大小
-const frameSize = computed({
-  get: () => {
-    if (!isSashSelected.value || !windowStore.selectedElement) return 40;
-
-    const a = windowStore.selectedElement;
-    return windowStore.selectedElement.frameSize || 0;
-  },
-  set: (value) => {
-    if (!isSashSelected.value || !windowStore.selectedElement) return;
-    
-    // 更新窗框大小
-    windowStore.selectedElement.frameSize = value;
-
-    
-    // 触发重新渲染
-    if (windowStore.selectedElement.updateFrameSize) {
-      windowStore.selectedElement.updateFrameSize(value);
-    }
-  }
-});
-
-// 玻璃宽度
-const glassWidth = computed(() => {
-  if (!isSashSelected.value || !windowStore.selectedElement) return 0;
-  return sashWidth.value - (frameSize.value * 2);
-});
-
-// 玻璃高度
-const glassHeight = computed(() => {
-  if (!isSashSelected.value || !windowStore.selectedElement) return 0;
-  return sashHeight.value - (frameSize.value * 2);
 });
 
 // 窗扇类型
@@ -996,6 +1032,17 @@ button:hover {
 }
 
 .color-text {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.window-settings {
+  margin-bottom: 20px;
+}
+
+.window-settings input {
+  width: 100%;
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
