@@ -162,68 +162,91 @@ export class WindowStructure extends WindowComponent {
 export class WindowFrame extends WindowComponent {
   thickness: number;
   color: string;
-  
+  frameStrokeWidth: number;
+  frameStrokeColor: string;
   constructor(config: IDimension & { thickness: number, color?: string }) {
     super(config);
     this.thickness = config.thickness || 50;
     this.color = config.color || '#8B4513'; // 默认棕色
+    this.frameStrokeWidth = 2;
+    this.frameStrokeColor = '#000';
   }
   
   render(): KonvaRenderConfig {
-    // 创建四个边框矩形
+    // 创建四个边框线条，形成立体效果
     const topFrame: KonvaRenderConfig = {
-      component: 'v-rect',
+      component: 'v-line',
       config: {
-        x: 0,
-        y: 0,
-        width: this.width,
-        height: this.thickness,
+        points: [
+          0, 0,                               // 左上外角
+          this.width, 0,                      // 右上外角
+          this.width - this.thickness, this.thickness, // 右上内角
+          this.thickness, this.thickness      // 左上内角
+        ],
+        closed: true,
         fill: this.color,
+        stroke: this.frameStrokeColor,
+        strokeWidth: this.frameStrokeWidth,
+        id: this.id,
         ele: 'top-frame',
-        tag: 'top-frame',
-        id: this.id
+        tag: 'top-frame'
       }
     };
     
     const rightFrame: KonvaRenderConfig = {
-      component: 'v-rect',
+      component: 'v-line',
       config: {
-        x: this.width - this.thickness,
-        y: 0,
-        width: this.thickness,
-        height: this.height,
+        points: [
+          this.width, 0,                        // 右上外角
+          this.width, this.height,              // 右下外角
+          this.width - this.thickness, this.height - this.thickness, // 右下内角
+          this.width - this.thickness, this.thickness // 右上内角
+        ],
+        closed: true,
         fill: this.color,
+        stroke: this.frameStrokeColor,
+        strokeWidth: this.frameStrokeWidth,
+        id: this.id,
         ele: 'right-frame',
-        tag: 'right-frame',
-        id: this.id
+        tag: 'right-frame'
       }
     };
     
     const bottomFrame: KonvaRenderConfig = {
-      component: 'v-rect',
+      component: 'v-line',
       config: {
-        x: 0,
-        y: this.height - this.thickness,
-        width: this.width,
-        height: this.thickness,
+        points: [
+          0, this.height,                         // 左下外角
+          this.width, this.height,                // 右下外角
+          this.width - this.thickness, this.height - this.thickness, // 右下内角
+          this.thickness, this.height - this.thickness  // 左下内角
+        ],
+        closed: true,
         fill: this.color,
+        stroke: this.frameStrokeColor,
+        strokeWidth: this.frameStrokeWidth,
+        id: this.id,
         ele: 'bottom-frame',
-        tag: 'bottom-frame',
-        id: this.id
+        tag: 'bottom-frame'
       }
     };
     
     const leftFrame: KonvaRenderConfig = {
-      component: 'v-rect',
+      component: 'v-line',
       config: {
-        x: 0,
-        y: 0,
-        width: this.thickness,
-        height: this.height,
+        points: [
+          0, 0,                                // 左上外角
+          this.thickness, this.thickness,      // 左上内角
+          this.thickness, this.height - this.thickness, // 左下内角
+          0, this.height                        // 左下外角
+        ],
+        closed: true,
         fill: this.color,
+        stroke: this.frameStrokeColor,
+        strokeWidth: this.frameStrokeWidth,
+        id: this.id,
         ele: 'left-frame',
-        tag: 'left-frame',
-        id: this.id
+        tag: 'left-frame'
       }
     };
     
@@ -753,83 +776,114 @@ export class WindowSashFrame extends WindowComponent {
   thickness: number;
   color: string;
   
-  constructor(config: IDimension & { thickness: number, color?: string }) {
+  constructor(config: IDimension & { thickness: number, color?: string}) {
     super(config);
-    console.log(987987,this.parentId);
     this.thickness = config.thickness;
     this.color = config.color || '#A0522D'; // 默认深棕色
   }
   
   render(): KonvaRenderConfig {
-    // 与WindowFrame类似，创建四个边框矩形
-    const topFrame: KonvaRenderConfig = {
-      component: 'v-rect',
-      config: {
-        x: 0,
-        y: 0,
-        width: this.width,
-        height: this.thickness,
-        fill: this.color,
-        id: this.id,
-        parentId: this.parentId,
-        ele: 'window-sash-top-frame',
-        tag: 'window-sash-top-frame'
-      }
-    };
-    
-    const rightFrame: KonvaRenderConfig = {
-      component: 'v-rect',
-      config: {
-        x: this.width - this.thickness,
-        y: 0,
-        width: this.thickness,
-        height: this.height,
-        fill: this.color,
-        id: this.id,
-        parentId: this.parentId,
-        ele: 'window-sash-right-frame',
-        tag: 'window-sash-right-frame'
-      }
-    };
-    
-    const bottomFrame: KonvaRenderConfig = {
-      component: 'v-rect',
-      config: {
-        x: 0,
-        y: this.height - this.thickness,
-        width: this.width,
-        height: this.thickness,
-        fill: this.color,
-        id: this.id,
-        parentId: this.parentId,
-        ele: 'window-sash-bottom-frame',
-        tag: 'window-sash-bottom-frame'
-      }
-    };
-    
-    const leftFrame: KonvaRenderConfig = {
-      component: 'v-rect',
-      config: {
-        x: 0,
-        y: 0,
-        width: this.thickness,
-        height: this.height,
-        fill: this.color,
-        id: this.id,
-        parentId: this.parentId,
-        ele: 'window-sash-left-frame',
-        tag: 'window-sash-left-frame'
-      }
-    };
-    
+    // 使用线条创建立体边框效果，而非简单矩形
     return {
       component: 'v-group',
       config: this.getKonvaConfig(),
       children: [
-        topFrame,
-        rightFrame,
-        bottomFrame,
-        leftFrame
+        // 上边框 - 立体效果
+        {
+          component: 'v-line',
+          config: {
+            points: [
+              0, 0,                                 // 左上角
+              this.width, 0,                        // 右上角
+              this.width - this.thickness, this.thickness, // 右上内角
+              this.thickness, this.thickness        // 左上内角
+            ],
+            closed: true,
+            fill: this.color,
+            stroke: '#333333',
+            strokeWidth: 1,
+            id: this.id,
+            parentId: this.parentId,
+            ele: 'window-sash-top-frame',
+            tag: 'window-sash-top-frame'
+          }
+        },
+        // 左边框 - 立体效果
+        {
+          component: 'v-line',
+          config: {
+            points: [
+              0, 0,                                 // 左上角
+              this.thickness, this.thickness,       // 左上内角
+              this.thickness, this.height - this.thickness, // 左下内角
+              0, this.height                         // 左下角
+            ],
+            closed: true,
+            fill: this.color,
+            stroke: '#333333',
+            strokeWidth: 1,
+            id: this.id,
+            parentId: this.parentId,
+            ele: 'window-sash-left-frame',
+            tag: 'window-sash-left-frame'
+          }
+        },
+        // 下边框 - 立体效果
+        {
+          component: 'v-line',
+          config: {
+            points: [
+              0, this.height,                       // 左下角
+              this.width, this.height,              // 右下角
+              this.width - this.thickness, this.height - this.thickness, // 右下内角
+              this.thickness, this.height - this.thickness // 左下内角
+            ],
+            closed: true,
+            fill: this.color,
+            stroke: '#333333',
+            strokeWidth: 1,
+            id: this.id,
+            parentId: this.parentId,
+            ele: 'window-sash-bottom-frame',
+            tag: 'window-sash-bottom-frame'
+          }
+        },
+        // 右边框 - 立体效果
+        {
+          component: 'v-line',
+          config: {
+            points: [
+              this.width, 0,                        // 右上角
+              this.width, this.height,              // 右下角
+              this.width - this.thickness, this.height - this.thickness, // 右下内角
+              this.width - this.thickness, this.thickness // 右上内角
+            ],
+            closed: true,
+            fill: this.color,
+            stroke: '#333333',
+            strokeWidth: 1,
+            id: this.id,
+            parentId: this.parentId,
+            ele: 'window-sash-right-frame',
+            tag: 'window-sash-right-frame'
+          }
+        },
+        // 玻璃边缘框 - 形成窗扇的内部轮廓（仅对非固定窗扇添加）
+        // {
+        //   component: 'v-rect',
+        //   config: {
+        //     x: this.thickness,
+        //     y: this.thickness,
+        //     width: this.width - this.thickness * 2,
+        //     height: this.height - this.thickness * 2,
+        //     stroke: '#555555',
+        //     strokeWidth: 1,
+        //     id: this.id + '-glass-border',
+        //     parentId: this.parentId,
+        //     ele: 'window-sash-glass-border',
+        //     tag: 'window-sash-glass-border'
+        //   }
+        // }
       ]
     };
   }

@@ -435,9 +435,6 @@ function selectElement(node: any) {
   console.log("选中元素:", id, nodeType);
   console.log("元素类型:", nodeElement);
 
-  // 设置选中元素的ID
-  windowStore.setSelectedElement(id);
-
   // 处理中挺选择逻辑
   if (nodeElement === 'window-muntin') {
     console.log("选中了中挺元素:", node.attrs);
