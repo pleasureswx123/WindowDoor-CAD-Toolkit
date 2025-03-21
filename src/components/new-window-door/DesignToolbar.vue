@@ -13,23 +13,6 @@
           窗扇
         </button>
       </div>
-      
-      <!-- 场景控制工具 -->
-      <h3>场景控制</h3>
-      <div class="tool-buttons">
-        <button @click="selectTool('pan')" :class="{ active: activeTool === 'pan' }">
-          <span class="tool-icon">↔</span> 平移
-        </button>
-        <button @click="selectTool('zoomIn')" :class="{ active: activeTool === 'zoomIn' }">
-          <span class="tool-icon">+</span> 放大
-        </button>
-        <button @click="selectTool('zoomOut')" :class="{ active: activeTool === 'zoomOut' }">
-          <span class="tool-icon">-</span> 缩小
-        </button>
-        <button @click="resetView">
-          <span class="tool-icon">⟳</span> 重置视图
-        </button>
-      </div>
     </div>
 
     <div class="toolbar-section" v-if="activeTool === 'split'">
@@ -61,6 +44,25 @@
         </button>
         <button @click="setSashType('tiltRight')" :class="{ active: sashType === 'tiltRight' }">
           倾斜右开
+        </button>
+      </div>
+    </div>
+
+    <!-- 场景控制工具 -->
+    <div class="toolbar-section">
+      <h3>场景控制</h3>
+      <div class="tool-buttons">
+        <button @click="selectTool('pan')" :class="{ active: activeTool === 'pan' }">
+          <span class="tool-icon">↔</span> 平移
+        </button>
+        <button @click="selectTool('zoomIn')" :class="{ active: activeTool === 'zoomIn' }">
+          <span class="tool-icon">+</span> 放大
+        </button>
+        <button @click="selectTool('zoomOut')" :class="{ active: activeTool === 'zoomOut' }">
+          <span class="tool-icon">-</span> 缩小
+        </button>
+        <button @click="resetView">
+          <span class="tool-icon">⟳</span> 重置视图
         </button>
       </div>
     </div>
