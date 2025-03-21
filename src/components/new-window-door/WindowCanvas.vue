@@ -3,8 +3,19 @@
     class="window-canvas" 
     ref="canvasContainer"
   >
-    <v-stage ref="stageRef" :config="stageConfig" @click="handleStageClick" @mousemove="handleMouseMove"
-      @mouseleave="handleMouseLeave">
+    <v-stage 
+      ref="stageRef" 
+      :config="stageConfig" 
+      @click="handleStageClick" 
+      @mousemove="handleMouseMove"
+      @mouseleave="handleMouseLeave"
+      @mousedown="handleMouseDown"
+      @mouseup="handleMouseUp"
+      @wheel="handleWheel"
+      @touchstart="handleTouchStart"
+      @touchmove="handleTouchMove"
+      @touchend="handleTouchEnd"
+    >
       <v-layer ref="layerRef">
         <!-- 调试信息 -->
         <v-text v-if="showDebugInfo" :config="{
@@ -84,7 +95,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, onMounted, watch, nextTick, reactive } from 'vue';
 import { useRootWindowStore } from '../../stores/rootWindowStore';
 import AnnotationMarker from './AnnotationMarker.vue';
 import { WindowStructure, getElementById } from '../../utils/RootWindow';
@@ -123,12 +134,27 @@ const stageConfig = computed(() => {
     width: Math.max(500, windowStore.windowConfig.width * scale.value),
     height: Math.max(500, windowStore.windowConfig.height * scale.value),
     scaleX: scale.value,
-    scaleY: scale.value
+    scaleY: scale.value,
+    x: stagePosition.x,
+    y: stagePosition.y,
+    draggable: windowStore.activeTool === 'pan',
   };
 });
 
 // 缩放比例
-const scale = ref(0.5);
+const scale = ref(windowStore.viewState.scale);
+
+// 舞台位置
+const stagePosition = reactive({
+  x: windowStore.viewState.x,
+  y: windowStore.viewState.y
+});
+
+// 处理平移、缩放相关状态
+const isPanning = ref(false);
+const lastMousePos = ref({ x: 0, y: 0 });
+const lastTouchCenter = ref({ x: 0, y: 0 });
+const lastTouchDistance = ref(0);
 
 // 根据activeTool返回对应的鼠标样式名称
 const getCursorStyle = (tool?: string) => {
@@ -139,7 +165,13 @@ const getCursorStyle = (tool?: string) => {
     case 'split':
       return 'crosshair';
     case 'sash':
-      return 'copy'; // 更改为copy，表示添加窗扇的复制/创建操作
+      return 'copy';
+    case 'pan':
+      return 'grab';
+    case 'zoomIn':
+      return 'zoom-in';
+    case 'zoomOut':
+      return 'zoom-out';
     default:
       return 'default';
   }
@@ -248,7 +280,7 @@ const nodeAttrs = ref({
   y: 0,
 });
 
-// 监听工具变化以更新鼠标样式
+// 监听工具变化以更新鼠标样式和状态
 watch(() => windowStore.activeTool, (newTool) => {
   // 更新鼠标样式
   updateCursorStyle();
@@ -256,6 +288,20 @@ watch(() => windowStore.activeTool, (newTool) => {
   // 处理分割工具预览线
   if (newTool !== 'split') {
     showPreviewLine.value = false;
+  }
+  
+  // 响应工具变化
+  if (newTool === 'zoomIn') {
+    zoomIn();
+  } else if (newTool === 'zoomOut') {
+    zoomOut();
+  }
+});
+
+// 监听视图重置请求
+watch(() => windowStore.viewState.resetRequested, (requested) => {
+  if (requested) {
+    resetView();
   }
 });
 
@@ -328,6 +374,25 @@ function handleMouseMove(e: any) {
   if (windowStore.activeTool === 'split') {
     // 更新分割预览线
     showSplitPreview(e);
+  } else if (windowStore.activeTool === 'pan' && isPanning.value) {
+    // 处理平移逻辑
+    const stage = stageRef.value?.getStage();
+    if (stage) {
+      const pos = stage.getPointerPosition();
+      if (pos && lastMousePos.value) {
+        const dx = pos.x - lastMousePos.value.x;
+        const dy = pos.y - lastMousePos.value.y;
+        
+        stagePosition.x += dx;
+        stagePosition.y += dy;
+        
+        // 更新windowStore中的视图状态
+        windowStore.viewState.x = stagePosition.x;
+        windowStore.viewState.y = stagePosition.y;
+        
+        lastMousePos.value = { x: pos.x, y: pos.y };
+      }
+    }
   }
 }
 
@@ -530,6 +595,224 @@ function getParentElement(parentId: string) {
     height: parentElement.height,
     frameSize: parentElement.frameSize
   };
+}
+
+// 处理鼠标按下事件
+function handleMouseDown(e: any) {
+  if (windowStore.activeTool === 'pan') {
+    isPanning.value = true;
+    
+    // 更新鼠标样式为抓取中
+    if (stageRef.value) {
+      const stage = stageRef.value.getStage();
+      if (stage && stage.container()) {
+        stage.container().style.cursor = 'grabbing';
+      }
+    }
+    
+    // 记录鼠标位置
+    const stage = stageRef.value?.getStage();
+    if (stage) {
+      const pos = stage.getPointerPosition();
+      if (pos) {
+        lastMousePos.value = { x: pos.x, y: pos.y };
+      }
+    }
+  }
+}
+
+// 处理鼠标抬起事件
+function handleMouseUp(e: any) {
+  if (windowStore.activeTool === 'pan') {
+    isPanning.value = false;
+    
+    // 恢复鼠标样式
+    if (stageRef.value) {
+      const stage = stageRef.value.getStage();
+      if (stage && stage.container()) {
+        stage.container().style.cursor = 'grab';
+      }
+    }
+  }
+}
+
+// 处理滚轮事件，实现缩放
+function handleWheel(e: any) {
+  e.evt.preventDefault();
+  
+  const stage = stageRef.value?.getStage();
+  if (!stage) return;
+  
+  const oldScale = scale.value;
+  const pointer = stage.getPointerPosition();
+  
+  if (!pointer) return;
+  
+  // 计算鼠标位置相对于舞台的坐标
+  const mousePointTo = {
+    x: (pointer.x - stagePosition.x) / oldScale,
+    y: (pointer.y - stagePosition.y) / oldScale
+  };
+  
+  // 根据滚轮方向调整缩放比例
+  const scaleBy = 1.1;
+  const newScale = e.evt.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy;
+  
+  // 限制缩放范围
+  scale.value = Math.max(0.1, Math.min(2, newScale));
+  
+  // 更新windowStore中的视图状态
+  windowStore.viewState.scale = scale.value;
+  
+  // 计算新的舞台位置
+  stagePosition.x = pointer.x - mousePointTo.x * scale.value;
+  stagePosition.y = pointer.y - mousePointTo.y * scale.value;
+  
+  // 更新windowStore中的视图状态
+  windowStore.viewState.x = stagePosition.x;
+  windowStore.viewState.y = stagePosition.y;
+}
+
+// 处理触摸开始事件
+function handleTouchStart(e: any) {
+  const touches = e.evt.touches;
+  
+  // 处理双指触摸（缩放）
+  if (touches.length === 2) {
+    // 阻止默认行为（如页面缩放）
+    e.evt.preventDefault();
+    
+    // 计算两指的中心点
+    const touch1 = touches[0];
+    const touch2 = touches[1];
+    
+    const center = {
+      x: (touch1.clientX + touch2.clientX) / 2,
+      y: (touch1.clientY + touch2.clientY) / 2
+    };
+    
+    // 计算两指的距离
+    const distance = Math.sqrt(
+      Math.pow(touch2.clientX - touch1.clientX, 2) +
+      Math.pow(touch2.clientY - touch1.clientY, 2)
+    );
+    
+    lastTouchCenter.value = center;
+    lastTouchDistance.value = distance;
+  }
+}
+
+// 处理触摸移动事件
+function handleTouchMove(e: any) {
+  const touches = e.evt.touches;
+  
+  // 处理双指触摸（缩放）
+  if (touches.length === 2) {
+    // 阻止默认行为
+    e.evt.preventDefault();
+    
+    const stage = stageRef.value?.getStage();
+    if (!stage) return;
+    
+    // 计算两指的中心点
+    const touch1 = touches[0];
+    const touch2 = touches[1];
+    
+    const center = {
+      x: (touch1.clientX + touch2.clientX) / 2,
+      y: (touch1.clientY + touch2.clientY) / 2
+    };
+    
+    // 计算两指的距离
+    const distance = Math.sqrt(
+      Math.pow(touch2.clientX - touch1.clientX, 2) +
+      Math.pow(touch2.clientY - touch1.clientY, 2)
+    );
+    
+    // 如果有上一次的距离记录，计算缩放比例变化
+    if (lastTouchDistance.value > 0) {
+      // 计算触摸点相对于舞台的坐标
+      const oldScale = scale.value;
+      
+      // 计算触摸中心点相对于舞台的坐标
+      const mousePointTo = {
+        x: (center.x - stagePosition.x) / oldScale,
+        y: (center.y - stagePosition.y) / oldScale
+      };
+      
+      // 计算新的缩放比例
+      const scaleFactor = distance / lastTouchDistance.value;
+      const newScale = oldScale * scaleFactor;
+      
+      // 限制缩放范围
+      scale.value = Math.max(0.1, Math.min(2, newScale));
+      
+      // 更新windowStore中的视图状态
+      windowStore.viewState.scale = scale.value;
+      
+      // 计算新的舞台位置
+      stagePosition.x = center.x - mousePointTo.x * scale.value;
+      stagePosition.y = center.y - mousePointTo.y * scale.value;
+      
+      // 更新windowStore中的视图状态
+      windowStore.viewState.x = stagePosition.x;
+      windowStore.viewState.y = stagePosition.y;
+    }
+    
+    // 记录本次触摸状态
+    lastTouchCenter.value = center;
+    lastTouchDistance.value = distance;
+  }
+}
+
+// 处理触摸结束事件
+function handleTouchEnd(e: any) {
+  // 重置触摸状态
+  if (e.evt.touches.length < 2) {
+    lastTouchDistance.value = 0;
+  }
+}
+
+// 放大功能
+function zoomIn() {
+  const scaleBy = 1.1;
+  const newScale = scale.value * scaleBy;
+  
+  // 限制缩放范围
+  scale.value = Math.min(2, newScale);
+  
+  // 更新windowStore中的视图状态
+  windowStore.viewState.scale = scale.value;
+  
+  // 切换回选择工具
+  windowStore.activeTool = 'select';
+}
+
+// 缩小功能
+function zoomOut() {
+  const scaleBy = 1.1;
+  const newScale = scale.value / scaleBy;
+  
+  // 限制缩放范围
+  scale.value = Math.max(0.1, newScale);
+  
+  // 更新windowStore中的视图状态
+  windowStore.viewState.scale = scale.value;
+  
+  // 切换回选择工具
+  windowStore.activeTool = 'select';
+}
+
+// 重置视图
+function resetView() {
+  scale.value = 0.5;
+  stagePosition.x = 0;
+  stagePosition.y = 0;
+  
+  // 强制刷新
+  if (layerRef.value) {
+    layerRef.value.getNode().batchDraw();
+  }
 }
 
 // 初始化

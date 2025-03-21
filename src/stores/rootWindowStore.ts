@@ -27,9 +27,17 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
   const selectedSash = ref<string | null>(null)
   
   // 工具状态
-  const activeTool = ref<'select' | 'split' | 'sash' | null>('select')
+  const activeTool = ref<'select' | 'split' | 'sash' | 'pan' | 'zoomIn' | 'zoomOut' | null>('select')
   const splitDirection = ref<'horizontal' | 'vertical'>('vertical')
   const sashType = ref<'fixed' | 'left' | 'right' | 'tiltLeft' | 'tiltRight'>('fixed')
+  
+  // 视图状态
+  const viewState = reactive({
+    scale: 0.5,
+    x: 0,
+    y: 0,
+    resetRequested: false
+  });
   
   // 创建/初始化窗户结构
   function initializeWindow() {
@@ -112,6 +120,18 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
     // TODO: 实现配置导入逻辑
   }
   
+  // 重置视图
+  function resetView() {
+    viewState.scale = 0.5;
+    viewState.x = 0;
+    viewState.y = 0;
+    viewState.resetRequested = true;
+    // 重置后立即关闭标志
+    setTimeout(() => {
+      viewState.resetRequested = false;
+    }, 100);
+  }
+  
   return {
     windowConfig,
     windowStructure,
@@ -121,6 +141,7 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
     activeTool,
     splitDirection,
     sashType,
+    viewState,
     initializeWindow,
     updateWindowSize,
     updateFrameSize,
@@ -129,5 +150,6 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
     importWindowConfig,
     selectedElement,
     setSelectedElement,
+    resetView,
   }
 })

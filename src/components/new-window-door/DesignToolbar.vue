@@ -29,6 +29,23 @@
           窗扇
         </button>
       </div>
+      
+      <!-- 场景控制工具 -->
+      <h3>场景控制</h3>
+      <div class="tool-buttons">
+        <button @click="selectTool('pan')" :class="{ active: activeTool === 'pan' }">
+          <span class="tool-icon">↔</span> 平移
+        </button>
+        <button @click="selectTool('zoomIn')" :class="{ active: activeTool === 'zoomIn' }">
+          <span class="tool-icon">+</span> 放大
+        </button>
+        <button @click="selectTool('zoomOut')" :class="{ active: activeTool === 'zoomOut' }">
+          <span class="tool-icon">-</span> 缩小
+        </button>
+        <button @click="resetView">
+          <span class="tool-icon">⟳</span> 重置视图
+        </button>
+      </div>
     </div>
 
     <div class="toolbar-section" v-if="activeTool === 'split'">
@@ -100,7 +117,7 @@ function updateFrameSize() {
 }
 
 // 选择工具
-function selectTool(tool: 'select' | 'split' | 'sash') {
+function selectTool(tool: 'select' | 'split' | 'sash' | 'pan' | 'zoomIn' | 'zoomOut') {
   if(tool === 'select') {
     windowStore.selectedElement = null;
   }
@@ -163,6 +180,12 @@ function importWindow() {
     }
   };
   input.click();
+}
+
+// 重置视图
+function resetView() {
+  // 发送重置视图事件
+  windowStore.resetView();
 }
 </script>
 
