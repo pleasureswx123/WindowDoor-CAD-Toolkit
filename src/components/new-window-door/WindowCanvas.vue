@@ -91,6 +91,17 @@
         </template>
       </v-layer>
     </v-stage>
+    
+    <!-- 添加舞台预览 -->
+    <div class="stage-preview" v-if="showPreview">
+      <img 
+        :src="previewUrl" 
+        alt="舞台预览"
+        class="preview-image"
+        @click="togglePreviewSize"
+        :class="{ 'preview-large': isPreviewLarge }"
+      />
+    </div>
   </div>
 </template>
 
@@ -120,6 +131,11 @@ const canvasContainer = ref<HTMLElement | null>(null); // 修复类型
 
 // 调试标记
 const showDebugInfo = ref(true); // 启用调试信息展示
+
+// 预览相关状态
+const showPreview = ref(true); // 是否显示预览
+const previewUrl = ref(''); // 预览图URL
+const isPreviewLarge = ref(false); // 预览是否放大
 
 // 预览线相关状态
 const showPreviewLine = ref(false);
@@ -633,6 +649,9 @@ function handleMouseUp(e: any) {
         stage.container().style.cursor = 'grab';
       }
     }
+    
+    // 更新预览
+    updatePreview();
   }
 }
 
@@ -671,6 +690,13 @@ function handleWheel(e: any) {
   // 更新windowStore中的视图状态
   windowStore.viewState.x = stagePosition.x;
   windowStore.viewState.y = stagePosition.y;
+  
+  // 更新预览 - 使用requestAnimationFrame防止频繁更新
+  if (!window.requestAnimationFrame) {
+    updatePreview();
+  } else {
+    requestAnimationFrame(updatePreview);
+  }
 }
 
 // 处理触摸开始事件
@@ -815,6 +841,59 @@ function resetView() {
   }
 }
 
+// 更新预览图
+function updatePreview() {
+  if (!stageRef.value) return;
+  
+  // 使用1/6的比例生成预览图
+  const scale = 1 / 6;
+  
+  try {
+    // 获取舞台的DataURL
+    const url = stageRef.value.getNode().toDataURL({
+      pixelRatio: scale,
+      mimeType: 'image/jpeg',
+      quality: 0.8
+    });
+    
+    // 更新预览图URL
+    previewUrl.value = url;
+  } catch (error) {
+    console.error('生成预览图失败:', error);
+  }
+}
+
+// 切换预览图大小
+function togglePreviewSize() {
+  isPreviewLarge.value = !isPreviewLarge.value;
+}
+
+// 监听窗户结构变化，更新预览
+watch(() => windowComponents.value.length, () => {
+  nextTick(() => {
+    updatePreview();
+  });
+});
+
+// 监听缩放和位置变化，更新预览
+watch([() => scale.value, () => stagePosition.x, () => stagePosition.y], () => {
+  nextTick(() => {
+    updatePreview();
+  });
+});
+
+// 监听选中元素变化，更新预览
+watch(() => windowStore.selectedElement, () => {
+  nextTick(() => {
+    updatePreview();
+  });
+});
+
+// 在任何可能改变舞台内容或视图的事件后更新预览
+const handleZoomOrPanComplete = () => {
+  updatePreview();
+};
+
 // 初始化
 onMounted(() => {
   console.log("WindowCanvas组件已挂载");
@@ -829,7 +908,10 @@ onMounted(() => {
     updateCanvasSize();
 
     // 监听窗口大小变化
-    window.addEventListener('resize', updateCanvasSize);
+    window.addEventListener('resize', () => {
+      updateCanvasSize();
+      updatePreview();
+    });
 
     // 强制刷新图层，确保标注显示
     if (layerRef.value) {
@@ -838,6 +920,9 @@ onMounted(() => {
     
     // 初始化鼠标样式
     updateCursorStyle();
+    
+    // 生成初始预览图
+    updatePreview();
   });
 });
 
@@ -852,5 +937,32 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
+}
+
+.stage-preview {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  border: 2px solid #333;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  background-color: white;
+}
+
+.preview-image {
+  display: block;
+  max-width: 200px;
+  max-height: 150px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.preview-large {
+  max-width: 300px;
+  max-height: 225px;
 }
 </style>
