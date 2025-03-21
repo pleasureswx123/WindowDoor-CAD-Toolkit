@@ -139,18 +139,29 @@ const getCursorStyle = (tool?: string) => {
     case 'split':
       return 'crosshair';
     case 'sash':
-      return 'cell';
+      return 'copy'; // 更改为copy，表示添加窗扇的复制/创建操作
     default:
       return 'default';
   }
 };
 
-// 更新鼠标样式
+// 更新鼠标样式，支持自定义光标
 const updateCursorStyle = () => {
   if (stageRef.value) {
     const stage = stageRef.value.getStage();
     if (stage && stage.container()) {
-      stage.container().style.cursor = getCursorStyle();
+      const tool = windowStore.activeTool;
+      
+      // 使用自定义光标图像
+      if (tool === 'sash') {
+        // 可以使用base64编码的图像或相对路径
+        // stage.container().style.cursor = `url('/images/sash-cursor.png'), copy`;
+        
+        // 暂时使用CSS自带的光标
+        stage.container().style.cursor = getCursorStyle();
+      } else {
+        stage.container().style.cursor = getCursorStyle();
+      }
     }
   }
 };
