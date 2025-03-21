@@ -63,25 +63,14 @@
                 width: selectedMuntin.width,
                 height: selectedMuntin.height
               }">
-                <annotation-marker :element="selectedMuntin" :is-horizontal="isMuntinHorizontal"
-                  :parent-element="muntinParentElement" line-color="#ff3333" text-color="#ff3333" arrow-color="#ff3333"
-                  :line-width="1" :font-size="20" />
-              </v-group>
-            </v-group>
-
-            <v-group :config="{
-              x: isMuntinHorizontal ? windowStore.windowConfig.frameSize : 0,
-              y: isMuntinHorizontal ? 0 : windowStore.windowConfig.frameSize
-            }">
-              <v-group :config="{
-                x: selectedMuntin1.x,
-                y: selectedMuntin1.y,
-                width: selectedMuntin1.width,
-                height: selectedMuntin1.height
-              }">
-                <annotation-marker :element="selectedMuntin1" :is-horizontal="isMuntinHorizontal"
-                  :parent-element="muntinParentElement" line-color="#ff3333" text-color="#ff3333" arrow-color="#ff3333"
-                  :line-width="1" :font-size="20" />
+                <annotation-marker 
+                  :element="selectedMuntin" 
+                  :is-horizontal="selectedMuntin.direction === 'horizontal'"
+                  :parent-element="getParentElement(selectedMuntin.parentId)"
+                  :line-color="annotationColor" 
+                  :arrow-color="annotationColor" 
+                  :text-color="annotationColor"
+                />
               </v-group>
             </v-group>
           </v-group>
@@ -95,6 +84,7 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useRootWindowStore } from '../../stores/rootWindowStore';
 import AnnotationMarker from './AnnotationMarker.vue';
+import { WindowStructure, getElementById } from '../../utils/RootWindow';
 
 // 获取窗户状态
 const windowStore = useRootWindowStore();
@@ -121,6 +111,9 @@ const showDebugInfo = ref(true); // 启用调试信息展示
 const showPreviewLine = ref(false);
 const previewLinePoints = ref<number[]>([0, 0, 0, 0]);
 
+// 标注样式
+const annotationColor = '#ff3333'; // 标注线条和文字颜色
+
 // 舞台配置
 const stageConfig = computed(() => {
   return {
@@ -139,15 +132,14 @@ const selectedMuntin = computed(() => {
   if (!windowStore.selectedElement || windowStore.selectedElement.ele !== 'window-muntin') {
     return null;
   }
-  console.log("选中的111111中挺:", windowStore.selectedElement);
   return Object.assign({}, windowStore.selectedElement);
 });
-// 选中的中挺
+
+// 选中的中挺1 (用于绘制)
 const selectedMuntin1 = computed(() => {
   if (!windowStore.selectedElement || windowStore.selectedElement.ele !== 'window-muntin') {
     return null;
   }
-  console.log("选中的111111中挺:", windowStore.selectedElement);
   return Object.assign({}, windowStore.selectedElement, nodeAttrs.value);
 });
 
@@ -155,25 +147,6 @@ const selectedMuntin1 = computed(() => {
 const isMuntinHorizontal = computed(() => {
   if (!selectedMuntin.value) return false;
   return selectedMuntin.value.direction === 'horizontal';
-});
-
-// 获取中挺的父元素（窗框）
-const muntinParentElement = computed(() => {
-  if (!selectedMuntin.value || !windowStore.windowStructure) return null;
-
-  // 获取窗框作为父元素
-  try {
-    return {
-      x: 0, // 窗框始终从0,0开始
-      y: 0,
-      width: windowStore.windowConfig.width,
-      height: windowStore.windowConfig.height,
-      frameSize: windowStore.windowConfig.frameSize
-    };
-  } catch (error) {
-    console.error("获取窗框信息出错:", error);
-    return null;
-  }
 });
 
 // 窗户组件
@@ -493,6 +466,28 @@ function getSelectedElementStyle(id: string) {
     return selectedBorderStyle.value;
   }
   return null;
+}
+
+// 获取父元素数据，用于标注定位
+function getParentElement(parentId: string) {
+  if (!parentId) return null;
+  
+  // 从store获取窗户结构
+  const windowStructure = windowStore.windowStructure;
+  if (!windowStructure) return null;
+  
+  // 获取父元素
+  const parentElement = getElementById(parentId);
+  if (!parentElement) return null;
+  
+  // 返回父元素的定位和尺寸信息
+  return {
+    x: parentElement.x,
+    y: parentElement.y,
+    width: parentElement.width,
+    height: parentElement.height,
+    frameSize: parentElement.frameSize
+  };
 }
 
 // 初始化
