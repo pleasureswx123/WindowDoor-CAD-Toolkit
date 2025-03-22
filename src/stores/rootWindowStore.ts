@@ -27,7 +27,7 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
   const selectedSash = ref<string | null>(null)
   
   // 工具状态
-  const activeTool = ref<'select' | 'split' | 'sash' | 'pan' | 'zoomIn' | 'zoomOut' | null>('select')
+  const activeTool = ref<'select' | 'split' | 'sash' | 'pan' | 'zoomIn' | 'zoomOut' | 'rectSelect' | 'rotate' | 'transform' | null>('select')
   const splitDirection = ref<'horizontal' | 'vertical'>('vertical')
   const sashType = ref<'fixed' | 'left' | 'right' | 'tiltLeft' | 'tiltRight'>('fixed')
   

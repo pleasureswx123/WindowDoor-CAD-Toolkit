@@ -2,52 +2,52 @@
   <div class="setting-panel">
     <!-- 默认显示窗口尺寸设置 -->
     <div v-if="!hasSelectedElement" class="window-settings">
-      <h3>窗户基础属性</h3>
+      <h3><Icon icon="tabler:window" class="section-icon" /> 窗户基础属性</h3>
       <div class="setting-group">
-        <label>窗户宽度 (mm):</label>
+        <label><Icon icon="tabler:ruler-2" class="setting-icon" /> 窗户宽度 (mm):</label>
         <input type="number" v-model.number="width" @change="updateSize" min="300" max="5000" />
       </div>
       <div class="setting-group">
-        <label>窗户高度 (mm):</label>
+        <label><Icon icon="tabler:ruler-2" class="setting-icon" /> 窗户高度 (mm):</label>
         <input type="number" v-model.number="height" @change="updateSize" min="300" max="5000" />
       </div>
       <div class="setting-group">
-        <label>框架厚度 (mm):</label>
+        <label><Icon icon="tabler:border-all" class="setting-icon" /> 框架厚度 (mm):</label>
         <input type="number" v-model.number="frameSize" min="20" max="200" />
       </div>
       
       <!-- 全局默认配置 -->
       <div class="global-settings">
-        <h4>全局默认配置</h4>
+        <h4><Icon icon="tabler:settings" class="section-icon" /> 全局默认配置</h4>
         <p class="setting-desc">设置下列项目后，新创建的元素将使用这些默认值</p>
         
         <!-- 默认颜色配置 -->
         <div class="setting-section">
-          <h5>窗框配置</h5>
+          <h5><Icon icon="tabler:border-outer" class="setting-icon" /> 窗框配置</h5>
           <div class="setting-group">
-            <label>窗框颜色:</label>
+            <label><Icon icon="tabler:color-swatch" class="setting-icon" /> 窗框颜色:</label>
             <div class="color-picker-container">
               <input type="color" v-model="defaultConfigValue.frameColor" class="color-input" />
               <input type="text" v-model="defaultConfigValue.frameColor" class="color-text" placeholder="#颜色代码" />
             </div>
           </div>
           <div class="setting-group">
-            <label>窗框边线颜色:</label>
+            <label><Icon icon="tabler:border-style" class="setting-icon" /> 窗框边线颜色:</label>
             <div class="color-picker-container">
               <input type="color" v-model="defaultConfigValue.frameStrokeColor" class="color-input" />
               <input type="text" v-model="defaultConfigValue.frameStrokeColor" class="color-text" placeholder="#颜色代码" />
             </div>
           </div>
           <div class="setting-group">
-            <label>窗框边线宽度 (px):</label>
+            <label><Icon icon="tabler:line-height" class="setting-icon" /> 窗框边线宽度 (px):</label>
             <input type="number" v-model.number="defaultConfigValue.frameStrokeWidth" min="0" max="5" step="0.5" />
           </div>
         </div>
         
         <div class="setting-section">
-          <h5>中挺配置</h5>
+          <h5><Icon icon="tabler:layout-grid" class="setting-icon" /> 中挺配置</h5>
           <div class="setting-group">
-            <label>中挺颜色:</label>
+            <label><Icon icon="tabler:color-swatch" class="setting-icon" /> 中挺颜色:</label>
             <div class="color-picker-container">
               <input type="color" v-model="defaultConfigValue.muntinColor" class="color-input" />
               <input type="text" v-model="defaultConfigValue.muntinColor" class="color-text" placeholder="#颜色代码" />
@@ -56,38 +56,38 @@
         </div>
         
         <div class="setting-section">
-          <h5>窗扇配置</h5>
+          <h5><Icon icon="tabler:layout-board" class="setting-icon" /> 窗扇配置</h5>
           <div class="setting-group">
-            <label>窗扇颜色:</label>
+            <label><Icon icon="tabler:color-swatch" class="setting-icon" /> 窗扇颜色:</label>
             <div class="color-picker-container">
               <input type="color" v-model="defaultConfigValue.sashColor" class="color-input" />
               <input type="text" v-model="defaultConfigValue.sashColor" class="color-text" placeholder="#颜色代码" />
             </div>
           </div>
           <div class="setting-group">
-            <label>窗扇边线颜色:</label>
+            <label><Icon icon="tabler:border-style" class="setting-icon" /> 窗扇边线颜色:</label>
             <div class="color-picker-container">
               <input type="color" v-model="defaultConfigValue.sashStrokeColor" class="color-input" />
               <input type="text" v-model="defaultConfigValue.sashStrokeColor" class="color-text" placeholder="#颜色代码" />
             </div>
           </div>
           <div class="setting-group">
-            <label>窗扇边线宽度 (px):</label>
+            <label><Icon icon="tabler:line-height" class="setting-icon" /> 窗扇边线宽度 (px):</label>
             <input type="number" v-model.number="defaultConfigValue.sashStrokeWidth" min="0" max="5" step="0.5" />
           </div>
         </div>
         
         <div class="setting-section">
-          <h5>玻璃配置</h5>
+          <h5><Icon icon="tabler:glass" class="setting-icon" /> 玻璃配置</h5>
           <div class="setting-group">
-            <label>玻璃颜色:</label>
+            <label><Icon icon="tabler:color-swatch" class="setting-icon" /> 玻璃颜色:</label>
             <div class="color-picker-container">
               <input type="color" v-model="defaultConfigValue.glassColor" class="color-input" />
               <input type="text" v-model="defaultConfigValue.glassColor" class="color-text" placeholder="#颜色代码" />
             </div>
           </div>
           <div class="setting-group">
-            <label>玻璃透明度: {{ (defaultConfigValue.glassOpacity * 100).toFixed(0) }}%</label>
+            <label><Icon icon="tabler:opacity" class="setting-icon" /> 玻璃透明度: {{ (defaultConfigValue.glassOpacity * 100).toFixed(0) }}%</label>
             <input type="range" v-model.number="defaultConfigValue.glassOpacity" min="0" max="1" step="0.05" class="slider" />
             <div class="opacity-hint">
               <span>不透明</span>
@@ -99,38 +99,38 @@
         <!-- 应用默认配置按钮 -->
         <div class="setting-actions">
           <button class="apply-all-button" @click="applyToAllElements">
-            应用到所有元素
+            <Icon icon="tabler:wand" /> 应用到所有元素
           </button>
         </div>
       </div>
       
       <!-- 提示信息 -->
       <div class="setting-tips">
-        <p>提示: 调整窗户尺寸将重新绘制整个窗户</p>
-        <p>全局默认配置将影响新创建的元素</p>
-        <p>点击"应用到所有元素"可将当前配置应用到所有现有元素</p>
+        <p><Icon icon="tabler:info-circle" /> 提示: 调整窗户尺寸将重新绘制整个窗户</p>
+        <p><Icon icon="tabler:info-circle" /> 全局默认配置将影响新创建的元素</p>
+        <p><Icon icon="tabler:info-circle" /> 点击"应用到所有元素"可将当前配置应用到所有现有元素</p>
       </div>
     </div>
 
     <!-- 中挺设置面板 -->
     <div v-else-if="isMuntinSelected" class="muntin-settings">
-      <h3>中挺设置</h3>
+      <h3><Icon icon="tabler:layout-grid" class="section-icon" /> 中挺设置</h3>
 
       <!-- 中挺方向 (只读) -->
       <div class="setting-group">
-        <label>中挺方向:</label>
+        <label><Icon icon="tabler:arrows-horizontal" class="setting-icon" /> 中挺方向:</label>
         <span>{{ muntinDirection === 'horizontal' ? '水平' : '垂直' }}</span>
       </div>
 
       <!-- 中挺厚度设置 -->
       <div class="setting-group">
-        <label>厚度 (mm):</label>
+        <label><Icon icon="tabler:ruler" class="setting-icon" /> 厚度 (mm):</label>
         <input type="number" v-model.number="muntinThickness" min="20" max="100" step="2" />
       </div>
       
       <!-- 中挺颜色设置 -->
       <div class="setting-group">
-        <label>中挺颜色:</label>
+        <label><Icon icon="tabler:color-swatch" class="setting-icon" /> 中挺颜色:</label>
         <div class="color-picker-container">
           <input type="color" v-model="muntinColor" class="color-input" />
           <input type="text" v-model="muntinColor" class="color-text" placeholder="#颜色代码" />
@@ -139,12 +139,12 @@
 
       <!-- 中挺位置设置 -->
       <div class="setting-group" v-if="muntinDirection === 'horizontal'">
-        <label>上边距 (mm):</label>
+        <label><Icon icon="tabler:arrow-up" class="setting-icon" /> 上边距 (mm):</label>
         <input type="number" v-model.number="muntinPosition" :min="minPosition" :max="maxPosition" step="5" />
       </div>
 
       <div class="setting-group" v-if="muntinDirection === 'vertical'">
-        <label>左边距 (mm):</label>
+        <label><Icon icon="tabler:arrow-left" class="setting-icon" /> 左边距 (mm):</label>
         <input type="number" v-model.number="muntinPosition" :min="minPosition" :max="maxPosition" step="5" />
       </div>
 
@@ -397,6 +397,7 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRootWindowStore } from '../../stores/rootWindowStore';
 import { WindowMuntin, defaultConfigValue } from '../../utils/RootWindow';
 import { useEventListener, onKeyStroke } from '@vueuse/core';
+import { Icon } from '@iconify/vue';
 
 const windowStore = useRootWindowStore();
 
@@ -996,20 +997,34 @@ function applyToAllElements() {
 <style scoped>
 .setting-panel {
   padding: 15px;
-  background: #f5f5f5;
-  border-left: 1px solid #ddd;
-  width: 250px;
+  background-color: #252525;
+  border-left: 1px solid #3e3e3e;
+  width: 100%;
   height: 100%;
   overflow-y: auto;
+  color: #e0e0e0;
 }
 
 h3 {
   margin-top: 0;
   margin-bottom: 15px;
   font-size: 16px;
-  color: #333;
-  border-bottom: 1px solid #ddd;
+  color: #e0e0e0;
+  border-bottom: 1px solid #3e3e3e;
   padding-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.section-icon {
+  margin-right: 8px;
+  color: #4a6bff;
+}
+
+.setting-icon {
+  font-size: 16px;
+  margin-right: 4px;
+  opacity: 0.8;
 }
 
 .setting-group {
@@ -1021,14 +1036,18 @@ h3 {
 .setting-group label {
   font-size: 14px;
   margin-bottom: 4px;
-  color: #555;
+  color: #b0b0b0;
+  display: flex;
+  align-items: center;
 }
 
 .setting-group input {
   padding: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid #444;
   border-radius: 4px;
   font-size: 14px;
+  background-color: #333;
+  color: #e0e0e0;
 }
 
 .setting-group input:focus {
@@ -1043,34 +1062,35 @@ h3 {
 button {
   padding: 8px 12px;
   border-radius: 4px;
-  border: 1px solid #ccc;
-  background: white;
+  border: 1px solid #444;
+  background-color: #333;
+  color: #e0e0e0;
   cursor: pointer;
   font-size: 14px;
   transition: all 0.2s;
 }
 
 button:hover {
-  background: #f0f0f0;
+  background-color: #444;
 }
 
 .delete-button {
-  background: #ff4a4a;
+  background-color: #ff4a4a;
   color: white;
   border-color: #d83636;
 }
 
 .delete-button:hover {
-  background: #d83636;
+  background-color: #d83636;
 }
 
 .setting-tips {
   margin-top: 20px;
   padding: 10px;
-  background: #e9f7fb;
+  background-color: #2a2a2a;
   border-radius: 4px;
   font-size: 12px;
-  color: #444;
+  color: #b0b0b0;
 }
 
 .setting-tips p {
@@ -1079,10 +1099,10 @@ button:hover {
 
 /* 添加新的样式 */
 .size-display {
-  background: #f8f8f8;
+  background-color: #2a2a2a;
   padding: 8px;
   border-radius: 4px;
-  border: 1px solid #ddd;
+  border: 1px solid #444;
 }
 
 .size-item {
@@ -1099,10 +1119,11 @@ button:hover {
 
 .select-input {
   padding: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid #444;
   border-radius: 4px;
   font-size: 14px;
-  background: white;
+  background-color: #333;
+  color: #e0e0e0;
   width: 100%;
 }
 
@@ -1112,14 +1133,14 @@ button:hover {
 }
 
 .install-button {
-  background: #4a6bff;
+  background-color: #4a6bff;
   color: white;
   border-color: #3551d1;
   width: 100%;
 }
 
 .install-button:hover {
-  background: #3551d1;
+  background-color: #3551d1;
 }
 
 .separator {
@@ -1134,12 +1155,12 @@ button:hover {
 
 .split-button {
   flex: 1;
-  background: #f5f5f5;
-  border: 1px solid #ccc;
+  background-color: #333;
+  border: 1px solid #444;
 }
 
 .split-button.active {
-  background: #e0e0ff;
+  background-color: #405060;
   border-color: #4a6bff;
   font-weight: bold;
 }
@@ -1161,16 +1182,18 @@ button:hover {
 }
 
 .color-input {
-  padding: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid #444;
   border-radius: 4px;
   margin-right: 8px;
+  background-color: #333;
 }
 
 .color-text {
   padding: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid #444;
   border-radius: 4px;
+  background-color: #333;
+  color: #e0e0e0;
 }
 
 .window-settings {
@@ -1193,13 +1216,13 @@ button:hover {
   justify-content: space-between;
   margin-top: 8px;
   font-size: 12px;
-  color: #666;
+  color: #b0b0b0;
 }
 
 .global-settings {
   margin-top: 20px;
   margin-bottom: 20px;
-  border-top: 1px dashed #ccc;
+  border-top: 1px dashed #444;
   padding-top: 15px;
 }
 
@@ -1220,7 +1243,7 @@ button:hover {
 .setting-section {
   margin-bottom: 15px;
   padding: 10px;
-  background: #f0f0f0;
+  background-color: #2a2a2a;
   border-radius: 4px;
   border-left: 3px solid #4a6bff;
 }
@@ -1229,8 +1252,8 @@ button:hover {
   margin-top: 0;
   margin-bottom: 10px;
   font-size: 14px;
-  color: #333;
-  border-bottom: 1px solid #ddd;
+  color: #e0e0e0;
+  border-bottom: 1px solid #444;
   padding-bottom: 5px;
 }
 
@@ -1247,9 +1270,38 @@ button:hover {
 }
 
 .apply-all-button {
-  background: #ff6b4a;
+  background-color: #ff6b4a;
   color: white;
   border-color: #d13535;
-  margin-left: 4%;
+  width: 100%;
+}
+
+.apply-all-button:hover {
+  background-color: #d13535;
+}
+
+/* 响应式适配 */
+@media (max-width: 768px) {
+  .setting-panel {
+    padding: 10px;
+  }
+  
+  h3 {
+    font-size: 14px;
+  }
+  
+  .setting-group label {
+    font-size: 12px;
+  }
+  
+  .setting-group input {
+    padding: 6px;
+    font-size: 12px;
+  }
+  
+  button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
 }
 </style> 

@@ -1,21 +1,8 @@
 <template>
-  <div 
-    class="window-canvas" 
-    ref="canvasContainer"
-  >
-    <v-stage 
-      ref="stageRef" 
-      :config="stageConfig" 
-      @click="handleStageClick" 
-      @mousemove="handleMouseMove"
-      @mouseleave="handleMouseLeave"
-      @mousedown="handleMouseDown"
-      @mouseup="handleMouseUp"
-      @wheel="handleWheel"
-      @touchstart="handleTouchStart"
-      @touchmove="handleTouchMove"
-      @touchend="handleTouchEnd"
-    >
+  <div class="window-canvas" ref="canvasContainer">
+    <v-stage ref="stageRef" :config="stageConfig" @click="handleStageClick" @tap="handleStageClick"
+      @mousemove="handleMouseMove" @mouseleave="handleMouseLeave" @mousedown="handleMouseDown" @mouseup="handleMouseUp"
+      @wheel="handleWheel" @touchstart="handleTouchStart" @touchmove="handleTouchMove" @touchend="handleTouchEnd">
       <v-layer ref="layerRef">
         <!-- 调试信息 -->
         <v-text v-if="showDebugInfo" :config="{
@@ -31,11 +18,9 @@
           <v-group :config="{ x: 0, y: 0 }">
             <template v-for="(component, index) in flattenComponents" :key="index">
               <component :is="component.component" :config="component.config" />
-              
+
               <!-- 选中元素的高亮指示 -->
-              <v-rect 
-                v-if="isElementSelected(component.config.id)"
-                :config="{
+              <v-rect v-if="isElementSelected(component.config.id)" :config="{
                   x: component.config.x,
                   y: component.config.y,
                   width: component.config.width,
@@ -48,8 +33,7 @@
                   shadowBlur: 10,
                   shadowOffset: { x: 0, y: 0 },
                   shadowOpacity: 1
-                }"
-              />
+                }" />
             </template>
           </v-group>
         </template>
@@ -77,30 +61,32 @@
                 width: selectedMuntin.width,
                 height: selectedMuntin.height
               }">
-                <annotation-marker 
-                  :element="selectedMuntin" 
-                  :is-horizontal="selectedMuntin.direction === 'horizontal'"
-                  :parent-element="getParentElement(selectedMuntin.parentId)"
-                  :line-color="annotationColor" 
-                  :arrow-color="annotationColor" 
-                  :text-color="annotationColor"
-                />
+                <annotation-marker :element="selectedMuntin" :is-horizontal="selectedMuntin.direction === 'horizontal'"
+                  :parent-element="getParentElement(selectedMuntin.parentId)" :line-color="annotationColor"
+                  :arrow-color="annotationColor" :text-color="annotationColor" />
               </v-group>
             </v-group>
           </v-group>
         </template>
       </v-layer>
     </v-stage>
-    
+
     <!-- 添加舞台预览 -->
     <div class="stage-preview" v-if="showPreview">
-      <img 
-        :src="previewUrl" 
-        alt="舞台预览"
-        class="preview-image"
-        @click="togglePreviewSize"
-        :class="{ 'preview-large': isPreviewLarge }"
-      />
+      <div class="preview-header">
+        <Icon icon="tabler:eye" class="preview-icon" />
+        <span>实时预览</span>
+      </div>
+      <img :src="previewUrl" alt="舞台预览" class="preview-image" @click="togglePreviewSize" @tap="togglePreviewSize"
+        :class="{ 'preview-large': isPreviewLarge }" />
+      <div class="preview-controls">
+        <button class="preview-button" @click="togglePreviewSize" @tap="togglePreviewSize">
+          <Icon :icon="isPreviewLarge ? 'tabler:arrows-minimize' : 'tabler:arrows-maximize'" />
+        </button>
+        <button class="preview-button" @click="updatePreview" @tap="updatePreview">
+          <Icon icon="tabler:refresh" />
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -110,6 +96,7 @@ import { ref, computed, onMounted, watch, nextTick, reactive } from 'vue';
 import { useRootWindowStore } from '../../stores/rootWindowStore';
 import AnnotationMarker from './AnnotationMarker.vue';
 import { WindowStructure, getElementById } from '../../utils/RootWindow';
+import { Icon } from '@iconify/vue';
 
 // 获取窗户状态
 const windowStore = useRootWindowStore();
@@ -178,6 +165,8 @@ const getCursorStyle = (tool?: string) => {
   switch (toolType) {
     case 'select':
       return 'pointer';
+    case 'rectSelect':
+      return 'crosshair';
     case 'split':
       return 'crosshair';
     case 'sash':
@@ -188,6 +177,10 @@ const getCursorStyle = (tool?: string) => {
       return 'zoom-in';
     case 'zoomOut':
       return 'zoom-out';
+    case 'rotate':
+      return 'alias';
+    case 'transform':
+      return 'all-scroll';
     default:
       return 'default';
   }
@@ -323,6 +316,7 @@ watch(() => windowStore.viewState.resetRequested, (requested) => {
 
 // 点击事件处理
 function handleStageClick(e: any) {
+  debugger;
   const clickedNode = e.target;
   if (clickedNode && clickedNode.attrs && clickedNode.attrs.ele === 'window-muntin') {
     nodeAttrs.value = {
@@ -952,16 +946,19 @@ onMounted(() => {
 
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .window-canvas {
   flex: 1;
-  background: #e0e0e0;
+  background: #000000;
   overflow: hidden;
   height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
+  & > div {
+    background: transparent;
+  }
 }
 
 .stage-preview {
@@ -975,6 +972,22 @@ onMounted(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   background-color: white;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-header {
+  background-color: #333;
+  color: white;
+  padding: 4px 8px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.preview-icon {
+  margin-right: 5px;
+  font-size: 14px;
 }
 
 .preview-image {
@@ -988,5 +1001,27 @@ onMounted(() => {
 .preview-large {
   max-width: 300px;
   max-height: 225px;
+}
+
+.preview-controls {
+  display: flex;
+  justify-content: flex-end;
+  background-color: #333;
+  padding: 2px;
+}
+
+.preview-button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 2px 5px;
+  font-size: 12px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.preview-button:hover {
+  opacity: 1;
 }
 </style>

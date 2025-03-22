@@ -1,178 +1,283 @@
 <template>
-  <div class="design-toolbar">
+  <div class="design-toolbar" :class="{ 'compact-mode': isCompact }">
+    <!-- 工具栏折叠控制 -->
+    <div class="toolbar-collapse">
+      <Icon style="font-size: 10px; color: rgba(255,255,255,.3)" icon="tabler:grip-horizontal" class="collapse-icon" />
+      <Icon style="font-size: 10px; color: rgba(255,255,255,.3)" icon="tabler:grip-horizontal" class="collapse-icon" />
+      <Icon style="font-size: 10px; color: rgba(255,255,255,.3)" icon="tabler:grip-horizontal" class="collapse-icon" />
+      <Icon style="font-size: 10px; color: rgba(255,255,255,.3)" icon="tabler:grip-horizontal" class="collapse-icon" />
+    </div>
+
+
+    <!-- 基础工具组 - 两列布局 -->
     <div class="toolbar-section">
-      <h3>工具</h3>
-      <div class="tool-buttons">
-        <button @click="selectTool('select')" :class="{ active: activeTool === 'select' }">
-          选择
-        </button>
-        <button @click="selectTool('split')" :class="{ active: activeTool === 'split' }">
-          分割
-        </button>
-        <button @click="selectTool('sash')" :class="{ active: activeTool === 'sash' }">
-          窗扇
-        </button>
+
+      <div style="width: 100%; display: flex; justify-content: center; align-items: center;">
+        <el-tooltip content="选择" placement="right" :disabled="activeTool === 'select'">
+          <div class="tool-wrapper">
+            <el-button class="tool-button" @click="selectTool('select')" @tap="selectTool('select')"
+              :class="{ active: activeTool === 'select', 'active-tool': activeTool === 'select' }">
+              <Icon icon="tabler:pointer" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip>
+      </div>
+      <div class="tool-column">
+        <!-- <el-tooltip content="矩形选框" placement="right">
+          <div class="tool-wrapper">
+            <el-button class="tool-button" @click="selectTool('rectSelect')" @tap="selectTool('rectSelect')"
+              :class="{ active: activeTool === 'rectSelect', 'active-tool': activeTool === 'rectSelect' }">
+              <Icon icon="tabler:square-dashed" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip> -->
+
+        <el-tooltip content="分割工具" placement="right" :disabled="activeTool === 'split'">
+          <div class="tool-wrapper" ref="splitToolRef">
+            <el-button class="tool-button" @click="selectTool('split')" @tap="selectTool('split')"
+              :class="{ active: activeTool === 'split', 'active-tool': activeTool === 'split' }">
+              <Icon :icon="getSplitDirectionIcon()" class="tool-icon" />
+            </el-button>
+            <div class="tool-indicator" v-if="true"></div>
+          </div>
+        </el-tooltip>
+
+        <el-tooltip content="窗扇工具" placement="right" :disabled="activeTool === 'sash'">
+          <div class="tool-wrapper" ref="sashToolRef">
+            <el-button class="tool-button" @click="selectTool('sash')" @tap="selectTool('sash')"
+              :class="{ active: activeTool === 'sash', 'active-tool': activeTool === 'sash' }">
+              <Icon :icon="getSashTypeIcon()" class="tool-icon" />
+            </el-button>
+            <div class="tool-indicator" v-if="true"></div>
+          </div>
+        </el-tooltip>
+
+        <!-- <el-tooltip content="旋转" placement="right">
+          <div class="tool-wrapper">
+            <el-button 
+              class="tool-button"
+              @click="selectTool('rotate')" 
+              @tap="selectTool('rotate')"
+              :class="{ active: activeTool === 'rotate', 'active-tool': activeTool === 'rotate' }"
+            >
+              <Icon icon="tabler:rotate" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip>
+
+        <el-tooltip content="调整" placement="right">
+          <div class="tool-wrapper">
+            <el-button 
+              class="tool-button"
+              @click="selectTool('transform')" 
+              @tap="selectTool('transform')"
+              :class="{ active: activeTool === 'transform', 'active-tool': activeTool === 'transform' }"
+            >
+              <Icon icon="tabler:transform" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip> -->
       </div>
     </div>
 
-    <div class="toolbar-section" v-if="activeTool === 'split'">
-      <h3>分割方向</h3>
-      <div class="direction-buttons">
-        <button @click="setSplitDirection('vertical')" :class="{ active: splitDirection === 'vertical' }">
-          垂直分割
-        </button>
-        <button @click="setSplitDirection('horizontal')" :class="{ active: splitDirection === 'horizontal' }">
-          水平分割
-        </button>
+    <!-- 分割方向弹出面板 -->
+    <div class="tool-popup-panel" v-show="activeTool === 'split' && showPopupMenu"
+      :style="getPopupPosition('split', forceRerender)">
+      <div class="popup-item" @click="setSplitDirection('vertical')" @tap="setSplitDirection('vertical')"
+        :class="{ active: splitDirection === 'vertical' }">
+        <Icon icon="tabler:border-vertical" class="popup-item-icon" />
+        <span>垂直分割</span>
+      </div>
+      <div class="popup-item" @click="setSplitDirection('horizontal')" @tap="setSplitDirection('horizontal')"
+        :class="{ active: splitDirection === 'horizontal' }">
+        <Icon icon="tabler:border-horizontal" class="popup-item-icon" />
+        <span>水平分割</span>
       </div>
     </div>
 
-    <div class="toolbar-section" v-if="activeTool === 'sash'">
-      <h3>窗扇类型</h3>
-      <div class="sash-buttons">
-        <button @click="setSashType('fixed')" :class="{ active: sashType === 'fixed' }">
-          固定窗
-        </button>
-        <button @click="setSashType('left')" :class="{ active: sashType === 'left' }">
-          左开
-        </button>
-        <button @click="setSashType('right')" :class="{ active: sashType === 'right' }">
-          右开
-        </button>
-        <button @click="setSashType('tiltLeft')" :class="{ active: sashType === 'tiltLeft' }">
-          倾斜左开
-        </button>
-        <button @click="setSashType('tiltRight')" :class="{ active: sashType === 'tiltRight' }">
-          倾斜右开
-        </button>
+    <!-- 窗扇类型弹出面板 -->
+    <div class="tool-popup-panel sash-panel" v-show="activeTool === 'sash' && showPopupMenu"
+      :style="getPopupPosition('sash', forceRerender)">
+      <div class="popup-item" @click="setSashType('fixed')" @tap="setSashType('fixed')"
+        :class="{ active: sashType === 'fixed' }">
+        <Icon icon="tabler:dice" class="popup-item-icon" />
+        <span>固定窗</span>
+      </div>
+      <div class="popup-item" @click="setSashType('left')" @tap="setSashType('left')"
+        :class="{ active: sashType === 'left' }">
+        <Icon icon="tabler:arrow-left" class="popup-item-icon" />
+        <span>左开窗</span>
+      </div>
+      <div class="popup-item" @click="setSashType('right')" @tap="setSashType('right')"
+        :class="{ active: sashType === 'right' }">
+        <Icon icon="tabler:arrow-right" class="popup-item-icon" />
+        <span>右开窗</span>
+      </div>
+      <div class="popup-item" @click="setSashType('tiltLeft')" @tap="setSashType('tiltLeft')"
+        :class="{ active: sashType === 'tiltLeft' }">
+        <Icon icon="tabler:arrow-bar-to-left" class="popup-item-icon" />
+        <span>倾斜左开</span>
+      </div>
+      <div class="popup-item" @click="setSashType('tiltRight')" @tap="setSashType('tiltRight')"
+        :class="{ active: sashType === 'tiltRight' }">
+        <Icon icon="tabler:arrow-bar-to-right" class="popup-item-icon" />
+        <span>倾斜右开</span>
       </div>
     </div>
 
     <!-- 场景控制工具 -->
     <div class="toolbar-section">
-      <h3>场景控制</h3>
-      <div class="tool-buttons">
-        <button @click="selectTool('pan')" :class="{ active: activeTool === 'pan' }">
-          <span class="tool-icon">↔</span> 平移
-        </button>
-        <button @click="selectTool('zoomIn')" :class="{ active: activeTool === 'zoomIn' }">
-          <span class="tool-icon">+</span> 放大
-        </button>
-        <button @click="selectTool('zoomOut')" :class="{ active: activeTool === 'zoomOut' }">
-          <span class="tool-icon">-</span> 缩小
-        </button>
-        <button @click="resetView">
-          <span class="tool-icon">⟳</span> 重置视图
-        </button>
+      <div class="section-title">场景控制</div>
+      <div class="tool-column">
+        <el-tooltip content="平移" placement="right" :disabled="activeTool === 'pan'">
+          <div class="tool-wrapper">
+            <el-button class="tool-button" @click="selectTool('pan')" @tap="selectTool('pan')"
+              :class="{ active: activeTool === 'pan', 'active-tool': activeTool === 'pan' }">
+              <Icon icon="tabler:hand-move" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip>
+
+        <el-tooltip content="放大" placement="right" :disabled="activeTool === 'zoomIn'">
+          <div class="tool-wrapper">
+            <el-button class="tool-button" @click="selectTool('zoomIn')" @tap="selectTool('zoomIn')"
+              :class="{ active: activeTool === 'zoomIn', 'active-tool': activeTool === 'zoomIn' }">
+              <Icon icon="tabler:zoom-in" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip>
+
+        <el-tooltip content="缩小" placement="right" :disabled="activeTool === 'zoomOut'">
+          <div class="tool-wrapper">
+            <el-button class="tool-button" @click="selectTool('zoomOut')" @tap="selectTool('zoomOut')"
+              :class="{ active: activeTool === 'zoomOut', 'active-tool': activeTool === 'zoomOut' }">
+              <Icon icon="tabler:zoom-out" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip>
+
+        <el-tooltip content="重置视图" placement="right">
+          <div class="tool-wrapper">
+            <el-button class="tool-button" @click="resetView" @tap="resetView">
+              <Icon icon="tabler:refresh" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip>
       </div>
     </div>
 
+    <!-- 操作工具 -->
     <div class="toolbar-section">
-      <h3>操作</h3>
-      <div class="action-buttons">
-        <button @click="resetWindow">重置</button>
-        <el-dropdown>
-          <el-button type="primary" class="export-button">
-            导出<el-icon class="el-icon--right"><arrow-down /></el-icon>
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item @click="exportWindowImage">导出图片</el-dropdown-item>
-              <el-dropdown-item @click="exportWindowConfig">导出配置</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-        <button @click="importWindow">导入</button>
-      </div>
-      
-      <!-- 导出图片弹出层 -->
-      <el-dialog
-        v-model="showExportDialog"
-        title="导出图片"
-        width="500px"
-        center
-        destroy-on-close
-      >
-        <div class="export-options">
-          <div class="export-option">
-            <label>格式:</label>
-            <el-select v-model="exportFormat" class="export-format-select">
-              <el-option value="png" label="PNG (透明背景)" />
-              <el-option value="jpeg" label="JPEG (高压缩率)" />
-              <el-option value="webp" label="WebP (最佳质量/大小比)" />
-            </el-select>
-          </div>
-          <div class="export-option">
-            <label>质量:</label>
-            <el-slider 
-              v-model="exportQuality" 
-              :min="0.1" 
-              :max="1" 
-              :step="0.1" 
-              show-tooltip
-              :format-tooltip="(value: number) => `${Math.round(value * 100)}%`"
-            />
-          </div>
-          <div class="export-option">
-            <label>像素比例:</label>
-            <el-radio-group v-model="exportPixelRatio">
-              <el-radio label="1">1x (标准)</el-radio>
-              <el-radio label="2">2x (高清)</el-radio>
-              <el-radio label="3">3x (超高清)</el-radio>
-            </el-radio-group>
-          </div>
-          <div class="export-option">
-            <label>保留背景:</label>
-            <el-switch v-model="exportWithBackground" />
-          </div>
-        </div>
-        
-        <div class="export-preview">
-          <el-image 
-            v-if="exportPreviewUrl" 
-            :src="exportPreviewUrl"
-            fit="contain"
-            style="max-height: 250px;"
-          />
-          <div v-else class="export-preview-placeholder">
-            生成预览图...
-          </div>
-        </div>
-        
-        <template #footer>
-          <span class="dialog-footer">
-            <el-button @click="cancelExport">取消</el-button>
-            <el-button type="primary" @click="confirmExport">
-              导出图片
+      <div class="section-title">操作</div>
+      <div class="tool-column">
+        <el-tooltip content="重置" placement="right">
+          <div class="tool-wrapper">
+            <el-button class="tool-button" @click="resetWindow" @tap="resetWindow">
+              <Icon icon="tabler:trash" class="tool-icon" />
             </el-button>
-          </span>
-        </template>
-      </el-dialog>
+          </div>
+        </el-tooltip>
+
+        <el-tooltip content="导出" placement="right">
+          <div class="tool-wrapper">
+            <el-button class="tool-button" @click="exportWindow" @tap="exportWindow">
+              <Icon icon="tabler:file-export" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip>
+
+        <el-tooltip content="导入" placement="right">
+          <div class="tool-wrapper">
+            <el-button class="tool-button" @click="importWindow" @tap="importWindow">
+              <Icon icon="tabler:file-import" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip>
+
+        <el-tooltip content="切换预览" placement="right">
+          <div class="tool-wrapper">
+            <el-button class="tool-button" @click="togglePreview" @tap="togglePreview">
+              <Icon icon="tabler:eye" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip>
+      </div>
     </div>
+
+    <!-- 底部颜色/图层面板区域 -->
+    <!-- <div class="color-panel">
+      <div class="color-box primary-box"></div>
+      <div class="color-box secondary-box" style="background-color: #ff3030;"></div>
+      <div class="layer-controls">
+        <Icon icon="tabler:layers" class="layer-icon" />
+        <Icon icon="tabler:layout-2" class="layer-icon" />
+      </div>
+    </div> -->
+
+    <!-- 导出对话框 -->
+    <el-dialog v-model="showExportDialog" title="导出图片" width="500px" destroy-on-close>
+      <div class="export-options">
+        <div class="export-option">
+          <span>格式:</span>
+          <el-select v-model="exportFormat" class="export-format-select">
+            <el-option label="PNG图片" value="png" />
+            <el-option label="JPEG图片" value="jpeg" />
+          </el-select>
+        </div>
+        <div class="export-option" v-if="exportFormat === 'jpeg'">
+          <span>质量:</span>
+          <el-slider v-model="exportQuality" :min="0.1" :max="1" :step="0.1" :format-tooltip="qualityFormatter" />
+        </div>
+        <div class="export-option">
+          <span>像素比:</span>
+          <el-radio-group v-model="exportPixelRatio">
+            <el-radio label="1">1x (标准)</el-radio>
+            <el-radio label="2">2x (高清)</el-radio>
+            <el-radio label="3">3x (超高清)</el-radio>
+          </el-radio-group>
+        </div>
+        <div class="export-option">
+          <span>保留背景:</span>
+          <el-switch v-model="exportWithBackground" />
+        </div>
+      </div>
+
+      <div class="export-preview">
+        <el-image v-if="exportPreviewUrl" :src="exportPreviewUrl" fit="contain" style="max-height: 250px;" />
+        <div v-else class="export-preview-placeholder">
+          <Icon icon="tabler:loader-2" class="spin-icon" />
+          生成预览图...
+        </div>
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="cancelExport" @tap="cancelExport">取消</el-button>
+          <el-button type="primary" @click="confirmExport" @tap="confirmExport">
+            导出图片
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRootWindowStore } from '../../stores/rootWindowStore';
-import { 
-  ElDropdown, 
-  ElDropdownMenu, 
-  ElDropdownItem, 
-  ElButton,
-  ElDialog,
-  ElSelect,
-  ElOption,
-  ElImage,
-  ElSlider,
-  ElRadioGroup,
-  ElRadio,
-  ElSwitch,
-  ElIcon 
-} from 'element-plus';
-import { 
-  ArrowDown 
-} from '@element-plus/icons-vue';
+import { Icon } from '@iconify/vue';
+import { ArrowDown } from '@element-plus/icons-vue';
+import { loadIcon } from '@iconify/vue';
+
+const props = defineProps({
+  isCompact: {
+    type: Boolean,
+    default: false
+  }
+});
+
+// Emits
+const emit = defineEmits(['toggle-preview']);
 
 const windowStore = useRootWindowStore();
 
@@ -180,7 +285,7 @@ const windowStore = useRootWindowStore();
 const width = ref(windowStore.windowConfig.width);
 const height = ref(windowStore.windowConfig.height);
 const frameSize = ref(windowStore.windowConfig.frameSize);
-const activeTool = ref('select');
+const activeTool = ref<'select' | 'split' | 'sash' | 'pan' | 'zoomIn' | 'zoomOut' | 'rectSelect' | 'rotate' | 'transform'>('select');
 const splitDirection = ref('vertical');
 const sashType = ref('fixed');
 
@@ -191,6 +296,54 @@ const exportQuality = ref(0.9);
 const exportPixelRatio = ref('2');
 const exportWithBackground = ref(true);
 const exportPreviewUrl = ref('');
+
+// 定义DOM引用
+const splitToolRef = ref<HTMLElement | null>(null);
+const sashToolRef = ref<HTMLElement | null>(null);
+
+// 标记弹出菜单是否显示
+const showPopupMenu = ref(false);
+
+// 计算属性监听活动工具变化
+watch(activeTool, (newTool) => {
+  if (newTool === 'select') {
+    windowStore.setSelectedElement('');
+    windowStore.selectedElement = null;
+  }
+  // 延迟执行确保DOM更新
+  setTimeout(() => {
+    if (newTool === 'split' || newTool === 'sash') {
+      // 强制更新子菜单位置
+      forceRerender.value = !forceRerender.value;
+    }
+  }, 10);
+});
+
+// 用于强制重新渲染子菜单的标记
+const forceRerender = ref(false);
+
+// 窗扇类型更新后，确保图标立即更新
+watch(sashType, (newType) => {
+  // 强制重新渲染
+  forceRerender.value = !forceRerender.value;
+});
+
+// 获取窗扇类型标签
+function getSashTypeLabel(): string {
+  const typeMap: Record<string, string> = {
+    'fixed': '固定窗',
+    'left': '左开窗',
+    'right': '右开窗',
+    'tiltLeft': '倾斜左开',
+    'tiltRight': '倾斜右开'
+  };
+  return typeMap[sashType.value] || '固定窗';
+}
+
+// 格式化质量值
+function qualityFormatter(val: number): string {
+  return `${(val * 100).toFixed(0)}%`;
+}
 
 // 更新尺寸
 function updateSize() {
@@ -203,72 +356,112 @@ function updateFrameSize() {
 }
 
 // 选择工具
-function selectTool(tool: 'select' | 'split' | 'sash' | 'pan' | 'zoomIn' | 'zoomOut') {
-  if(tool === 'select') {
-    windowStore.selectedElement = null;
+function selectTool(tool: 'select' | 'split' | 'sash' | 'pan' | 'zoomIn' | 'zoomOut' | 'rectSelect' | 'rotate' | 'transform'): void {
+  // 如果点击的是当前激活的工具，则切换弹出菜单的显示/隐藏状态
+  if (activeTool.value === tool && (tool === 'split' || tool === 'sash')) {
+    showPopupMenu.value = !showPopupMenu.value;
+  } else {
+    activeTool.value = tool;
+    debugger;
+    windowStore.activeTool = tool;
+    
+    // 如果选择了带有子菜单的工具，则显示弹出菜单
+    if (tool === 'split' || tool === 'sash') {
+      showPopupMenu.value = true;
+    } else {
+      showPopupMenu.value = false;
+    }
   }
-  activeTool.value = tool;
-  windowStore.activeTool = tool;
 }
 
 // 设置分割方向
-function setSplitDirection(direction: 'horizontal' | 'vertical') {
-  splitDirection.value = direction;
-  windowStore.splitDirection = direction;
+function setSplitDirection(direction: string): void {
+  splitDirection.value = direction as 'vertical' | 'horizontal';
+  windowStore.splitDirection = direction as 'vertical' | 'horizontal';
 }
 
 // 设置窗扇类型
-function setSashType(type: 'fixed' | 'left' | 'right' | 'tiltLeft' | 'tiltRight') {
-  sashType.value = type;
-  windowStore.sashType = type;
+function setSashType(type: string): void {
+  console.log('设置窗扇类型:', type);
+  sashType.value = type as 'fixed' | 'left' | 'right' | 'tiltLeft' | 'tiltRight';
+  windowStore.sashType = type as 'fixed' | 'left' | 'right' | 'tiltLeft' | 'tiltRight';
+  
+  // 更新后关闭弹出菜单
+  showPopupMenu.value = false;
+}
+
+// 缩放控制
+function zoomIn() {
+  windowStore.viewState.scale = Math.min(2, windowStore.viewState.scale + 0.1);
+}
+
+function zoomOut() {
+  windowStore.viewState.scale = Math.max(0.1, windowStore.viewState.scale - 0.1);
 }
 
 // 重置窗户
-function resetWindow() {
-  width.value = 1000;
-  height.value = 2000;
-  frameSize.value = 50;
-  windowStore.updateWindowSize(width.value, height.value);
-  windowStore.updateFrameSize(frameSize.value);
+function resetWindow(): void {
+  if (confirm('确定要重置窗户设计吗？所有当前设计将丢失。')) {
+    width.value = 1000;
+    height.value = 2000;
+    frameSize.value = 50;
+    windowStore.updateWindowSize(width.value, height.value);
+    windowStore.updateFrameSize(frameSize.value);
+  }
 }
 
 // 导出窗户配置
 function exportWindowConfig() {
   const config = windowStore.exportWindowConfig();
-  if (config) {
-    const dataStr = JSON.stringify(config, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-    const exportFileDefaultName = 'window-config.json';
-
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-  }
+  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'window-config.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
-// 导出窗户图片
-function exportWindowImage() {
+// 导出图片
+function exportWindow(): void {
   showExportDialog.value = true;
-  // 生成预览图
-  generateExportPreview();
+  // 请求预览图
+  // windowStore.requestExportImage(
+  //   Number(exportPixelRatio.value), 
+  //   exportFormat.value, 
+  //   exportQuality.value,
+  //   exportWithBackground.value
+  // );
+  
+  // 使用自定义事件通信，请求WindowCanvas组件导出图片
+  window.dispatchEvent(new CustomEvent('export-canvas-image', {
+    detail: {
+      mimeType: `image/${exportFormat.value}`,
+      quality: exportQuality.value,
+      pixelRatio: Number(exportPixelRatio.value),
+      backgroundColor: exportWithBackground.value ? '#e0e0e0' : undefined
+    }
+  }));
 }
 
-// 生成导出预览图
-function generateExportPreview() {
-  try {
-    // 使用自定义事件通信，请求WindowCanvas组件导出图片
-    window.dispatchEvent(new CustomEvent('export-canvas-image', {
-      detail: {
-        mimeType: `image/${exportFormat.value}`,
-        quality: exportQuality.value,
-        pixelRatio: Number(exportPixelRatio.value),
-        backgroundColor: exportWithBackground.value ? '#e0e0e0' : undefined
-      }
-    }));
-  } catch (error) {
-    console.error('请求导出图片失败:', error);
+// 确认导出
+function confirmExport() {
+  if (!exportPreviewUrl.value) {
+    return;
   }
+  
+  // 下载图片
+  const a = document.createElement('a');
+  a.href = exportPreviewUrl.value;
+  a.download = `window-design.${exportFormat.value}`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  
+  // 关闭对话框
+  showExportDialog.value = false;
 }
 
 // 取消导出
@@ -276,42 +469,6 @@ function cancelExport() {
   showExportDialog.value = false;
   exportPreviewUrl.value = '';
 }
-
-// 确认导出图片
-function confirmExport() {
-  if (!exportPreviewUrl.value) {
-    generateExportPreview();
-    
-    // 如果仍然没有预览图，则返回
-    if (!exportPreviewUrl.value) {
-      alert('导出失败，请重试');
-      return;
-    }
-  }
-  
-  // 创建下载链接
-  const link = document.createElement('a');
-  link.download = `窗户设计_${new Date().getTime()}.${exportFormat.value}`;
-  link.href = exportPreviewUrl.value;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  
-  // 关闭导出对话框
-  showExportDialog.value = false;
-}
-
-// 修改导出参数时重新生成预览
-function updateExportPreview() {
-  if (showExportDialog.value) {
-    generateExportPreview();
-  }
-}
-
-// 监听导出参数变化
-watch([exportFormat, exportQuality, exportPixelRatio, exportWithBackground], () => {
-  updateExportPreview();
-});
 
 // 导入窗户配置
 function importWindow() {
@@ -343,6 +500,11 @@ function resetView() {
   windowStore.viewState.resetRequested = true;
 }
 
+// 切换预览显示
+function togglePreview() {
+  emit('toggle-preview');
+}
+
 // 在onMounted中添加事件监听
 onMounted(() => {
   // 监听WindowCanvas组件返回的图片数据
@@ -357,81 +519,385 @@ onMounted(() => {
     console.error('导出图片失败:', e.detail?.error);
     alert(`导出图片失败: ${e.detail?.error || '未知错误'}`);
   });
+  
+  // 添加全局点击事件，用于关闭弹出菜单
+  document.addEventListener('click', handleDocumentClick);
+  
+  // 监听窗口调整大小
+  window.addEventListener('resize', handleWindowResize);
+  
+  // 从store初始化状态
+  if (windowStore.sashType) {
+    sashType.value = windowStore.sashType;
+  }
+  
+  if (windowStore.splitDirection) {
+    splitDirection.value = windowStore.splitDirection;
+  }
+
+  // 预加载常用图标
+  const sashIcons = [
+    'tabler:window',
+    'tabler:arrow-left',
+    'tabler:arrow-right', 
+    'tabler:arrow-bar-to-left',
+    'tabler:arrow-bar-to-right'
+  ];
+  
+  const splitIcons = [
+    'tabler:layout-grid',
+    'tabler:arrows-horizontal',
+    'tabler:arrows-vertical'
+  ];
+  
+  const panIcons = [
+    'tabler:hand-move'
+  ];
+  
+  // 预加载所有图标
+  [...sashIcons, ...splitIcons, ...panIcons].forEach(icon => {
+    loadIcon(icon).catch(err => console.error('图标加载失败:', icon, err));
+  });
 });
 
 // 在onUnmounted中移除事件监听
 onUnmounted(() => {
   window.removeEventListener('canvas-image-ready', () => {});
   window.removeEventListener('canvas-image-error', () => {});
+  
+  // 移除全局点击事件
+  document.removeEventListener('click', handleDocumentClick);
+  
+  // 移除窗口调整大小事件
+  window.removeEventListener('resize', handleWindowResize);
 });
+
+// 处理全局点击事件，关闭弹出菜单
+function handleDocumentClick(event: MouseEvent) {
+  // 如果弹出菜单没有显示，直接返回
+  if (!showPopupMenu.value) {
+    return;
+  }
+  
+  // 获取实际DOM元素
+  const splitTool = splitToolRef.value;
+  const sashTool = sashToolRef.value;
+  
+  // 获取弹出面板元素
+  const splitPanel = document.querySelector('.tool-popup-panel[style*="display: block"]');
+  const sashPanel = document.querySelector('.tool-popup-panel[style*="display: block"]');
+  
+  // 检查点击的目标是否在工具按钮或弹出面板内
+  const target = event.target as Node;
+  const isClickOutside = (
+    (!splitTool || !splitTool.contains(target)) &&
+    (!sashTool || !sashTool.contains(target)) &&
+    (!splitPanel || !splitPanel.contains(target)) &&
+    (!sashPanel || !sashPanel.contains(target))
+  );
+  
+  // 如果点击在外部，则隐藏弹出菜单
+  if (isClickOutside) {
+    showPopupMenu.value = false;
+  }
+}
+
+// 处理窗口调整大小
+function handleWindowResize() {
+  // 如果有显示弹出菜单，重新计算位置
+  if (showPopupMenu.value) {
+    forceRerender.value = !forceRerender.value;
+  }
+}
+
+// 获取弹出面板位置
+function getPopupPosition(tool: string, forceRerender: boolean): Record<string, string> {
+  if (tool === 'split' && splitToolRef.value) {
+    const rect = splitToolRef.value.getBoundingClientRect();
+    return {
+      top: `${rect.top}px`,
+      left: `${rect.right}px`
+    };
+  } else if (tool === 'sash' && sashToolRef.value) {
+    const rect = sashToolRef.value.getBoundingClientRect();
+    return {
+      top: `${rect.top}px`,
+      left: `${rect.right}px`
+    };
+  }
+  return {};
+}
+
+// 获取窗扇工具图标，确保图标加载完成
+function getSashTypeIcon(): string {
+  if (!sashType.value) return 'tabler:dice';
+  
+  const iconMap: Record<string, string> = {
+    'fixed': 'tabler:dice',
+    'left': 'tabler:arrow-left',
+    'right': 'tabler:arrow-right',
+    'tiltLeft': 'tabler:arrow-bar-to-left',
+    'tiltRight': 'tabler:arrow-bar-to-right'
+  };
+  
+  const icon = iconMap[sashType.value];
+  console.log('窗扇图标:', sashType.value, '->', icon);
+  return icon || 'tabler:dice';
+}
+
+// 获取分割方向图标
+function getSplitDirectionIcon(): string {
+  const iconMap: Record<string, string> = {
+    'vertical': 'tabler:border-vertical',
+    'horizontal': 'tabler:border-horizontal'
+  };
+  return iconMap[splitDirection.value] || 'tabler:layout-grid';
+}
 </script>
 
 <style scoped>
 .design-toolbar {
-  padding: 15px;
-  background: #f5f5f5;
-  border-right: 1px solid #ddd;
-  width: 250px;
+  background-color: #363636;
+  width: 70px; /* 增加宽度从56px到70px */
   height: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  color: #e0e0e0;
+  padding: 0;
+  user-select: none;
+  position: relative;
+}
+
+.toolbar-collapse {
+  height: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  background-color: #2a2a2a;
+}
+
+.collapse-icon {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.tool-spacer {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spacer-dots {
+  font-size: 6px;
+  color: #5a5a5a;
+  letter-spacing: -1px;
+}
+
+.section-title {
+  font-size: 10px;
+  color: #999;
+  text-align: center;
+  padding: 2px 0;
+  background-color: #2a2a2a;
 }
 
 .toolbar-section {
-  margin-bottom: 20px;
+  margin-bottom: 0;
 }
 
-h3 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  font-size: 16px;
-  color: #333;
+.tool-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
 }
 
-.input-group {
+.tool-wrapper {
+  position: relative;
+  width: 34px; /* 从28px增加到34px */
+  height: 34px; /* 从28px增加到34px */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.tool-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 0 7px 7px;
+  border-color: transparent transparent #777 transparent;
+}
+
+.tool-button {
+  width: 30px; /* 从24px增加到30px */
+  height: 30px; /* 从24px增加到30px */
+  padding: 5px;
+  border: none;
+  background-color: transparent;
+  border-radius: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.15s;
+  margin: 0;
+}
+
+.tool-button:hover {
+  background-color: #474747;
+}
+
+.tool-button.active {
+  background-color: #6056DB; /* 更加接近图像中的蓝紫色 */
+  color: white;
+}
+
+.tool-icon {
+  font-size: 18px; /* 从16px增加到18px */
+}
+
+/* 弹出面板样式 */
+.tool-popup-panel {
+  position: fixed;
+  left: 70px; /* 调整为新的工具栏宽度 */
+  top: 50px;
+  background-color: #363636;
+  border: 1px solid #222;
+  width: 110px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 2000;
+}
+
+.popup-header {
   display: flex;
   align-items: center;
-  margin-bottom: 8px;
-}
-
-.input-group label {
-  width: 80px;
+  padding: 10px;
   font-size: 14px;
+  border-bottom: 1px solid #222;
+  background-color: #2a2a2a;
+  font-weight: 500;
 }
 
-.input-group input {
-  width: 100px;
-  padding: 5px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.popup-icon {
+  margin-right: 8px;
+  font-size: 16px;
 }
 
-.tool-buttons,
-.direction-buttons,
-.sash-buttons,
-.action-buttons {
+.popup-item {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-button {
-  padding: 8px 12px;
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  cursor: pointer;
+  align-items: center;
+  padding: 10px 12px;
   font-size: 14px;
-  transition: all 0.2s;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  position: relative;
 }
 
-button:hover {
-  background: #f0f0f0;
+.popup-item:hover {
+  background-color: #474747;
 }
 
-button.active {
-  background: #4a6bff;
+.popup-item.active {
+  background-color: #6056DB; /* 更加接近图像中的蓝紫色 */
   color: white;
-  border-color: #3351d8;
+}
+
+/* 添加选中指示器 */
+.popup-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background-color: #ffffff;
+}
+
+.popup-item-icon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+.keyboard-shortcut {
+  margin-left: auto;
+  font-size: 12px;
+  color: #999;
+}
+
+.popup-item.active .keyboard-shortcut {
+  color: #ccc;
+}
+
+.tool-options {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px 0;
+  background-color: #2a2a2a;
+  gap: 2px;
+}
+
+.option-button {
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+  border: none;
+  background-color: transparent;
+  border-radius: 0;
+  margin: 0;
+}
+
+.option-button:hover {
+  background-color: #474747;
+}
+
+.option-button.active {
+  background-color: #4842c5;
+  color: white;
+}
+
+.option-icon {
+  font-size: 16px;
+}
+
+/* 底部颜色面板 */
+.color-panel {
+  margin-top: auto;
+  padding: 8px 4px;
+  background-color: #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.color-box {
+  width: 32px;
+  height: 32px;
+  background-color: #ffffff;
+  border: 1px solid #777;
+}
+
+.secondary-box {
+  margin-top: -14px;
+  margin-left: 14px;
+}
+
+.layer-controls {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.layer-icon {
+  font-size: 18px;
+  opacity: 0.8;
 }
 
 /* 导出对话框样式 */
@@ -445,10 +911,10 @@ button.active {
   margin-bottom: 18px;
 }
 
-.export-option label {
+.export-option span {
   width: 90px;
   font-size: 14px;
-  color: #555;
+  color: #e0e0e0;
 }
 
 .export-format-select {
@@ -457,14 +923,14 @@ button.active {
 
 .export-preview {
   margin-bottom: 20px;
-  border: 1px solid #ddd;
+  border: 1px solid #444;
   border-radius: 4px;
   overflow: hidden;
   min-height: 150px;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #f5f5f5;
+  background-color: #333;
 }
 
 .export-preview-placeholder {
@@ -478,32 +944,67 @@ button.active {
   gap: 10px;
 }
 
-.export-preview-placeholder .el-icon {
+.spin-icon {
   font-size: 24px;
-  color: #4285f4;
+  animation: spin 1.5s linear infinite;
 }
 
-/* Element Plus 样式覆盖 */
-.export-button {
-  margin: 0 8px; /* 保持与其他按钮一致的间距 */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* 确保下拉菜单样式与应用整体风格一致 */
-:deep(.el-dropdown-menu) {
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .design-toolbar {
+    width: 50px;
+  }
+  
+  .tool-wrapper {
+    width: 25px;
+    height: 25px;
+  }
+  
+  .tool-button {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .tool-icon {
+    font-size: 14px;
+  }
 }
 
-:deep(.el-dropdown-item) {
-  font-size: 14px;
-  padding: 8px 12px;
+/* 紧凑模式 */
+.compact-mode {
+  width: 56px; /* 从46px调整到56px */
 }
 
-:deep(.el-dialog) {
-  border-radius: 8px;
+.compact-mode .tool-wrapper {
+  width: 28px; /* 从23px调整到28px */
+  height: 28px; /* 从23px调整到28px */
 }
 
-:deep(.el-radio) {
-  margin-right: 15px;
+.compact-mode .tool-button {
+  width: 24px; /* 从20px调整到24px */
+  height: 24px; /* 从20px调整到24px */
+}
+
+.compact-mode .tool-icon {
+  font-size: 16px; /* 从12px调整到16px */
+}
+
+.compact-mode .option-button {
+  width: 24px;
+  height: 24px;
+}
+
+.compact-mode .option-icon {
+  font-size: 12px;
+}
+
+.compact-mode .color-box {
+  width: 26px;
+  height: 26px;
 }
 </style>
