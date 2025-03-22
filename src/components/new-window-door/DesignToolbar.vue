@@ -306,10 +306,6 @@ const showPopupMenu = ref(false);
 
 // 计算属性监听活动工具变化
 watch(activeTool, (newTool) => {
-  if (newTool === 'select') {
-    windowStore.setSelectedElement('');
-    windowStore.selectedElement = null;
-  }
   // 延迟执行确保DOM更新
   setTimeout(() => {
     if (newTool === 'split' || newTool === 'sash') {
@@ -357,6 +353,10 @@ function updateFrameSize() {
 
 // 选择工具
 function selectTool(tool: 'select' | 'split' | 'sash' | 'pan' | 'zoomIn' | 'zoomOut' | 'rectSelect' | 'rotate' | 'transform'): void {
+  if (tool === 'select') {
+    windowStore.setSelectedElement('');
+    windowStore.selectedElement = null;
+  }
   // 如果点击的是当前激活的工具，则切换弹出菜单的显示/隐藏状态
   if (activeTool.value === tool && (tool === 'split' || tool === 'sash')) {
     showPopupMenu.value = !showPopupMenu.value;
