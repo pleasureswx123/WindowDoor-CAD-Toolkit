@@ -1043,7 +1043,7 @@ h3 {
 
 .setting-group input {
   padding: 8px;
-  border: 1px solid #444;
+  border: 1px solid #555;
   border-radius: 4px;
   font-size: 14px;
   background-color: #333;
@@ -1119,12 +1119,13 @@ button:hover {
 
 .select-input {
   padding: 8px;
-  border: 1px solid #444;
+  border: 1px solid #555;
   border-radius: 4px;
   font-size: 14px;
   background-color: #333;
   color: #e0e0e0;
   width: 100%;
+  cursor: pointer;
 }
 
 .select-input:focus {
@@ -1182,7 +1183,7 @@ button:hover {
 }
 
 .color-input {
-  border: 1px solid #444;
+  border: 1px solid #555;
   border-radius: 4px;
   margin-right: 8px;
   background-color: #333;
@@ -1190,7 +1191,7 @@ button:hover {
 
 .color-text {
   padding: 8px;
-  border: 1px solid #444;
+  border: 1px solid #555;
   border-radius: 4px;
   background-color: #333;
   color: #e0e0e0;
@@ -1203,7 +1204,7 @@ button:hover {
 .window-settings input {
   width: 100%;
   padding: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid #555;
   border-radius: 4px;
 }
 
@@ -1297,6 +1298,7 @@ button:hover {
   .setting-group input {
     padding: 6px;
     font-size: 12px;
+    border: 1px solid #555;
   }
   
   button {
