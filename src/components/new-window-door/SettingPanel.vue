@@ -506,11 +506,11 @@ const muntinThickness = computed({
     if (!isMuntinSelected.value || !windowStore.selectedElement) return 40;
     return windowStore.selectedElement.thickness || 40;
   },
-  set: (value) => {
+  set: (validThickness) => {
     if (!isMuntinSelected.value || !windowStore.selectedElement) return;
     
     // 确保厚度在有效范围内
-    const validThickness = Math.max(20, Math.min(100, value));
+    // const validThickness = Math.max(20, Math.min(100, value));
     
     // 更新中挺厚度
     windowStore.selectedElement.thickness = validThickness;
@@ -546,11 +546,11 @@ const muntinPosition = computed({
       return windowStore.selectedElement.x || 0;
     }
   },
-  set: (value) => {
+  set: (validPosition) => {
     if (!isMuntinSelected.value || !windowStore.selectedElement) return;
     
     // 确保位置在有效范围内
-    const validPosition = Math.max(minPosition.value, Math.min(maxPosition.value, value));
+    // const validPosition = Math.max(minPosition.value, Math.min(maxPosition.value, value));
     
     // 根据中挺方向更新位置
     if (muntinDirection.value === 'horizontal') {

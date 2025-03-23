@@ -414,7 +414,7 @@ export class WindowEmptyArea extends GlobalDefaultConfig {
   }
   
   // 分割区域
-  splitArea(direction: 'horizontal' | 'vertical', pointerPosition: { x: number, y: number }) {
+  splitArea(direction: 'horizontal' | 'vertical', pointerPosition: { x: number, y: number }, thickness?: number) {
     if (this.sash) {
       console.error('此区域已有窗扇，无法分割');
       return;
@@ -422,7 +422,7 @@ export class WindowEmptyArea extends GlobalDefaultConfig {
     
     this.splitDirection = direction;
     this.pointerPosition = pointerPosition;
-    this.thickness = this.defaultConfig.muntinThickness;
+    this.thickness = thickness || this.thickness || this.defaultConfig.muntinThickness;
     
     let area1: WindowEmptyArea, area2: WindowEmptyArea, muntin: WindowMuntin;
 
