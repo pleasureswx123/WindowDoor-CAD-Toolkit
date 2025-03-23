@@ -132,6 +132,24 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
     }, 100);
   }
   
+  // 应用设置
+  function updateSettings(settings: { showGrid?: boolean, showDimensions?: boolean, units?: string }) {
+    // 将来可以添加更多设置处理逻辑
+    console.log('应用设置:', settings);
+  }
+  
+  // 撤销操作
+  function undo() {
+    console.log('执行撤销操作');
+    // TODO: 实现撤销功能
+  }
+  
+  // 重做操作
+  function redo() {
+    console.log('执行重做操作');
+    // TODO: 实现重做功能
+  }
+  
   return {
     windowConfig,
     windowStructure,
@@ -151,5 +169,8 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
     selectedElement,
     setSelectedElement,
     resetView,
+    updateSettings,
+    undo,
+    redo,
   }
 })

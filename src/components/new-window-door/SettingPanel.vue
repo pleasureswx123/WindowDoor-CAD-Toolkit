@@ -115,13 +115,13 @@
     <!-- 中挺设置面板 -->
     <div v-else-if="isMuntinSelected" class="muntin-settings">
       <h3><Icon icon="tabler:layout-grid" class="section-icon" /> 中挺设置</h3>
-
+      
       <!-- 中挺方向 (只读) -->
       <div class="setting-group">
         <label><Icon icon="tabler:arrows-horizontal" class="setting-icon" /> 中挺方向:</label>
         <span>{{ muntinDirection === 'horizontal' ? '水平' : '垂直' }}</span>
       </div>
-
+      
       <!-- 中挺厚度设置 -->
       <div class="setting-group">
         <label><Icon icon="tabler:ruler" class="setting-icon" /> 厚度 (mm):</label>
@@ -136,25 +136,25 @@
           <input type="text" v-model="muntinColor" class="color-text" placeholder="#颜色代码" />
         </div>
       </div>
-
+      
       <!-- 中挺位置设置 -->
       <div class="setting-group" v-if="muntinDirection === 'horizontal'">
         <label><Icon icon="tabler:arrow-up" class="setting-icon" /> 上边距 (mm):</label>
         <input type="number" v-model.number="muntinPosition" :min="minPosition" :max="maxPosition" step="5" />
       </div>
-
+      
       <div class="setting-group" v-if="muntinDirection === 'vertical'">
         <label><Icon icon="tabler:arrow-left" class="setting-icon" /> 左边距 (mm):</label>
         <input type="number" v-model.number="muntinPosition" :min="minPosition" :max="maxPosition" step="5" />
       </div>
-
+      
       <!-- 删除中挺按钮 -->
       <div class="setting-actions">
         <button class="delete-button" @click="deleteMuntin">
           删除中挺
         </button>
       </div>
-
+      
       <!-- 提示信息 -->
       <div class="setting-tips">
         <p>提示: 水平中挺只能上下移动，垂直中挺只能左右移动</p>
@@ -162,7 +162,7 @@
         <p>可以自定义中挺颜色和边框样式使其更加美观</p>
       </div>
     </div>
-
+    
     <!-- 窗扇设置面板 -->
     <div v-if="isSashSelected" class="sash-settings">
       <h3>窗扇设置</h3>
@@ -178,7 +178,7 @@
           <option value="tiltRight">倾斜右开</option>
         </select>
       </div>
-
+      
       <!-- 窗扇整体尺寸（只读） -->
       <div class="setting-group">
         <label>窗扇整体尺寸:</label>
@@ -191,7 +191,7 @@
           </div>
         </div>
       </div>
-
+      
       <!-- 窗框大小设置（可编辑） -->
       <div class="setting-group">
         <label>窗框大小 (mm):</label>
@@ -221,7 +221,7 @@
         <label>边线粗细 (px):</label>
         <input type="number" v-model.number="sashStrokeWidth" min="0" max="5" step="0.5" />
       </div>
-
+      
       <!-- 玻璃尺寸（只读） -->
       <div class="setting-group">
         <label>玻璃尺寸:</label>
@@ -260,7 +260,7 @@
           删除窗扇
         </button>
       </div>
-
+      
       <!-- 提示信息 -->
       <div class="setting-tips">
         <p>提示: 调整窗框大小会自动更新玻璃尺寸</p>
@@ -348,7 +348,7 @@
         <p>分割区域后，将创建中挺和两个新的空白区域</p>
       </div>
     </div>
-
+    
     <!-- 其他元素设置面板可以在这里添加 -->
     <div v-else-if="isFrameSelected" class="frame-settings">
       <h3>窗框设置</h3>

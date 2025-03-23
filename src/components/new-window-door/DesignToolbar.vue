@@ -194,6 +194,14 @@
           </div>
         </el-tooltip>
 
+        <el-tooltip content="材料统计" placement="right">
+          <div class="tool-wrapper">
+            <el-button class="tool-button" @click="showMaterialStats" @tap="showMaterialStats">
+              <Icon icon="tabler:table" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip>
+
         <el-tooltip content="切换预览" placement="right">
           <div class="tool-wrapper">
             <el-button class="tool-button" @click="togglePreview" @tap="togglePreview">
@@ -277,7 +285,7 @@ const props = defineProps({
 });
 
 // Emits
-const emit = defineEmits(['toggle-preview']);
+const emit = defineEmits(['toggle-preview', 'show-material-stats']);
 
 const windowStore = useRootWindowStore();
 
@@ -503,6 +511,12 @@ function resetView() {
 // 切换预览显示
 function togglePreview() {
   emit('toggle-preview');
+}
+
+// 展示材料统计
+function showMaterialStats() {
+  // 触发自定义事件，让父组件显示材料统计
+  emit('show-material-stats');
 }
 
 // 在onMounted中添加事件监听

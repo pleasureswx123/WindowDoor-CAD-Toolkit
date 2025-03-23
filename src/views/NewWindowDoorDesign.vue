@@ -36,6 +36,7 @@
             class="design-toolbar" 
             :is-compact="isCompactMode" 
             @toggle-preview="togglePreview" 
+            @show-material-stats="showMaterialStats"
           />
         </el-aside>
         
@@ -73,36 +74,53 @@
     <el-dialog
       v-model="showSettings"
       title="设置"
-      width="500px"
+      width="650px"
       destroy-on-close
     >
-      <div class="settings-content">
-        <h3>显示选项</h3>
-        <el-form label-position="left" label-width="120px">
-          <el-form-item label="显示预览">
-            <el-switch v-model="showPreview" />
-          </el-form-item>
-          <el-form-item label="显示网格">
-            <el-switch v-model="showGrid" />
-          </el-form-item>
-          <el-form-item label="显示尺寸标注">
-            <el-switch v-model="showDimensions" />
-          </el-form-item>
-        </el-form>
-        
-        <h3>单位设置</h3>
-        <el-radio-group v-model="units">
-          <el-radio-button label="mm">毫米</el-radio-button>
-          <el-radio-button label="cm">厘米</el-radio-button>
-          <el-radio-button label="inch">英寸</el-radio-button>
-        </el-radio-group>
-      </div>
+      <el-tabs>
+        <el-tab-pane label="显示设置">
+          <div class="settings-content">
+            <h3>显示选项</h3>
+            <el-form label-position="left" label-width="120px">
+              <el-form-item label="显示预览">
+                <el-switch v-model="showPreview" />
+              </el-form-item>
+              <el-form-item label="显示网格">
+                <el-switch v-model="showGrid" />
+              </el-form-item>
+              <el-form-item label="显示尺寸标注">
+                <el-switch v-model="showDimensions" />
+              </el-form-item>
+            </el-form>
+            
+            <h3>单位设置</h3>
+            <el-radio-group v-model="units">
+              <el-radio-button label="mm">毫米</el-radio-button>
+              <el-radio-button label="cm">厘米</el-radio-button>
+              <el-radio-button label="inch">英寸</el-radio-button>
+            </el-radio-group>
+          </div>
+        </el-tab-pane>
+        <el-tab-pane label="材料统计">
+          <MaterialStatsTable />
+        </el-tab-pane>
+      </el-tabs>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="showSettings = false">取消</el-button>
+          <el-button @click="showSettings = false">关闭</el-button>
           <el-button type="primary" @click="applySettings">应用设置</el-button>
         </span>
       </template>
+    </el-dialog>
+    
+    <!-- 材料统计对话框 -->
+    <el-dialog
+      v-model="showMaterialStatsDialog"
+      title="材料用量统计"
+      width="800px"
+      destroy-on-close
+    >
+      <MaterialStatsTable />
     </el-dialog>
     
     <!-- 移动设备侧边栏设置面板 -->
@@ -125,6 +143,7 @@ import DesignToolbar from '../components/new-window-door/DesignToolbar.vue';
 import WindowCanvas from '../components/new-window-door/WindowCanvas.vue';
 import { useRootWindowStore } from '../stores/rootWindowStore';
 import SettingPanel from '../components/new-window-door/SettingPanel.vue';
+import MaterialStatsTable from '../components/new-window-door/MaterialStatsTable.vue';
 
 // 导入 Iconify 图标 - 创建组件而不是使用 markRaw
 const RefreshRight = () => h(Icon, { icon: 'tabler:arrow-back-up' });
@@ -145,6 +164,7 @@ const scale = computed(() => windowStore.viewState.scale);
 const isCompactMode = ref(false);
 const showPreview = ref(true);
 const showSettings = ref(false);
+const showMaterialStatsDialog = ref(false);
 const showSettingDrawer = ref(false);
 const showGrid = ref(true);
 const showDimensions = ref(true);
@@ -246,6 +266,11 @@ watch(() => windowStore.selectedElement, (newValue) => {
     showSettingDrawer.value = true;
   }
 });
+
+// 显示材料统计对话框
+function showMaterialStats() {
+  showMaterialStatsDialog.value = true;
+}
 
 onMounted(() => {
   window.addEventListener('resize', handleResize);
