@@ -40,6 +40,7 @@ interface IDimension {
   frameStrokeWidth?: number | string;
   frameStrokeColor?: string; // 边框颜色
   frameColor?: string; // 边框颜色
+  sashType?: SashType;
 }
 
 export const elementIdMap = reactive(new Map());
@@ -787,7 +788,7 @@ export class WindowSash extends GlobalDefaultConfig {
   }
 
   initData() {
-    this.frameSize = this.sashType === 'fixed' ? 0 : this.defaultConfig.muntinThickness;
+    this.frameSize = this.sashType === 'fixed' ? 0 : this.defaultConfig.sashFrameThickness;
 
     // 创建窗扇框架
     this.frame = new WindowSashFrame({
@@ -795,6 +796,7 @@ export class WindowSash extends GlobalDefaultConfig {
       y: this.y,
       width: this.width,
       height: this.height,
+      sashType: this.sashType,
       thickness: this.frameSize,
       frameStrokeColor: this.frameStrokeColor,
       frameStrokeWidth: this.frameStrokeWidth,
@@ -888,13 +890,15 @@ export class WindowSashFrame extends GlobalDefaultConfig {
   frameStrokeWidth: number | string;
   frameStrokeColor: string;
   frameColor: string;
+  sashType?: SashType;
   
   constructor(config: IDimension & { thickness: number, color?: string}) {
     super(config);
-    this.thickness = config.thickness || this.defaultConfig.sashFrameThickness;
+    this.thickness = config.thickness;
     this.frameColor = config.frameColor || this.defaultConfig.sashColor; // 默认深棕色
     this.frameStrokeWidth = config.frameStrokeWidth || this.defaultConfig.sashStrokeWidth;
     this.frameStrokeColor = config.frameStrokeColor || this.defaultConfig.sashStrokeColor;
+    this.sashType = config.sashType;
   }
   
   // 更新窗扇边框颜色
