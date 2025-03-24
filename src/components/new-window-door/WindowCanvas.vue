@@ -1027,7 +1027,12 @@ onMounted(() => {
 <style lang="scss" scoped>
 .window-canvas {
   flex: 1;
-  background: #ffffff;
+  background-color: #f5f5f5;
+  background-image: 
+    linear-gradient(45deg, #e0e0e0 25%, transparent 25%, transparent 75%, #e0e0e0 75%, #e0e0e0),
+    linear-gradient(45deg, #e0e0e0 25%, transparent 25%, transparent 75%, #e0e0e0 75%, #e0e0e0);
+  background-size: 20px 20px;
+  background-position: 0 0, 10px 10px;
   overflow: hidden;
   height: 100%;
   display: flex;
