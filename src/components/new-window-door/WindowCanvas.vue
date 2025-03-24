@@ -1027,7 +1027,7 @@ onMounted(() => {
 <style lang="scss" scoped>
 .window-canvas {
   flex: 1;
-  background: #000000;
+  background: #ffffff;
   overflow: hidden;
   height: 100%;
   display: flex;
