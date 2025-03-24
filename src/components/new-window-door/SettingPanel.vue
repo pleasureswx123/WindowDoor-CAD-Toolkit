@@ -140,12 +140,22 @@
       <!-- 中挺位置设置 -->
       <div class="setting-group" v-if="muntinDirection === 'horizontal'">
         <label><Icon icon="tabler:arrow-up" class="setting-icon" /> 上边距 (mm):</label>
-        <input type="number" v-model.number="muntinPosition" :min="minPosition" :max="maxPosition" step="5" />
+        <input type="number" v-model.number="muntinPosition" :min="minPosition" :max="maxPosition" step="5" @blur="validateMuntinPosition('top')" />
+      </div>
+      
+      <div class="setting-group" v-if="muntinDirection === 'horizontal'">
+        <label><Icon icon="tabler:arrow-down" class="setting-icon" /> 下边距 (mm):</label>
+        <input type="number" v-model.number="muntinBottomPosition" :min="minPosition" :max="maxPosition" step="5" @blur="validateMuntinPosition('bottom')" />
       </div>
       
       <div class="setting-group" v-if="muntinDirection === 'vertical'">
         <label><Icon icon="tabler:arrow-left" class="setting-icon" /> 左边距 (mm):</label>
-        <input type="number" v-model.number="muntinPosition" :min="minPosition" :max="maxPosition" step="5" />
+        <input type="number" v-model.number="muntinPosition" :min="minPosition" :max="maxPosition" step="5" @blur="validateMuntinPosition('left')" />
+      </div>
+      
+      <div class="setting-group" v-if="muntinDirection === 'vertical'">
+        <label><Icon icon="tabler:arrow-right" class="setting-icon" /> 右边距 (mm):</label>
+        <input type="number" v-model.number="muntinRightPosition" :min="minPosition" :max="maxPosition" step="5" @blur="validateMuntinPosition('right')" />
       </div>
       
       <!-- 删除中挺按钮 -->
@@ -157,7 +167,7 @@
       
       <!-- 提示信息 -->
       <div class="setting-tips">
-        <p>提示: 水平中挺只能上下移动，垂直中挺只能左右移动</p>
+        <p>提示: 水平中挺可以调整上下边距，垂直中挺可以调整左右边距</p>
         <p>有效范围: {{ minPosition }}mm - {{ maxPosition }}mm</p>
         <p>可以自定义中挺颜色和边框样式使其更加美观</p>
       </div>
@@ -546,24 +556,21 @@ const muntinPosition = computed({
       return windowStore.selectedElement.x || 0;
     }
   },
-  set: (validPosition) => {
+  set: (newPosition) => {
     if (!isMuntinSelected.value || !windowStore.selectedElement) return;
-    
-    // 确保位置在有效范围内
-    // const validPosition = Math.max(minPosition.value, Math.min(maxPosition.value, value));
     
     // 根据中挺方向更新位置
     if (muntinDirection.value === 'horizontal') {
-      windowStore.selectedElement.y = validPosition;
+      windowStore.selectedElement.y = newPosition;
     } else {
-      windowStore.selectedElement.x = validPosition;
+      windowStore.selectedElement.x = newPosition;
     }
     
     // 调用父元素的splitArea方法更新分割
     if (windowStore.selectedElement.parent && windowStore.selectedElement.parent.splitArea) {
       const position = muntinDirection.value === 'horizontal' 
-        ? { x: 0, y: validPosition + muntinThickness.value / 2 } 
-        : { x: validPosition + muntinThickness.value / 2, y: 0 };
+        ? { x: 0, y: newPosition + muntinThickness.value / 2 } 
+        : { x: newPosition + muntinThickness.value / 2, y: 0 };
 
       nextTick(() => {
         windowStore.selectedElement.parent.splitArea(
@@ -984,6 +991,82 @@ const muntinColor = computed({
   }
 });
 
+// 中挺位置 - 下边距
+const muntinBottomPosition = computed({
+  get: () => {
+    if (!isMuntinSelected.value || !windowStore.selectedElement || muntinDirection.value !== 'horizontal') return 0;
+    
+    const parent = windowStore.selectedElement.parent;
+    if (!parent) return 0;
+    
+    // 计算下边距 = 父元素高度 - 中挺位置 - 中挺厚度
+    return parent.height - windowStore.selectedElement.y - muntinThickness.value;
+  },
+  set: (value) => {
+    if (!isMuntinSelected.value || !windowStore.selectedElement || muntinDirection.value !== 'horizontal') return;
+    
+    const parent = windowStore.selectedElement.parent;
+    if (!parent) return;
+    
+    // 根据下边距计算中挺位置 = 父元素高度 - 下边距 - 中挺厚度
+    const newPosition = parent.height - value - muntinThickness.value;
+    
+    // 更新中挺位置
+    windowStore.selectedElement.y = newPosition;
+    
+    // 调用父元素的splitArea方法更新分割
+    if (windowStore.selectedElement.parent && windowStore.selectedElement.parent.splitArea) {
+      const position = { x: 0, y: newPosition + muntinThickness.value / 2 };
+
+      nextTick(() => {
+        windowStore.selectedElement.parent.splitArea(
+          'horizontal', 
+          position, 
+          muntinThickness.value
+        );
+      });
+    }
+  }
+});
+
+// 中挺位置 - 右边距
+const muntinRightPosition = computed({
+  get: () => {
+    if (!isMuntinSelected.value || !windowStore.selectedElement || muntinDirection.value !== 'vertical') return 0;
+    
+    const parent = windowStore.selectedElement.parent;
+    if (!parent) return 0;
+    
+    // 计算右边距 = 父元素宽度 - 中挺位置 - 中挺厚度
+    return parent.width - windowStore.selectedElement.x - muntinThickness.value;
+  },
+  set: (value) => {
+    if (!isMuntinSelected.value || !windowStore.selectedElement || muntinDirection.value !== 'vertical') return;
+    
+    const parent = windowStore.selectedElement.parent;
+    if (!parent) return;
+    
+    // 根据右边距计算中挺位置 = 父元素宽度 - 右边距 - 中挺厚度
+    const newPosition = parent.width - value - muntinThickness.value;
+    
+    // 更新中挺位置
+    windowStore.selectedElement.x = newPosition;
+    
+    // 调用父元素的splitArea方法更新分割
+    if (windowStore.selectedElement.parent && windowStore.selectedElement.parent.splitArea) {
+      const position = { x: newPosition + muntinThickness.value / 2, y: 0 };
+
+      nextTick(() => {
+        windowStore.selectedElement.parent.splitArea(
+          'vertical', 
+          position, 
+          muntinThickness.value
+        );
+      });
+    }
+  }
+});
+
 // 应用到所有元素
 function applyToAllElements() {
   // 应用到所有元素
@@ -991,6 +1074,100 @@ function applyToAllElements() {
     windowStore.windowStructure.applyDefaultConfigToAll();
   }
 }
+
+// 添加validateMuntinPosition方法
+const validateMuntinPosition = (type: 'left' | 'right' | 'top' | 'bottom') => {
+  if (!isMuntinSelected.value || !windowStore.selectedElement) return;
+  
+  const parent = windowStore.selectedElement.parent;
+  if (!parent) return;
+  
+  // 获取父元素的宽度和高度
+  const parentWidth = parent.width;
+  const parentHeight = parent.height;
+  
+  // 获取中挺当前位置
+  const currentX = windowStore.selectedElement.x || 0;
+  const currentY = windowStore.selectedElement.y || 0;
+  
+  // 最小和最大位置
+  let min = 0;
+  let max = 0;
+  let currentValue = 0;
+  
+  // 根据类型确定最小和最大值以及当前值
+  switch(type) {
+    case 'left': // 左边距
+      min = 0;
+      max = parentWidth - muntinThickness.value;
+      currentValue = currentX;
+      break;
+    case 'right': // 右边距
+      min = 0;
+      max = parentWidth - muntinThickness.value;
+      currentValue = parentWidth - currentX - muntinThickness.value;
+      break;
+    case 'top': // 上边距
+      min = 0;
+      max = parentHeight - muntinThickness.value;
+      currentValue = currentY;
+      break;
+    case 'bottom': // 下边距
+      min = 0;
+      max = parentHeight - muntinThickness.value;
+      currentValue = parentHeight - currentY - muntinThickness.value;
+      break;
+  }
+  
+  // 检查边界并更新
+  if (currentValue < min) {
+    updateMuntinPosition(type, min);
+  } else if (currentValue > max) {
+    updateMuntinPosition(type, max);
+  }
+};
+
+// 更新中挺位置
+const updateMuntinPosition = (type: 'left' | 'right' | 'top' | 'bottom', value: number) => {
+  if (!windowStore.selectedElement || !windowStore.selectedElement.parent) return;
+  
+  const parent = windowStore.selectedElement.parent;
+  
+  switch(type) {
+    case 'left':
+      // 直接设置x位置
+      windowStore.selectedElement.x = value;
+      break;
+    case 'right':
+      // 从右边计算x位置
+      windowStore.selectedElement.x = parent.width - value - muntinThickness.value;
+      break;
+    case 'top':
+      // 直接设置y位置
+      windowStore.selectedElement.y = value;
+      break;
+    case 'bottom':
+      // 从底部计算y位置
+      windowStore.selectedElement.y = parent.height - value - muntinThickness.value;
+      break;
+  }
+  
+  // 更新分割区域
+  if (windowStore.selectedElement.parent.splitArea) {
+    const direction = (type === 'left' || type === 'right') ? 'vertical' : 'horizontal';
+    const position = direction === 'horizontal'
+      ? { x: 0, y: windowStore.selectedElement.y + muntinThickness.value / 2 }
+      : { x: windowStore.selectedElement.x + muntinThickness.value / 2, y: 0 };
+    
+    nextTick(() => {
+      windowStore.selectedElement.parent.splitArea(
+        direction,
+        position,
+        muntinThickness.value
+      );
+    });
+  }
+};
 
 </script>
 
