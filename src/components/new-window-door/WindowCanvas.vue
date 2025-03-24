@@ -1020,6 +1020,36 @@ onMounted(() => {
         }
       }
     });
+    
+    // 添加键盘快捷键支持
+    window.addEventListener('keydown', (e) => {
+      // 忽略输入框和文本区域中的快捷键
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      
+      // Ctrl+Z: 撤销
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        windowStore.undo();
+      }
+      
+      // Ctrl+Y 或 Ctrl+Shift+Z: 重做
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y' || 
+          ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z')) {
+        e.preventDefault();
+        windowStore.redo();
+      }
+      
+      // Delete 或 Backspace: 删除选中元素
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        // 只有在有选中元素时才处理删除
+        if (windowStore.selectedElement) {
+          e.preventDefault();
+          windowStore.deleteSelectedElement();
+        }
+      }
+    });
   });
 });
 

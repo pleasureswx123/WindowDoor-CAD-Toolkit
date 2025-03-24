@@ -253,7 +253,7 @@
     </el-dialog>
 
     <!-- 快捷键对话框 -->
-    <el-dialog v-model="showShortcuts" title="键盘快捷键" width="700px" custom-class="shortcut-dialog" destroy-on-close>
+    <el-dialog v-model="showShortcuts" title="键盘快捷键" width="800px" custom-class="shortcut-dialog" destroy-on-close>
       <div class="shortcuts-grid">
         <div v-for="(section, sectionIndex) in shortcutsContent" :key="sectionIndex" class="shortcut-section">
           <div class="section-title">{{ section.title }}</div>
@@ -765,6 +765,20 @@ const shortcutsContent = [
       { key: '空格+拖动', desc: '平移视图' },
       { key: '+', desc: '放大' },
       { key: '-', desc: '缩小' },
+    ]
+  },
+  {
+    title: '查看控制',
+    items: [
+      { key: 'P', desc: '平移工具' },
+      { key: '+', desc: '放大' },
+      { key: '-', desc: '缩小' },
+    ]
+  },
+  {
+    title: '编辑操作',
+    items: [
+      { key: 'Delete', desc: '删除选中元素' },
     ]
   }
 ];

@@ -10,8 +10,8 @@
     <el-header class="app-header" height="40px">
       <div class="header-left">
         <el-button-group>
-          <el-button :icon="RefreshRight" size="small" title="撤销" @click="undo"/>
-          <el-button :icon="RefreshLeft" size="small" title="重做" @click="redo"/>
+          <el-button :icon="Delete" size="small" title="删除选中元素" @click="deleteSelected" />
+          <el-button :icon="DeleteFilled" size="small" title="清空设计" @click="confirmClear" />
         </el-button-group>
         <el-divider direction="vertical" />
         <el-button :icon="Message" size="small" @click="saveDesign">保存设计</el-button>
@@ -28,23 +28,19 @@
         </el-tooltip>
       </div>
     </el-header>
-    
+
     <div class="main-content">
       <el-container>
         <el-aside :width="isCompactMode ? '60px' : '75px'" class="design-toolbar-container">
-          <DesignToolbar 
-            class="design-toolbar" 
-            :is-compact="isCompactMode" 
-            @toggle-preview="togglePreview" 
-            @show-material-stats="showMaterialStats"
-          />
+          <DesignToolbar class="design-toolbar" :is-compact="isCompactMode" @toggle-preview="togglePreview"
+            @show-material-stats="showMaterialStats" />
         </el-aside>
-        
+
         <el-main class="design-workspace">
           <div class="canvas-wrapper">
             <WindowCanvas class="design-canvas" :show-preview="showPreview" />
           </div>
-          
+
           <div class="design-status-bar">
             <div class="status-info">
               <div v-if="selectedElementInfo">
@@ -56,27 +52,22 @@
             </div>
             <div class="scale-controls">
               <el-button-group>
-                <el-button :icon="ZoomOut" size="small" @click="zoomOut" title="缩小"/>
+                <el-button :icon="ZoomOut" size="small" @click="zoomOut" title="缩小" />
                 <el-button size="small">{{ Math.round(scale * 100) }}%</el-button>
-                <el-button :icon="ZoomIn" size="small" @click="zoomIn" title="放大"/>
+                <el-button :icon="ZoomIn" size="small" @click="zoomIn" title="放大" />
               </el-button-group>
             </div>
           </div>
         </el-main>
-        
+
         <el-aside :width="isCompactMode ? '0' : '250px'" class="design-setting-panel-container">
           <SettingPanel class="design-setting-panel" v-show="!isCompactMode" />
         </el-aside>
       </el-container>
     </div>
-    
+
     <!-- 设置对话框 -->
-    <el-dialog
-      v-model="showSettings"
-      title="设置"
-      width="650px"
-      destroy-on-close
-    >
+    <el-dialog v-model="showSettings" title="设置" width="650px" destroy-on-close>
       <el-tabs>
         <el-tab-pane label="显示设置">
           <div class="settings-content">
@@ -92,7 +83,7 @@
                 <el-switch v-model="showDimensions" />
               </el-form-item>
             </el-form>
-            
+
             <h3>单位设置</h3>
             <el-radio-group v-model="units">
               <el-radio-button label="mm">毫米</el-radio-button>
@@ -112,26 +103,32 @@
         </span>
       </template>
     </el-dialog>
-    
+
     <!-- 材料统计对话框 -->
-    <el-dialog
-      v-model="showMaterialStatsDialog"
-      title="材料用量统计"
-      width="800px"
-      destroy-on-close
-    >
+    <el-dialog v-model="showMaterialStatsDialog" title="材料用量统计" width="800px" destroy-on-close>
       <MaterialStatsTable />
     </el-dialog>
-    
+
     <!-- 移动设备侧边栏设置面板 -->
-    <el-drawer
-      v-model="showSettingDrawer"
-      direction="rtl"
-      title="设置面板"
-      size="80%"
-    >
+    <el-drawer v-model="showSettingDrawer" direction="rtl" title="设置面板" size="80%">
       <SettingPanel />
     </el-drawer>
+
+    <!-- 确认清空对话框 -->
+    <el-dialog
+      v-model="showClearConfirmDialog"
+      title="确认清空"
+      width="300px"
+      :close-on-click-modal="false"
+    >
+      <span>确定要清空当前设计吗？此操作可以撤销。</span>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="showClearConfirmDialog = false">取消</el-button>
+          <el-button type="danger" @click="clearDesign">确定清空</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -153,6 +150,8 @@ const ZoomIn = () => h(Icon, { icon: 'tabler:zoom-in' });
 const ZoomOut = () => h(Icon, { icon: 'tabler:zoom-out' });
 const FoldIcon = () => h(Icon, { icon: 'tabler:layout-sidebar-right-collapse' });
 const ExpandIcon = () => h(Icon, { icon: 'tabler:layout-sidebar-right-expand' });
+const Delete = () => h(Icon, { icon: 'tabler:trash' });
+const DeleteFilled = () => h(Icon, { icon: 'tabler:trash-filled' });
 
 // store
 const windowStore = useRootWindowStore();
@@ -169,6 +168,7 @@ const showSettingDrawer = ref(false);
 const showGrid = ref(true);
 const showDimensions = ref(true);
 const units = ref('mm');
+const showClearConfirmDialog = ref(false);
 
 // 记录是否为移动设备
 const isMobile = ref(window.innerWidth < 768);
@@ -253,15 +253,6 @@ function applySettings() {
   showSettings.value = false;
 }
 
-// 撤销/重做
-function undo() {
-  windowStore.undo();
-}
-
-function redo() {
-  windowStore.redo();
-}
-
 // 保存设计
 function saveDesign() {
   windowStore.exportWindowConfig();
@@ -295,6 +286,22 @@ watch(() => windowStore.selectedElement, (newValue) => {
 // 显示材料统计对话框
 function showMaterialStats() {
   showMaterialStatsDialog.value = true;
+}
+
+// 删除选中元素
+function deleteSelected() {
+  windowStore.deleteSelectedElement();
+}
+
+// 确认清空设计
+function confirmClear() {
+  showClearConfirmDialog.value = true;
+}
+
+// 执行清空设计
+function clearDesign() {
+  windowStore.clearDesign();
+  showClearConfirmDialog.value = false;
 }
 
 onMounted(() => {
