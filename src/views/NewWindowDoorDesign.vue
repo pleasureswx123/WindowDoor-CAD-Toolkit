@@ -48,10 +48,10 @@
           <div class="design-status-bar">
             <div class="status-info">
               <div v-if="selectedElementInfo">
-                <el-tag size="small">{{ selectedElementInfo }}</el-tag>
+                <el-tag size="small" :type="elementTagType" effect="dark">{{ selectedElementInfo }}</el-tag>
               </div>
               <div v-else>
-                <el-tag size="small" type="info">未选中元素</el-tag>
+                <el-tag size="small" type="info" effect="dark">未选中元素</el-tag>
               </div>
             </div>
             <div class="scale-controls">
@@ -173,26 +173,51 @@ const units = ref('mm');
 // 记录是否为移动设备
 const isMobile = ref(window.innerWidth < 768);
 
-// 显示选中元素的信息
-// const selectedElementInfo = computed(() => {
-//   if (windowStore.selectedArea) {
-//     return `选中区域: ${windowStore.selectedArea}`;
-//   } else if (windowStore.selectedMuntin) {
-//     return `选中中挺: ${windowStore.selectedMuntin}`;
-//   } else if (windowStore.selectedSash) {
-//     return `选中窗扇: ${windowStore.selectedSash}`;
-//   }
-//   return null;
-// });
-
-
 // 判断选中的元素类型
 const selectedElementInfo = computed(() => {
-  if (!windowStore.selectedElement) return '无';
+  if (!windowStore.selectedElement) return '无选中元素';
 
-  // 根据元素类型返回对应的名称
+  // 根据元素类型返回对应的中文名称
   const elementType = windowStore.selectedElement.ele || '未知元素';
-  return elementType;
+  
+  // 将技术类型名称映射为用户友好的中文描述
+  const typeNameMap: Record<string, string> = {
+    'window-frame': '窗框',
+    'window-muntin': '中挺',
+    'window-sash': '窗扇',
+    'window-sash-fixed': '固定窗扇',
+    'window-sash-left': '左开窗扇',
+    'window-sash-right': '右开窗扇',
+    'window-sash-tilt-left': '左倾斜窗扇',
+    'window-sash-tilt-right': '右倾斜窗扇',
+    'window-empty-area': '空白区域',
+    'window-glazing': '玻璃面板'
+  };
+  
+  // 返回友好的中文名称，如果没有映射则返回原始类型名称
+  return `当前选中：${typeNameMap[elementType] || elementType}`;
+});
+
+// 根据元素类型确定标签样式
+const elementTagType = computed(() => {
+  if (!windowStore.selectedElement) return 'info';
+  
+  const elementType = windowStore.selectedElement.ele || '';
+  
+  // 根据元素类型返回不同的标签类型
+  if (elementType.includes('window-frame')) {
+    return 'warning'; // 窗框使用橙色警告标签
+  } else if (elementType.includes('window-muntin')) {
+    return 'primary'; // 中挺使用蓝色主要标签
+  } else if (elementType.includes('window-sash')) {
+    return 'success'; // 窗扇使用绿色成功标签
+  } else if (elementType.includes('window-empty-area')) {
+    return 'info'; // 空白区域使用灰色信息标签
+  } else if (elementType.includes('window-glazing')) {
+    return 'danger'; // 玻璃面板使用红色危险标签
+  }
+  
+  return 'info'; // 默认使用信息标签
 });
 
 // 切换紧凑模式
@@ -364,6 +389,14 @@ onBeforeUnmount(() => {
 
 .status-info {
   font-size: 12px;
+}
+
+.status-info .el-tag {
+  border-radius: 4px;
+  padding: 0 10px;
+  height: 24px;
+  line-height: 24px;
+  font-weight: 500;
 }
 
 .scale-controls {
