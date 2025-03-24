@@ -136,7 +136,7 @@ const stageConfig = computed(() => {
   return {
     width: canvasContainer.value ? canvasContainer.value.clientWidth : 800,
     height: canvasContainer.value ? canvasContainer.value.clientHeight : 600,
-    draggable: false,
+    draggable: true,
   };
 });
 
@@ -495,14 +495,22 @@ function showSplitPreview(e: any) {
   // 获取stage相对于容器的绝对坐标
   const stageBox = stage.container().getBoundingClientRect();
   
-  // 计算鼠标在原始窗口坐标系中的位置（考虑图层位移和缩放）
-  const x = (pointerPos.x - stagePosition.x) / scale.value;
-  const y = (pointerPos.y - stagePosition.y) / scale.value;
+  // 当舞台可拖动时，需要考虑舞台本身的位置偏移
+  // 首先获取舞台自身的偏移值
+  const stageOffset = {
+    x: stage.x(),
+    y: stage.y()
+  };
+  
+  // 计算鼠标在原始窗口坐标系中的位置（考虑图层位移、舞台偏移和缩放）
+  const x = (pointerPos.x - stagePosition.x - stageOffset.x) / scale.value;
+  const y = (pointerPos.y - stagePosition.y - stageOffset.y) / scale.value;
   
   // 输出调试信息以便排查问题
   console.log('预览线计算:', {
     pointerPos,
     stagePosition: {...stagePosition},
+    stageOffset,
     scale: scale.value,
     calculatedPos: {x, y}
   });
