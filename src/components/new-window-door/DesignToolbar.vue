@@ -22,113 +22,82 @@
           </div>
         </el-tooltip>
       </div>
+      <div class="section-title">分割工具</div>
       <div class="tool-column">
-        <!-- <el-tooltip content="矩形选框" placement="right">
+        <!-- 垂直分割 -->
+        <el-tooltip content="垂直分割" placement="right"
+          :disabled="activeTool === 'split' && splitDirection === 'vertical'">
           <div class="tool-wrapper">
-            <el-button class="tool-button" @click="selectTool('rectSelect')" @tap="selectTool('rectSelect')"
-              :class="{ active: activeTool === 'rectSelect', 'active-tool': activeTool === 'rectSelect' }">
-              <Icon icon="tabler:square-dashed" class="tool-icon" />
-            </el-button>
-          </div>
-        </el-tooltip> -->
-
-        <el-tooltip content="分割工具" placement="right" :disabled="activeTool === 'split'">
-          <div class="tool-wrapper" ref="splitToolRef">
-            <el-button class="tool-button" @click="selectTool('split')" @tap="selectTool('split')"
-              :class="{ active: activeTool === 'split', 'active-tool': activeTool === 'split' }">
-              <Icon :icon="getSplitDirectionIcon()" class="tool-icon" />
-            </el-button>
-            <div class="tool-indicator" v-if="true"></div>
-          </div>
-        </el-tooltip>
-
-        <el-tooltip content="窗扇工具" placement="right" :disabled="activeTool === 'sash'">
-          <div class="tool-wrapper" ref="sashToolRef">
-            <el-button class="tool-button" @click="selectTool('sash')" @tap="selectTool('sash')"
-              :class="{ active: activeTool === 'sash', 'active-tool': activeTool === 'sash' }">
-              <Icon :icon="getSashTypeIcon()" class="tool-icon" />
-            </el-button>
-            <div class="tool-indicator" v-if="true"></div>
-          </div>
-        </el-tooltip>
-
-        <!-- <el-tooltip content="旋转" placement="right">
-          <div class="tool-wrapper">
-            <el-button 
-              class="tool-button"
-              @click="selectTool('rotate')" 
-              @tap="selectTool('rotate')"
-              :class="{ active: activeTool === 'rotate', 'active-tool': activeTool === 'rotate' }"
-            >
-              <Icon icon="tabler:rotate" class="tool-icon" />
+            <el-button class="tool-button" @click="selectSplitTool('vertical')" @tap="selectSplitTool('vertical')"
+              :class="{ active: activeTool === 'split' && splitDirection === 'vertical', 'active-tool': activeTool === 'split' && splitDirection === 'vertical' }">
+              <Icon icon="tabler:border-vertical" class="tool-icon" />
             </el-button>
           </div>
         </el-tooltip>
 
-        <el-tooltip content="调整" placement="right">
+        <!-- 水平分割 -->
+        <el-tooltip content="水平分割" placement="right"
+          :disabled="activeTool === 'split' && splitDirection === 'horizontal'">
           <div class="tool-wrapper">
-            <el-button 
-              class="tool-button"
-              @click="selectTool('transform')" 
-              @tap="selectTool('transform')"
-              :class="{ active: activeTool === 'transform', 'active-tool': activeTool === 'transform' }"
-            >
-              <Icon icon="tabler:transform" class="tool-icon" />
+            <el-button class="tool-button" @click="selectSplitTool('horizontal')" @tap="selectSplitTool('horizontal')"
+              :class="{ active: activeTool === 'split' && splitDirection === 'horizontal', 'active-tool': activeTool === 'split' && splitDirection === 'horizontal' }">
+              <Icon icon="tabler:border-horizontal" class="tool-icon" />
             </el-button>
+          </div>
+        </el-tooltip>
       </div>
-        </el-tooltip> -->
-      </div>
-    </div>
 
-    <!-- 分割方向弹出面板 -->
-    <div class="tool-popup-panel" v-show="activeTool === 'split' && showPopupMenu"
-      :style="getPopupPosition('split', forceRerender)">
-      <div class="popup-item" @click="setSplitDirection('vertical')" @tap="setSplitDirection('vertical')"
-        :class="{ active: splitDirection === 'vertical' }">
-        <Icon icon="tabler:border-vertical" class="popup-item-icon" />
-        <span>垂直分割</span>
-        <span class="keyboard-shortcut">V</span>
-      </div>
-      <div class="popup-item" @click="setSplitDirection('horizontal')" @tap="setSplitDirection('horizontal')"
-        :class="{ active: splitDirection === 'horizontal' }">
-        <Icon icon="tabler:border-horizontal" class="popup-item-icon" />
-        <span>水平分割</span>
-        <span class="keyboard-shortcut">H</span>
-      </div>
-    </div>
+      <div class="section-title">窗扇类型</div>
+      <div class="tool-column">
+        <!-- 固定窗 -->
+        <el-tooltip content="固定窗" placement="right" :disabled="activeTool === 'sash' && sashType === 'fixed'">
+          <div class="tool-wrapper">
+            <el-button class="tool-button" @click="selectSashTool('fixed')" @tap="selectSashTool('fixed')"
+              :class="{ active: activeTool === 'sash' && sashType === 'fixed', 'active-tool': activeTool === 'sash' && sashType === 'fixed' }">
+              <Icon icon="tabler:dice" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip>
 
-    <!-- 窗扇类型弹出面板 -->
-    <div class="tool-popup-panel sash-panel" v-show="activeTool === 'sash' && showPopupMenu"
-      :style="getPopupPosition('sash', forceRerender)">
-      <div class="popup-item" @click="setSashType('fixed')" @tap="setSashType('fixed')"
-        :class="{ active: sashType === 'fixed' }">
-        <Icon icon="tabler:dice" class="popup-item-icon" />
-        <span>固定窗</span>
-        <span class="keyboard-shortcut">F</span>
-      </div>
-      <div class="popup-item" @click="setSashType('left')" @tap="setSashType('left')"
-        :class="{ active: sashType === 'left' }">
-        <Icon icon="tabler:arrow-left" class="popup-item-icon" />
-        <span>左开窗</span>
-        <span class="keyboard-shortcut">L</span>
-      </div>
-      <div class="popup-item" @click="setSashType('right')" @tap="setSashType('right')"
-        :class="{ active: sashType === 'right' }">
-        <Icon icon="tabler:arrow-right" class="popup-item-icon" />
-        <span>右开窗</span>
-        <span class="keyboard-shortcut">R</span>
-      </div>
-      <div class="popup-item" @click="setSashType('tiltLeft')" @tap="setSashType('tiltLeft')"
-        :class="{ active: sashType === 'tiltLeft' }">
-        <Icon icon="tabler:arrow-bar-to-left" class="popup-item-icon" />
-        <span>倾斜左开</span>
-        <span class="keyboard-shortcut">Q</span>
-      </div>
-      <div class="popup-item" @click="setSashType('tiltRight')" @tap="setSashType('tiltRight')"
-        :class="{ active: sashType === 'tiltRight' }">
-        <Icon icon="tabler:arrow-bar-to-right" class="popup-item-icon" />
-        <span>倾斜右开</span>
-        <span class="keyboard-shortcut">W</span>
+        <!-- 左开窗 -->
+        <el-tooltip content="左开窗" placement="right" :disabled="activeTool === 'sash' && sashType === 'left'">
+          <div class="tool-wrapper">
+            <el-button class="tool-button" @click="selectSashTool('left')" @tap="selectSashTool('left')"
+              :class="{ active: activeTool === 'sash' && sashType === 'left', 'active-tool': activeTool === 'sash' && sashType === 'left' }">
+              <Icon icon="tabler:arrow-left" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip>
+
+        <!-- 右开窗 -->
+        <el-tooltip content="右开窗" placement="right" :disabled="activeTool === 'sash' && sashType === 'right'">
+          <div class="tool-wrapper">
+            <el-button class="tool-button" @click="selectSashTool('right')" @tap="selectSashTool('right')"
+              :class="{ active: activeTool === 'sash' && sashType === 'right', 'active-tool': activeTool === 'sash' && sashType === 'right' }">
+              <Icon icon="tabler:arrow-right" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip>
+
+        <!-- 倾斜左开 -->
+        <el-tooltip content="倾斜左开" placement="right" :disabled="activeTool === 'sash' && sashType === 'tiltLeft'">
+          <div class="tool-wrapper">
+            <el-button class="tool-button" @click="selectSashTool('tiltLeft')" @tap="selectSashTool('tiltLeft')"
+              :class="{ active: activeTool === 'sash' && sashType === 'tiltLeft', 'active-tool': activeTool === 'sash' && sashType === 'tiltLeft' }">
+              <Icon icon="tabler:arrow-bar-to-left" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip>
+
+        <!-- 倾斜右开 -->
+        <el-tooltip content="倾斜右开" placement="right" :disabled="activeTool === 'sash' && sashType === 'tiltRight'">
+          <div class="tool-wrapper">
+            <el-button class="tool-button" @click="selectSashTool('tiltRight')" @tap="selectSashTool('tiltRight')"
+              :class="{ active: activeTool === 'sash' && sashType === 'tiltRight', 'active-tool': activeTool === 'sash' && sashType === 'tiltRight' }">
+              <Icon icon="tabler:arrow-bar-to-right" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip>
       </div>
     </div>
 
@@ -216,7 +185,7 @@
             </el-button>
           </div>
         </el-tooltip>
-        
+
         <el-tooltip content="查看快捷键" placement="right">
           <div class="tool-wrapper">
             <el-button class="tool-button" @click="showShortcutsDialog" @tap="showShortcutsDialog">
@@ -286,72 +255,12 @@
     <!-- 快捷键对话框 -->
     <el-dialog v-model="showShortcuts" title="键盘快捷键" width="700px" custom-class="shortcut-dialog" destroy-on-close>
       <div class="shortcuts-grid">
-        <div class="shortcut-section">
-          <div class="section-title">基础工具</div>
+        <div v-for="(section, sectionIndex) in shortcutsContent" :key="sectionIndex" class="shortcut-section">
+          <div class="section-title">{{ section.title }}</div>
           <div class="shortcut-list">
-            <div class="shortcut-item">
-              <div class="key">S</div>
-              <div class="desc">选择工具</div>
-            </div>
-            <div class="shortcut-item">
-              <div class="key">X</div>
-              <div class="desc">分割工具</div>
-            </div>
-            <div class="shortcut-item">
-              <div class="key">V</div>
-              <div class="desc">垂直分割</div>
-            </div>
-            <div class="shortcut-item">
-              <div class="key">H</div>
-              <div class="desc">水平分割</div>
-            </div>
-            <div class="shortcut-item">
-              <div class="key">A</div>
-              <div class="desc">窗扇工具</div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="shortcut-section">
-          <div class="section-title">窗扇类型</div>
-          <div class="shortcut-list">
-            <div class="shortcut-item">
-              <div class="key">F</div>
-              <div class="desc">固定窗</div>
-            </div>
-            <div class="shortcut-item">
-              <div class="key">L</div>
-              <div class="desc">左开窗</div>
-            </div>
-            <div class="shortcut-item">
-              <div class="key">R</div>
-              <div class="desc">右开窗</div>
-            </div>
-            <div class="shortcut-item">
-              <div class="key">Q</div>
-              <div class="desc">倾斜左开</div>
-            </div>
-            <div class="shortcut-item">
-              <div class="key">W</div>
-              <div class="desc">倾斜右开</div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="shortcut-section">
-          <div class="section-title">视图控制</div>
-          <div class="shortcut-list">
-            <div class="shortcut-item">
-              <div class="key">P</div>
-              <div class="desc">平移工具</div>
-            </div>
-            <div class="shortcut-item">
-              <div class="key">+</div>
-              <div class="desc">放大</div>
-            </div>
-            <div class="shortcut-item">
-              <div class="key">-</div>
-              <div class="desc">缩小</div>
+            <div v-for="(item, itemIndex) in section.items" :key="itemIndex" class="shortcut-item">
+              <div class="key">{{ item.key }}</div>
+              <div class="desc">{{ item.desc }}</div>
             </div>
           </div>
         </div>
@@ -396,11 +305,8 @@ const exportWithBackground = ref(true);
 const exportPreviewUrl = ref('');
 
 // 定义DOM引用
-const splitToolRef = ref<HTMLElement | null>(null);
-const sashToolRef = ref<HTMLElement | null>(null);
-
-// 标记弹出菜单是否显示
-const showPopupMenu = ref(false);
+// const splitToolRef = ref<HTMLElement | null>(null);
+// const sashToolRef = ref<HTMLElement | null>(null);
 
 // 计算属性监听活动工具变化
 watch(activeTool, (newTool) => {
@@ -455,21 +361,23 @@ function selectTool(tool: 'select' | 'split' | 'sash' | 'pan' | 'zoomIn' | 'zoom
     windowStore.setSelectedElement('');
     windowStore.selectedElement = null;
   }
-  // 如果点击的是当前激活的工具，则切换弹出菜单的显示/隐藏状态
-  if (activeTool.value === tool && (tool === 'split' || tool === 'sash')) {
-    showPopupMenu.value = !showPopupMenu.value;
-  } else {
-    activeTool.value = tool;
-    debugger;
+
+  activeTool.value = tool;
   windowStore.activeTool = tool;
-    
-    // 如果选择了带有子菜单的工具，则显示弹出菜单
-    if (tool === 'split' || tool === 'sash') {
-      showPopupMenu.value = true;
-    } else {
-      showPopupMenu.value = false;
-    }
-  }
+}
+
+// 新增：选择分割工具和方向
+function selectSplitTool(direction: 'vertical' | 'horizontal'): void {
+  activeTool.value = 'split';
+  windowStore.activeTool = 'split';
+  setSplitDirection(direction);
+}
+
+// 新增：选择窗扇工具和类型
+function selectSashTool(type: 'fixed' | 'left' | 'right' | 'tiltLeft' | 'tiltRight'): void {
+  activeTool.value = 'sash';
+  windowStore.activeTool = 'sash';
+  setSashType(type);
 }
 
 // 设置分割方向
@@ -483,9 +391,6 @@ function setSashType(type: string): void {
   console.log('设置窗扇类型:', type);
   sashType.value = type as 'fixed' | 'left' | 'right' | 'tiltLeft' | 'tiltRight';
   windowStore.sashType = type as 'fixed' | 'left' | 'right' | 'tiltLeft' | 'tiltRight';
-  
-  // 更新后关闭弹出菜单
-  showPopupMenu.value = false;
 }
 
 // 缩放控制
@@ -609,12 +514,16 @@ function showMaterialStats() {
   emit('show-material-stats');
 }
 
-// 在onMounted中添加事件监听
+// 在onMounted中添加空格键相关事件监听
 onMounted(() => {
-  // 监听WindowCanvas组件返回的图片数据
+  console.log('设计工具栏已挂载');
+  
+  // 监听导出图片就绪
   window.addEventListener('canvas-image-ready', (e: any) => {
-    if (e.detail && e.detail.dataURL) {
-      exportPreviewUrl.value = e.detail.dataURL;
+    const { dataURL } = e.detail;
+    if (dataURL) {
+      // 设置导出预览URL
+      exportPreviewUrl.value = dataURL;
     }
   });
   
@@ -642,6 +551,9 @@ onMounted(() => {
   // 添加键盘快捷键监听
   window.addEventListener('keydown', handleKeydown);
   
+  // 添加空格键释放监听
+  window.addEventListener('keyup', handleKeyup);
+  
   // 预加载常用图标
   const sashIcons = [
     'tabler:window',
@@ -667,7 +579,7 @@ onMounted(() => {
   });
 });
 
-// 在onUnmounted中移除事件监听
+// 在onUnmounted中移除相关事件监听
 onUnmounted(() => {
   window.removeEventListener('canvas-image-ready', () => {});
   window.removeEventListener('canvas-image-error', () => {});
@@ -680,61 +592,116 @@ onUnmounted(() => {
   
   // 移除键盘快捷键监听
   window.removeEventListener('keydown', handleKeydown);
+  
+  // 移除空格键释放监听
+  window.removeEventListener('keyup', handleKeyup);
 });
+
+// 添加一个变量跟踪空格键状态
+const isSpaceKeyPressed = ref(false);
+const originalTool = ref<'select' | 'split' | 'sash' | 'pan' | 'zoomIn' | 'zoomOut' | 'rectSelect' | 'transform' | 'rotate' | null>(null);
+
+// 处理键盘按下事件
+function handleKeydown(event: KeyboardEvent) {
+  // 忽略在输入框中的按键事件
+  if (event.target instanceof HTMLInputElement || 
+      event.target instanceof HTMLTextAreaElement ||
+      event.target instanceof HTMLSelectElement) {
+    return;
+  }
+
+  // 如果是空格键，激活平移工具
+  if (event.code === 'Space' && !isSpaceKeyPressed.value) {
+    isSpaceKeyPressed.value = true;
+    // 保存当前工具
+    originalTool.value = activeTool.value;
+    // 激活平移工具
+    selectTool('pan');
+    return;
+  }
+
+  // 定义快捷键映射
+  switch (event.key.toLowerCase()) {
+    // 选择工具 - 从's'改为'a'
+    case 'a':
+      selectTool('select');
+      break;
+      
+    // 垂直分割
+    case 'v':
+      selectSplitTool('vertical');
+      break;
+      
+    // 水平分割
+    case 'h':
+      selectSplitTool('horizontal');
+      break;
+      
+    // 固定窗
+    case 'f':
+      selectSashTool('fixed');
+      break;
+      
+    // 左开窗
+    case 'l':
+      selectSashTool('left');
+      break;
+      
+    // 右开窗
+    case 'r':
+      selectSashTool('right');
+      break;
+      
+    // 倾斜左开
+    case 'q':
+      selectSashTool('tiltLeft');
+      break;
+      
+    // 倾斜右开
+    case 'w':
+      selectSashTool('tiltRight');
+      break;
+      
+    // 缩放工具
+    case '+':
+    case '=':
+      selectTool('zoomIn');
+      break;
+      
+    case '-':
+      selectTool('zoomOut');
+      break;
+  }
+}
+
+// 处理键盘释放事件
+function handleKeyup(event: KeyboardEvent) {
+  // 如果松开的是空格键，恢复之前的工具
+  if (event.code === 'Space' && isSpaceKeyPressed.value) {
+    isSpaceKeyPressed.value = false;
+    // 恢复之前的工具
+    if (originalTool.value) {
+      selectTool(originalTool.value);
+    } else {
+      selectTool('select');
+    }
+  }
+}
 
 // 处理全局点击事件，关闭弹出菜单
 function handleDocumentClick(event: MouseEvent) {
-  // 如果弹出菜单没有显示，直接返回
-  if (!showPopupMenu.value) {
-    return;
-  }
-  
-  // 获取实际DOM元素
-  const splitTool = splitToolRef.value;
-  const sashTool = sashToolRef.value;
-  
-  // 获取弹出面板元素
-  const splitPanel = document.querySelector('.tool-popup-panel[style*="display: block"]');
-  const sashPanel = document.querySelector('.tool-popup-panel[style*="display: block"]');
-  
-  // 检查点击的目标是否在工具按钮或弹出面板内
-  const target = event.target as Node;
-  const isClickOutside = (
-    (!splitTool || !splitTool.contains(target)) &&
-    (!sashTool || !sashTool.contains(target)) &&
-    (!splitPanel || !splitPanel.contains(target)) &&
-    (!sashPanel || !sashPanel.contains(target))
-  );
-  
-  // 如果点击在外部，则隐藏弹出菜单
-  if (isClickOutside) {
-    showPopupMenu.value = false;
-  }
+  // 不再需要弹出菜单的处理逻辑
 }
 
 // 处理窗口调整大小
 function handleWindowResize() {
-  // 如果有显示弹出菜单，重新计算位置
-  if (showPopupMenu.value) {
-    forceRerender.value = !forceRerender.value;
-  }
+  // 不再需要弹出菜单的处理逻辑
+  forceRerender.value = !forceRerender.value;
 }
 
 // 获取弹出面板位置
 function getPopupPosition(tool: string, forceRerender: boolean): Record<string, string> {
-  if (tool === 'split' && splitToolRef.value) {
-    const rect = splitToolRef.value.getBoundingClientRect();
-    return {
-      top: `${rect.top}px`,
-      left: `${rect.right}px`
-    };
-  } else if (tool === 'sash' && sashToolRef.value) {
-    const rect = sashToolRef.value.getBoundingClientRect();
-    return {
-      top: `${rect.top}px`,
-      left: `${rect.right}px`
-    };
-  }
+  // 不再需要弹出面板位置计算
   return {};
 }
 
@@ -764,119 +731,6 @@ function getSplitDirectionIcon(): string {
   return iconMap[splitDirection.value] || 'tabler:layout-grid';
 }
 
-// 处理键盘快捷键
-function handleKeydown(event: KeyboardEvent) {
-  // 忽略在输入框中的按键事件
-  if (event.target instanceof HTMLInputElement || 
-      event.target instanceof HTMLTextAreaElement ||
-      event.target instanceof HTMLSelectElement) {
-    return;
-  }
-
-  // 定义快捷键映射
-  switch (event.key.toLowerCase()) {
-    // 选择工具
-    case 's':
-      selectTool('select');
-      break;
-      
-    // 分割工具
-    case 'x':
-      selectTool('split');
-      break;
-      
-    // 垂直分割
-    case 'v':
-      if (activeTool.value === 'split') {
-        setSplitDirection('vertical');
-      } else {
-        selectTool('split');
-        setSplitDirection('vertical');
-      }
-      break;
-      
-    // 水平分割
-    case 'h':
-      if (activeTool.value === 'split') {
-        setSplitDirection('horizontal');
-      } else {
-        selectTool('split');
-        setSplitDirection('horizontal');
-      }
-      break;
-      
-    // 窗扇工具
-    case 'a':
-      selectTool('sash');
-      break;
-      
-    // 固定窗
-    case 'f':
-      if (activeTool.value === 'sash') {
-        setSashType('fixed');
-      } else {
-        selectTool('sash');
-        setSashType('fixed');
-      }
-      break;
-      
-    // 左开窗
-    case 'l':
-      if (activeTool.value === 'sash') {
-        setSashType('left');
-      } else {
-        selectTool('sash');
-        setSashType('left');
-      }
-      break;
-      
-    // 右开窗
-    case 'r':
-      if (activeTool.value === 'sash') {
-        setSashType('right');
-      } else {
-        selectTool('sash');
-        setSashType('right');
-      }
-      break;
-      
-    // 倾斜左开
-    case 'q':
-      if (activeTool.value === 'sash') {
-        setSashType('tiltLeft');
-      } else {
-        selectTool('sash');
-        setSashType('tiltLeft');
-      }
-      break;
-      
-    // 倾斜右开
-    case 'w':
-      if (activeTool.value === 'sash') {
-        setSashType('tiltRight');
-      } else {
-        selectTool('sash');
-        setSashType('tiltRight');
-      }
-      break;
-
-    // 平移工具
-    case 'p':
-      selectTool('pan');
-      break;
-      
-    // 缩放工具
-    case '+':
-    case '=':
-      selectTool('zoomIn');
-      break;
-      
-    case '-':
-      selectTool('zoomOut');
-      break;
-  }
-}
-
 // 在script部分，添加以下变量和函数
 const showShortcuts = ref(false);
 
@@ -884,6 +738,36 @@ const showShortcuts = ref(false);
 function showShortcutsDialog() {
   showShortcuts.value = true;
 }
+
+// 修改快捷键对话框中的内容
+const shortcutsContent = [
+  {
+    title: '基础工具',
+    items: [
+      { key: 'A', desc: '选择工具' },
+      { key: 'V', desc: '垂直分割' },
+      { key: 'H', desc: '水平分割' },
+    ]
+  },
+  {
+    title: '窗扇类型',
+    items: [
+      { key: 'F', desc: '固定窗' },
+      { key: 'L', desc: '左开窗' },
+      { key: 'R', desc: '右开窗' },
+      { key: 'Q', desc: '倾斜左开' },
+      { key: 'W', desc: '倾斜右开' },
+    ]
+  },
+  {
+    title: '视图控制',
+    items: [
+      { key: '空格+拖动', desc: '平移视图' },
+      { key: '+', desc: '放大' },
+      { key: '-', desc: '缩小' },
+    ]
+  }
+];
 </script>
 
 <style scoped>
