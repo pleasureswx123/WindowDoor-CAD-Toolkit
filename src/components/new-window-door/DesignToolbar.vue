@@ -64,7 +64,7 @@
           <div class="tool-wrapper">
             <el-button class="tool-button" @click="selectSashTool('left')" @tap="selectSashTool('left')"
               :class="{ active: activeTool === 'sash' && sashType === 'left', 'active-tool': activeTool === 'sash' && sashType === 'left' }">
-              <Icon icon="tabler:arrow-left" class="tool-icon" />
+              <Icon icon="lucide:panel-left-open" class="tool-icon" />
             </el-button>
           </div>
         </el-tooltip>
@@ -74,7 +74,7 @@
           <div class="tool-wrapper">
             <el-button class="tool-button" @click="selectSashTool('right')" @tap="selectSashTool('right')"
               :class="{ active: activeTool === 'sash' && sashType === 'right', 'active-tool': activeTool === 'sash' && sashType === 'right' }">
-              <Icon icon="tabler:arrow-right" class="tool-icon" />
+              <Icon icon="lucide:panel-right-open" class="tool-icon" />
             </el-button>
           </div>
         </el-tooltip>
@@ -84,7 +84,7 @@
           <div class="tool-wrapper">
             <el-button class="tool-button" @click="selectSashTool('tiltLeft')" @tap="selectSashTool('tiltLeft')"
               :class="{ active: activeTool === 'sash' && sashType === 'tiltLeft', 'active-tool': activeTool === 'sash' && sashType === 'tiltLeft' }">
-              <Icon icon="tabler:arrow-bar-to-left" class="tool-icon" />
+              <Icon icon="mdi:rotate-left-variant" class="tool-icon" />
             </el-button>
           </div>
         </el-tooltip>
@@ -94,7 +94,7 @@
           <div class="tool-wrapper">
             <el-button class="tool-button" @click="selectSashTool('tiltRight')" @tap="selectSashTool('tiltRight')"
               :class="{ active: activeTool === 'sash' && sashType === 'tiltRight', 'active-tool': activeTool === 'sash' && sashType === 'tiltRight' }">
-              <Icon icon="tabler:arrow-bar-to-right" class="tool-icon" />
+              <Icon icon="mdi:rotate-right-variant" class="tool-icon" />
             </el-button>
           </div>
         </el-tooltip>
@@ -231,8 +231,8 @@
         <div class="export-option">
           <span>保留背景:</span>
           <el-switch v-model="exportWithBackground" />
+        </div>
       </div>
-    </div>
 
       <div class="export-preview">
         <el-image v-if="exportPreviewUrl" :src="exportPreviewUrl" fit="contain" style="max-height: 250px;" />
@@ -263,8 +263,8 @@
               <div class="desc">{{ item.desc }}</div>
             </div>
           </div>
+        </div>
       </div>
-    </div>
     </el-dialog>
   </div>
 </template>

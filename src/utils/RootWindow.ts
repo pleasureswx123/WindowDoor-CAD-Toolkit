@@ -864,6 +864,110 @@ export class WindowSash extends GlobalDefaultConfig {
     }
   }
   
+  // 渲染窗户开启方向的指示线
+  renderOpeningDirection(): KonvaRenderConfig | null {
+    // 如果是固定窗，不显示开启方向
+    if (this.sashType === 'fixed') {
+      return null;
+    }
+    
+    // 计算内边距，用于控制线条起点和终点的位置
+    const padding = 0;
+    
+    // 基于玻璃区域的位置和尺寸计算
+    const x = this.x + this.frameSize;
+    const y = this.y + this.frameSize;
+    const width = this.width - this.frameSize * 2;
+    const height = this.height - this.frameSize * 2;
+    
+    // 定义线条属性
+    const lineProps = {
+      stroke: 'black',
+      strokeWidth: 1,
+      listening: false
+    };
+    
+    // 根据窗扇类型计算不同的线条点
+    let points: number[] = [];
+    
+    // 判断是否显示左开线条
+    const showLeftLine = this.sashType.includes('left');
+    
+    // 判断是否显示右开线条
+    const showRightLine = this.sashType.includes('right');
+    
+    // 判断是否显示倾斜线条
+    const showTiltLine = this.sashType.includes('tilt');
+    
+    // 生成对应类型的线条数组
+    const lines = [];
+    
+    // 添加左开线条
+    if (showLeftLine && !showTiltLine) {
+      lines.push({
+        component: 'v-line',
+        config: {
+          points: [
+            padding, padding, 
+            width - padding, height / 2, 
+            padding, height - padding
+          ],
+          ...lineProps,
+          ele: 'opening-direction-left',
+          tag: 'opening-direction-left'
+        }
+      });
+    }
+    
+    // 添加右开线条
+    if (showRightLine && !showTiltLine) {
+      lines.push({
+        component: 'v-line',
+        config: {
+          points: [
+            width - padding, padding,
+            padding, height / 2,
+            width - padding, height - padding
+          ],
+          ...lineProps,
+          ele: 'opening-direction-right',
+          tag: 'opening-direction-right'
+        }
+      });
+    }
+    
+    // 添加倾斜线条
+    if (showTiltLine) {
+      lines.push({
+        component: 'v-line',
+        config: {
+          points: [
+            padding, height - padding,
+            width / 2, padding,
+            width - padding, height - padding
+          ],
+          ...lineProps,
+          ele: 'opening-direction-tilt',
+          tag: 'opening-direction-tilt'
+        }
+      });
+    }
+    
+    // 返回开启方向指示线组
+    return {
+      component: 'v-group',
+      config: {
+        x: x,
+        y: y,
+        width: width,
+        height: height,
+        ele: 'opening-direction',
+        tag: 'opening-direction'
+      },
+      children: lines
+    };
+  }
+  
   render(): KonvaRenderConfig {
     const children: any[] = [
       this.frame ? this.frame.render() : null,
@@ -872,6 +976,12 @@ export class WindowSash extends GlobalDefaultConfig {
     
     if (this.handle) {
       children.push(this.handle.render());
+    }
+    
+    // 添加开启方向指示线
+    const openingDirection = this.renderOpeningDirection();
+    if (openingDirection) {
+      children.push(openingDirection);
     }
     
     return {
