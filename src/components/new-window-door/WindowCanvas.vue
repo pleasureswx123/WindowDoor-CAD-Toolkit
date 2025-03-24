@@ -3,7 +3,7 @@
     <v-stage ref="stageRef" :config="stageConfig" @click="handleStageClick" @tap="handleStageClick"
       @mousemove="handleMouseMove" @mouseleave="handleMouseLeave" @mousedown="handleMouseDown" @mouseup="handleMouseUp"
       @wheel="handleWheel" @touchstart="handleTouchStart" @touchmove="handleTouchMove" @touchend="handleTouchEnd">
-      <v-layer ref="layerRef">
+      <v-layer ref="layerRef" :config="layerConfig">
         <!-- 调试信息 -->
         <v-text v-if="showDebugInfo" :config="{
           x: 10,
@@ -134,13 +134,19 @@ const annotationColor = '#ff3333'; // 标注线条和文字颜色
 // 舞台配置
 const stageConfig = computed(() => {
   return {
-    width: Math.max(500, windowStore.windowConfig.width * scale.value),
-    height: Math.max(500, windowStore.windowConfig.height * scale.value),
+    width: canvasContainer.value ? canvasContainer.value.clientWidth : 800,
+    height: canvasContainer.value ? canvasContainer.value.clientHeight : 600,
+    draggable: false,
+  };
+});
+
+// 添加图层配置
+const layerConfig = computed(() => {
+  return {
     scaleX: scale.value,
     scaleY: scale.value,
     x: stagePosition.x,
     y: stagePosition.y,
-    draggable: windowStore.activeTool === 'pan',
   };
 });
 
@@ -318,6 +324,15 @@ watch(() => windowStore.viewState.resetRequested, (requested) => {
 function handleStageClick(e: any) {
   debugger;
   const clickedNode = e.target;
+  // 如果当前工具是split并且预览线显示，则记录当前鼠标位置用于调试
+  if (windowStore.activeTool === 'split' && showPreviewLine.value) {
+    const stage = stageRef.value?.getStage();
+    if (stage) {
+      const pointerPos = stage.getPointerPosition();
+      console.log('点击位置:', pointerPos, '图层位置:', {...stagePosition}, '缩放:', scale.value);
+    }
+  }
+  
   if (clickedNode && clickedNode.attrs && clickedNode.attrs.ele === 'window-muntin') {
     nodeAttrs.value = {
       x: clickedNode.attrs.x,
@@ -370,7 +385,10 @@ function handleStageClick(e: any) {
   } else if (windowStore.activeTool === 'split') {
     // 处理分割工具
     if (clickedNode?.attrs?.self?.splitArea) {
-      clickedNode.attrs.self.splitArea(windowStore.splitDirection, clickedNode.getRelativePointerPosition());
+      // 转换鼠标位置到相对坐标
+      const relativePos = clickedNode.getRelativePointerPosition();
+      console.log('分割位置(相对坐标):', relativePos);
+      clickedNode.attrs.self.splitArea(windowStore.splitDirection, relativePos);
       showPreviewLine.value = false;
     }
   } else if (windowStore.activeTool === 'sash') {
@@ -393,6 +411,7 @@ function handleMouseMove(e: any) {
         const dx = pos.x - lastMousePos.value.x;
         const dy = pos.y - lastMousePos.value.y;
         
+        // 更新图层位置
         stagePosition.x += dx;
         stagePosition.y += dy;
         
@@ -400,7 +419,13 @@ function handleMouseMove(e: any) {
         windowStore.viewState.x = stagePosition.x;
         windowStore.viewState.y = stagePosition.y;
         
+        // 记录最后的鼠标位置
         lastMousePos.value = { x: pos.x, y: pos.y };
+        
+        // 更新图层
+        if (layerRef.value) {
+          layerRef.value.getNode().batchDraw();
+        }
       }
     }
   }
@@ -466,8 +491,20 @@ function showSplitPreview(e: any) {
   const pointerPos = stage.getPointerPosition();
   if (!pointerPos) return;
 
-  const x = pointerPos.x / scale.value;
-  const y = pointerPos.y / scale.value;
+  // 获取stage相对于容器的绝对坐标
+  const stageBox = stage.container().getBoundingClientRect();
+  
+  // 计算鼠标在原始窗口坐标系中的位置（考虑图层位移和缩放）
+  const x = (pointerPos.x - stagePosition.x) / scale.value;
+  const y = (pointerPos.y - stagePosition.y) / scale.value;
+  
+  // 输出调试信息以便排查问题
+  console.log('预览线计算:', {
+    pointerPos,
+    stagePosition: {...stagePosition},
+    scale: scale.value,
+    calculatedPos: {x, y}
+  });
 
   // 根据分割方向显示不同的预览线
   if (windowStore.splitDirection === 'vertical') {
@@ -502,12 +539,33 @@ function updateCanvasSize() {
   const windowWidth = windowStore.windowConfig.width;
   const windowHeight = windowStore.windowConfig.height;
 
-  const scaleX = (containerWidth - 40) / windowWidth;
-  const scaleY = (containerHeight - 40) / windowHeight;
+  const scaleX = (containerWidth - 80) / windowWidth;
+  const scaleY = (containerHeight - 80) / windowHeight;
 
   // 使用较小的缩放比例，确保窗户完全可见
   scale.value = Math.min(scaleX, scaleY, 1) || 0.5;
   console.log("计算的缩放比例:", scale.value);
+  
+  // 居中显示内容
+  centerContent();
+}
+
+// 居中内容
+function centerContent() {
+  if (!canvasContainer.value) return;
+  
+  const containerWidth = canvasContainer.value.clientWidth;
+  const containerHeight = canvasContainer.value.clientHeight;
+  const windowWidth = windowStore.windowConfig.width * scale.value;
+  const windowHeight = windowStore.windowConfig.height * scale.value;
+  
+  // 计算中心位置
+  stagePosition.x = (containerWidth - windowWidth) / 2;
+  stagePosition.y = (containerHeight - windowHeight) / 2;
+  
+  // 更新windowStore中的视图状态
+  windowStore.viewState.x = stagePosition.x;
+  windowStore.viewState.y = stagePosition.y;
 }
 
 // 当选中元素发生变化时，更新视图
@@ -658,7 +716,7 @@ function handleWheel(e: any) {
   
   if (!pointer) return;
   
-  // 计算鼠标位置相对于舞台的坐标
+  // 计算鼠标位置相对于图层的坐标
   const mousePointTo = {
     x: (pointer.x - stagePosition.x) / oldScale,
     y: (pointer.y - stagePosition.y) / oldScale
@@ -674,7 +732,7 @@ function handleWheel(e: any) {
   // 更新windowStore中的视图状态
   windowStore.viewState.scale = scale.value;
   
-  // 计算新的舞台位置
+  // 计算新的图层位置
   stagePosition.x = pointer.x - mousePointTo.x * scale.value;
   stagePosition.y = pointer.y - mousePointTo.y * scale.value;
   
@@ -748,10 +806,10 @@ function handleTouchMove(e: any) {
     
     // 如果有上一次的距离记录，计算缩放比例变化
     if (lastTouchDistance.value > 0) {
-      // 计算触摸点相对于舞台的坐标
+      // 计算触摸点相对于图层的坐标
       const oldScale = scale.value;
       
-      // 计算触摸中心点相对于舞台的坐标
+      // 计算触摸中心点相对于图层的坐标
       const mousePointTo = {
         x: (center.x - stagePosition.x) / oldScale,
         y: (center.y - stagePosition.y) / oldScale
@@ -767,7 +825,7 @@ function handleTouchMove(e: any) {
       // 更新windowStore中的视图状态
       windowStore.viewState.scale = scale.value;
       
-      // 计算新的舞台位置
+      // 计算新的图层位置
       stagePosition.x = center.x - mousePointTo.x * scale.value;
       stagePosition.y = center.y - mousePointTo.y * scale.value;
       
@@ -822,14 +880,24 @@ function zoomOut() {
 
 // 重置视图
 function resetView() {
-  scale.value = 0.5;
-  stagePosition.x = 0;
-  stagePosition.y = 0;
+  // 不直接设置固定值0.5，而是使用updateCanvasSize计算合适的缩放比例
+  updateCanvasSize();
+  
+  // 更新windowStore中的重置状态
+  windowStore.viewState.resetRequested = false;
+  
+  console.log('重置视图完成:', {
+    scale: scale.value,
+    position: {...stagePosition}
+  });
   
   // 强制刷新
   if (layerRef.value) {
     layerRef.value.getNode().batchDraw();
   }
+  
+  // 更新预览
+  updatePreview();
 }
 
 // 更新预览图
@@ -895,8 +963,18 @@ onMounted(() => {
 
   // 确保DOM已完全渲染
   nextTick(() => {
-    // 更新画布大小
+    // 更新画布大小和居中内容
     updateCanvasSize();
+    
+    // 记录初始状态，用于调试比较
+    console.log('初始化完成:', {
+      scale: scale.value,
+      position: {...stagePosition},
+      containerSize: {
+        width: canvasContainer.value?.clientWidth,
+        height: canvasContainer.value?.clientHeight
+      }
+    });
 
     // 监听窗口大小变化
     window.addEventListener('resize', () => {

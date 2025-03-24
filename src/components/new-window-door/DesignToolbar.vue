@@ -75,7 +75,7 @@
             >
               <Icon icon="tabler:transform" class="tool-icon" />
             </el-button>
-          </div>
+      </div>
         </el-tooltip> -->
       </div>
     </div>
@@ -461,7 +461,7 @@ function selectTool(tool: 'select' | 'split' | 'sash' | 'pan' | 'zoomIn' | 'zoom
   } else {
     activeTool.value = tool;
     debugger;
-    windowStore.activeTool = tool;
+  windowStore.activeTool = tool;
     
     // 如果选择了带有子菜单的工具，则显示弹出菜单
     if (tool === 'split' || tool === 'sash') {
@@ -500,11 +500,11 @@ function zoomOut() {
 // 重置窗户
 function resetWindow(): void {
   if (confirm('确定要重置窗户设计吗？所有当前设计将丢失。')) {
-    width.value = 1000;
-    height.value = 2000;
-    frameSize.value = 50;
-    windowStore.updateWindowSize(width.value, height.value);
-    windowStore.updateFrameSize(frameSize.value);
+  width.value = 1000;
+  height.value = 2000;
+  frameSize.value = 50;
+  windowStore.updateWindowSize(width.value, height.value);
+  windowStore.updateFrameSize(frameSize.value);
   }
 }
 

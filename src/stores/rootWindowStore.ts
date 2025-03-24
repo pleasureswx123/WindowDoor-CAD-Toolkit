@@ -122,14 +122,12 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
   
   // 重置视图
   function resetView() {
-    viewState.scale = 0.5;
-    viewState.x = 0;
-    viewState.y = 0;
+    // 不直接设置固定值，而是让组件处理
+    // 只设置标志位
     viewState.resetRequested = true;
-    // 重置后立即关闭标志
-    setTimeout(() => {
-      viewState.resetRequested = false;
-    }, 100);
+    
+    // 记录重置请求时间
+    console.log('请求重置视图:', new Date().toISOString());
   }
   
   // 应用设置
