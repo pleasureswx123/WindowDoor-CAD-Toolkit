@@ -516,11 +516,13 @@ const muntinThickness = computed({
     if (!isMuntinSelected.value || !windowStore.selectedElement) return 40;
     return windowStore.selectedElement.thickness || 40;
   },
-  set: (validThickness) => {
+  set: (value) => {
     if (!isMuntinSelected.value || !windowStore.selectedElement) return;
     
-    // 确保厚度在有效范围内
-    // const validThickness = Math.max(20, Math.min(100, value));
+    const currentElementId = windowStore.selectedElement.id; // 保存当前选中元素的ID
+    
+    // 保证最小厚度
+    const validThickness = Math.max(20, value);
     
     // 更新中挺厚度
     windowStore.selectedElement.thickness = validThickness;
@@ -539,6 +541,19 @@ const muntinThickness = computed({
           position, 
           validThickness // 传入新的厚度
         );
+        
+        // 分割区域更新后，确保重新选中同一个元素以触发标注更新
+        nextTick(() => {
+          // 通过ID重新查找并选中元素
+          const sameElement = getElementById(currentElementId);
+          if (sameElement) {
+            // 先取消选中，再重新选中以确保更新
+            windowStore.selectedElement = null;
+            nextTick(() => {
+              windowStore.selectedElement = sameElement;
+            });
+          }
+        });
       });
     }
   }
@@ -559,6 +574,8 @@ const muntinPosition = computed({
   set: (newPosition) => {
     if (!isMuntinSelected.value || !windowStore.selectedElement) return;
     
+    const currentElementId = windowStore.selectedElement.id; // 保存当前选中元素的ID
+    
     // 根据中挺方向更新位置
     if (muntinDirection.value === 'horizontal') {
       windowStore.selectedElement.y = newPosition;
@@ -578,6 +595,19 @@ const muntinPosition = computed({
           position, 
           muntinThickness.value
         );
+        
+        // 分割区域更新后，确保重新选中同一个元素以触发标注更新
+        nextTick(() => {
+          // 通过ID重新查找并选中元素
+          const sameElement = getElementById(currentElementId);
+          if (sameElement) {
+            // 先取消选中，再重新选中以确保更新
+            windowStore.selectedElement = null;
+            nextTick(() => {
+              windowStore.selectedElement = sameElement;
+            });
+          }
+        });
       });
     }
   }
@@ -1132,6 +1162,7 @@ const updateMuntinPosition = (type: 'left' | 'right' | 'top' | 'bottom', value: 
   if (!windowStore.selectedElement || !windowStore.selectedElement.parent) return;
   
   const parent = windowStore.selectedElement.parent;
+  const currentElementId = windowStore.selectedElement.id; // 保存当前选中元素的ID
   
   switch(type) {
     case 'left':
@@ -1165,8 +1196,49 @@ const updateMuntinPosition = (type: 'left' | 'right' | 'top' | 'bottom', value: 
         position,
         muntinThickness.value
       );
+      
+      // 分割区域更新后，确保重新选中同一个元素以触发标注更新
+      nextTick(() => {
+        // 通过ID重新查找并选中元素
+        const sameElement = getElementById(currentElementId);
+        if (sameElement) {
+          // 先取消选中，再重新选中以确保更新
+          windowStore.selectedElement = null;
+          nextTick(() => {
+            windowStore.selectedElement = sameElement;
+          });
+        }
+      });
     });
   }
+};
+
+// 获取元素通过ID
+const getElementById = (id: string) => {
+  if (!windowStore.windowStructure) return null;
+  
+  // 递归查找元素
+  function findElement(element: any): any {
+    if (element.id === id) return element;
+    
+    // 搜索子元素
+    if (element.children) {
+      for (const child of element.children) {
+        const found = findElement(child);
+        if (found) return found;
+      }
+    }
+    
+    // 搜索窗扇
+    if (element.sash) {
+      const found = findElement(element.sash);
+      if (found) return found;
+    }
+    
+    return null;
+  }
+  
+  return findElement(windowStore.windowStructure);
 };
 
 </script>

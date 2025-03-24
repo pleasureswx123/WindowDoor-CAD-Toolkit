@@ -231,8 +231,8 @@
         <div class="export-option">
           <span>保留背景:</span>
           <el-switch v-model="exportWithBackground" />
-        </div>
       </div>
+    </div>
 
       <div class="export-preview">
         <el-image v-if="exportPreviewUrl" :src="exportPreviewUrl" fit="contain" style="max-height: 250px;" />
@@ -263,8 +263,8 @@
               <div class="desc">{{ item.desc }}</div>
             </div>
           </div>
-        </div>
       </div>
+    </div>
     </el-dialog>
   </div>
 </template>

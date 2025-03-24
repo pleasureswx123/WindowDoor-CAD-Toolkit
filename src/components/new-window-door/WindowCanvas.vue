@@ -218,7 +218,8 @@ const selectedMuntin = computed(() => {
   if (!windowStore.selectedElement || windowStore.selectedElement.ele !== 'window-muntin') {
     return null;
   }
-  return Object.assign({}, windowStore.selectedElement);
+  // 不再通过深拷贝返回，直接返回引用以保持实时性
+  return windowStore.selectedElement;
 });
 
 // 选中的中挺1 (用于绘制)
