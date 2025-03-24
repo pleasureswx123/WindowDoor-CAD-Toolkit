@@ -819,17 +819,55 @@ export class WindowSash extends GlobalDefaultConfig {
     });
     
     // 如果不是固定窗，添加把手
-    this.handle = this.sashType !== 'fixed' ? new WindowSashHandle({
-      x: this.sashType.includes('left') ? this.x + this.width - 20 : this.x + 10,
-      y: this.y + this.height / 2 - 15,
-      width: 10,
-      height: 30,
-      type: this.sashType,
-      ele: 'window-sash-handle',
-      tag: 'window-sash-handle',
-      parentId: this.id,
-      parent: this
-    }) : null;
+    // 'left' | 'right' | 'tiltLeft' | 'tiltRight'
+    if (this.sashType !== 'fixed') {
+      // 计算把手位置
+      let handleX = 0;
+      let handleY = 0;
+      
+      switch (this.sashType) {
+        case 'left':
+        case 'tiltLeft':
+          // 左开窗，把手在右侧中间
+          handleX = this.x + this.width - 20;
+          handleY = this.y + this.height / 2 - 15;
+          break;
+        case 'right':
+        case 'tiltRight':
+          // 右开窗，把手在左侧中间
+          handleX = this.x + 10;
+          handleY = this.y + this.height / 2 - 15;
+          break;
+        // case 'tiltLeft':
+        //   // 倾斜左开，把手在底部偏左
+        //   handleX = this.x + this.width / 3 - 5;
+        //   handleY = this.y + this.height - 25;
+        //   break;
+        // case 'tiltRight':
+        //   // 倾斜右开，把手在底部偏右
+        //   handleX = this.x + (this.width * 2) / 3 - 5;
+        //   handleY = this.y + this.height - 25;
+        //   break;
+        default:
+          // 默认情况，把手在右侧中间
+          handleX = this.x + this.width - 20;
+          handleY = this.y + this.height / 2 - 15;
+      }
+      
+      this.handle = new WindowSashHandle({
+        x: handleX,
+        y: handleY,
+        width: 10,
+        height: 30,
+        type: this.sashType,
+        ele: 'window-sash-handle',
+        tag: 'window-sash-handle',
+        parentId: this.id,
+        parent: this
+      });
+    } else {
+      this.handle = null;
+    }
   }
 
   updateFrameSize(frameSize: number) {
@@ -903,7 +941,7 @@ export class WindowSash extends GlobalDefaultConfig {
     const lines = [];
     
     // 添加左开线条
-    if (showLeftLine && !showTiltLine) {
+    if (showLeftLine) {
       lines.push({
         component: 'v-line',
         config: {
@@ -918,9 +956,38 @@ export class WindowSash extends GlobalDefaultConfig {
         }
       });
     }
+
+    if (this.sashType === 'tiltLeft') {
+      lines.push({
+        component: 'v-line',
+        config: {
+          points: [
+            padding, padding, 
+            width - padding, height / 2, 
+            padding, height - padding
+          ],
+          ...lineProps,
+          ele: 'opening-direction-left',
+          tag: 'opening-direction-left'
+        }
+      });
+      lines.push({
+        component: 'v-line',
+        config: {
+          points: [
+            padding, height - padding,
+            width / 2, padding,
+            width - padding, height - padding
+          ],
+          ...lineProps,
+          ele: 'opening-direction-tilt',
+          tag: 'opening-direction-tilt'
+        }
+      });
+    }
     
     // 添加右开线条
-    if (showRightLine && !showTiltLine) {
+    if (showRightLine) {
       lines.push({
         component: 'v-line',
         config: {
@@ -935,9 +1002,21 @@ export class WindowSash extends GlobalDefaultConfig {
         }
       });
     }
-    
-    // 添加倾斜线条
-    if (showTiltLine) {
+
+    if (this.sashType === 'tiltRight') {
+      lines.push({
+        component: 'v-line',
+        config: {
+          points: [
+            width - padding, padding,
+            padding, height / 2,
+            width - padding, height - padding
+          ],
+          ...lineProps,
+          ele: 'opening-direction-right',
+          tag: 'opening-direction-right'
+        }
+      });
       lines.push({
         component: 'v-line',
         config: {
