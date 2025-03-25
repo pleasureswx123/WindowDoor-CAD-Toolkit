@@ -42,9 +42,18 @@
         <!-- 如果时activeTool为split，点击预览线允许穿透，执行stage上的click事件 -->
         <v-line v-if="showPreviewLine" :config="{
           points: previewLinePoints,
-          stroke: '#f00',
+          stroke: isSnapping ? snapLineColor : normalLineColor,
+          strokeWidth: isSnapping ? 3 : 2,
+          dash: isSnapping ? [] : [5, 5],
+          listening: false
+        }" />
+
+        <!-- 吸附辅助线 -->
+        <v-line v-if="isSnapping && snapLinePoints.length > 0" :config="{
+          points: snapLinePoints,
+          stroke: snapLineColor,
           strokeWidth: 2,
-          dash: [5, 5],
+          dash: [2, 2],
           listening: false
         }" />
 
@@ -127,6 +136,14 @@ const isPreviewLarge = ref(false); // 预览是否放大
 // 预览线相关状态
 const showPreviewLine = ref(false);
 const previewLinePoints = ref<number[]>([0, 0, 0, 0]);
+
+// 吸附相关状态
+const isSnapping = ref(false); // 是否正在吸附
+const snapTarget = ref<any>(null); // 吸附目标对象
+const snapThreshold = ref(10); // 吸附阈值（像素）
+const snapLineColor = ref('#00ff00'); // 吸附线颜色
+const normalLineColor = ref('#f00'); // 普通预览线颜色
+const snapLinePoints = ref<number[]>([]); // 吸附辅助线的点
 
 // 标注样式
 const annotationColor = '#ff3333'; // 标注线条和文字颜色
@@ -331,6 +348,7 @@ function handleStageClick(e: any) {
     if (stage) {
       const pointerPos = stage.getPointerPosition();
       console.log('点击位置:', pointerPos, '图层位置:', {...stagePosition}, '缩放:', scale.value);
+      console.log('吸附状态:', isSnapping.value, '吸附目标:', snapTarget.value);
     }
   }
   
@@ -386,11 +404,27 @@ function handleStageClick(e: any) {
   } else if (windowStore.activeTool === 'split') {
     // 处理分割工具
     if (clickedNode?.attrs?.self?.splitArea) {
-      // 转换鼠标位置到相对坐标
-      const relativePos = clickedNode.getRelativePointerPosition();
-      console.log('分割位置(相对坐标):', relativePos);
-      clickedNode.attrs.self.splitArea(windowStore.splitDirection, relativePos);
+      // 转换鼠标位置到相对坐标或使用吸附位置
+      let splitPos;
+      if (isSnapping.value && snapTarget.value) {
+        // 使用吸附位置
+        if (windowStore.splitDirection === 'vertical') {
+          const snapX = snapTarget.value.config.x + snapTarget.value.config.width / 2 - clickedNode.attrs.x;
+          splitPos = { x: snapX, y: 0 };
+        } else {
+          const snapY = snapTarget.value.config.y + snapTarget.value.config.height / 2 - clickedNode.attrs.y;
+          splitPos = { x: 0, y: snapY };
+        }
+      } else {
+        // 使用鼠标位置
+        splitPos = clickedNode.getRelativePointerPosition();
+      }
+      
+      console.log('分割位置(相对坐标):', splitPos);
+      clickedNode.attrs.self.splitArea(windowStore.splitDirection, splitPos);
       showPreviewLine.value = false;
+      isSnapping.value = false;
+      snapTarget.value = null;
     }
   } else if (windowStore.activeTool === 'sash') {
     // 处理窗扇工具
@@ -506,30 +540,129 @@ function showSplitPreview(e: any) {
   const x = (pointerPos.x - stagePosition.x - stageOffset.x) / scale.value;
   const y = (pointerPos.y - stagePosition.y - stageOffset.y) / scale.value;
   
+  // 重置吸附状态
+  isSnapping.value = false;
+  snapTarget.value = null;
+  
+  // 获取所有中挺组件
+  const muntins = flattenComponents.value.filter(comp => 
+    comp.config && comp.config.ele === 'window-muntin'
+  );
+  
+  // 垂直分割时查找水平方向最接近的中挺
+  if (windowStore.splitDirection === 'vertical') {
+    let closestMuntin = null;
+    let minDistance = Infinity;
+    
+    // 查找所有垂直中挺(方向为vertical)
+    const verticalMuntins = muntins.filter(m => 
+      m.config.direction === 'vertical'
+    );
+    
+    // 寻找距离最近的垂直中挺
+    for (const muntin of verticalMuntins) {
+      // 中心X坐标
+      const muntinCenterX = muntin.config.x + muntin.config.width / 2;
+      const distance = Math.abs(x - muntinCenterX);
+      
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestMuntin = muntin;
+      }
+    }
+    
+    // 判断是否需要吸附
+    if (closestMuntin && minDistance < snapThreshold.value / scale.value) {
+      // 吸附到中挺中心
+      const snapX = closestMuntin.config.x + closestMuntin.config.width / 2;
+      
+      // 绘制垂直分割线（吸附到中挺）
+      previewLinePoints.value = [
+        snapX, 0,
+        snapX, windowStore.windowConfig.height
+      ];
+      
+      // 设置吸附状态
+      isSnapping.value = true;
+      snapTarget.value = closestMuntin;
+      
+      // 添加辅助指示线
+      snapLinePoints.value = [
+        snapX, closestMuntin.config.y,
+        snapX, closestMuntin.config.y + closestMuntin.config.height
+      ];
+    } else {
+      // 正常绘制垂直分割线
+      previewLinePoints.value = [
+        x, 0,
+        x, windowStore.windowConfig.height
+      ];
+      snapLinePoints.value = [];
+    }
+  } else {
+    // 水平分割时查找垂直方向最接近的中挺
+    let closestMuntin = null;
+    let minDistance = Infinity;
+    
+    // 查找所有水平中挺(方向为horizontal)
+    const horizontalMuntins = muntins.filter(m => 
+      m.config.direction === 'horizontal'
+    );
+    
+    // 寻找距离最近的水平中挺
+    for (const muntin of horizontalMuntins) {
+      // 中心Y坐标
+      const muntinCenterY = muntin.config.y + muntin.config.height / 2;
+      const distance = Math.abs(y - muntinCenterY);
+      
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestMuntin = muntin;
+      }
+    }
+    
+    // 判断是否需要吸附
+    if (closestMuntin && minDistance < snapThreshold.value / scale.value) {
+      // 吸附到中挺中心
+      const snapY = closestMuntin.config.y + closestMuntin.config.height / 2;
+      
+      // 绘制水平分割线（吸附到中挺）
+      previewLinePoints.value = [
+        0, snapY,
+        windowStore.windowConfig.width, snapY
+      ];
+      
+      // 设置吸附状态
+      isSnapping.value = true;
+      snapTarget.value = closestMuntin;
+      
+      // 添加辅助指示线
+      snapLinePoints.value = [
+        closestMuntin.config.x, snapY,
+        closestMuntin.config.x + closestMuntin.config.width, snapY
+      ];
+    } else {
+      // 正常绘制水平分割线
+      previewLinePoints.value = [
+        0, y,
+        windowStore.windowConfig.width, y
+      ];
+      snapLinePoints.value = [];
+    }
+  }
+  
   // 输出调试信息以便排查问题
   console.log('预览线计算:', {
     pointerPos,
     stagePosition: {...stagePosition},
     stageOffset,
     scale: scale.value,
-    calculatedPos: {x, y}
+    calculatedPos: {x, y},
+    isSnapping: isSnapping.value,
+    snapTarget: snapTarget.value
   });
 
-  // 根据分割方向显示不同的预览线
-  if (windowStore.splitDirection === 'vertical') {
-    // 垂直分割线
-    previewLinePoints.value = [
-      x, 0,
-      x, windowStore.windowConfig.height
-    ];
-  } else {
-    // 水平分割线
-    previewLinePoints.value = [
-      0, y,
-      windowStore.windowConfig.width, y
-    ];
-  }
-
+  // 显示预览线
   showPreviewLine.value = true;
 }
 
