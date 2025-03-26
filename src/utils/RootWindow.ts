@@ -91,7 +91,8 @@ export const defaultConfigValue = reactive({
   sashStrokeWidth: 1,
   glassColor: '#ADD8E6', // 默认浅蓝色
   glassOpacity: 0.7,
-  muntinThickness: 50,
+  muntinThickness: 50, // 保留原有属性以维持兼容性
+  defaultMuntinThickness: 50, // 添加新属性用于全局设置
   sashFrameThickness: 50,
   frameSize: 50
 })
@@ -110,6 +111,7 @@ class GlobalDefaultConfig extends WindowComponent {
     glassColor: string; // 玻璃默认颜色
     glassOpacity: number; // 玻璃默认透明度
     muntinThickness: number; // 中挺宽度
+    defaultMuntinThickness: number; // 全局设置的中挺宽度
     sashFrameThickness: number; // 窗扇框架宽度
   };
   constructor(config: IDimension) {
@@ -127,7 +129,7 @@ export class WindowStructure extends GlobalDefaultConfig {
   width: number;
   height: number;
   
-  constructor(width: number, height: number, frameSize: number = 50) {
+  constructor(width: number, height: number, frameSize: number = 0) {
     super({ x: 0, y: 0, width, height, tag: 'root-window', ele: 'root-window' });
     this.width = width;
     this.height = height;
@@ -178,6 +180,9 @@ export class WindowStructure extends GlobalDefaultConfig {
   
   // 递归应用配置到空白区域及其子元素
   private applyConfigToEmptyArea(area: WindowEmptyArea) {
+    // 更新区域中挺厚度默认值
+    area.thickness = this.defaultConfig.defaultMuntinThickness;
+    
     // 如果有窗扇，应用配置
     if (area.sash) {
       // 应用到窗扇框架
@@ -185,6 +190,14 @@ export class WindowStructure extends GlobalDefaultConfig {
         area.sash.frame.frameColor = this.defaultConfig.sashColor;
         area.sash.frame.frameStrokeColor = this.defaultConfig.sashStrokeColor;
         area.sash.frame.frameStrokeWidth = this.defaultConfig.sashStrokeWidth;
+      }
+      
+      // 应用窗扇框架宽度
+      if (area.sash.sashType !== 'fixed') {
+        area.sash.frameSize = this.defaultConfig.sashFrameThickness;
+        if (typeof area.sash.updateFrameSize === 'function') {
+          area.sash.updateFrameSize(this.defaultConfig.sashFrameThickness);
+        }
       }
       
       // 应用到玻璃
@@ -200,6 +213,8 @@ export class WindowStructure extends GlobalDefaultConfig {
         // 应用到中挺
         if (child instanceof WindowMuntin) {
           child.color = this.defaultConfig.muntinColor;
+          child.thickness = this.defaultConfig.defaultMuntinThickness;
+          
           if (typeof child.updateColor === 'function') {
             child.updateColor(this.defaultConfig.muntinColor);
           }
@@ -372,7 +387,7 @@ export class WindowEmptyArea extends GlobalDefaultConfig {
     this.children = [];
     this.sash = null;
     this.splitDirection = null;
-    this.thickness = this.defaultConfig.muntinThickness;
+    this.thickness = this.defaultConfig.defaultMuntinThickness;
     this.pointerPosition = { x: 0, y: 0 };
   }
   
@@ -405,7 +420,7 @@ export class WindowEmptyArea extends GlobalDefaultConfig {
     
     this.splitDirection = direction;
     this.pointerPosition = pointerPosition;
-    this.thickness = thickness || this.thickness || this.defaultConfig.muntinThickness;
+    this.thickness = thickness || this.defaultConfig.defaultMuntinThickness;
     
     let area1: WindowEmptyArea, area2: WindowEmptyArea, muntin: WindowMuntin;
 
@@ -639,7 +654,7 @@ export class WindowMuntin extends GlobalDefaultConfig {
   constructor(config: IDimension & { direction: 'horizontal' | 'vertical', thickness?: number, color?: string }) {
     super(config);
     this.direction = config.direction;
-    this.thickness = config.thickness || this.defaultConfig.muntinThickness;
+    this.thickness = config.thickness || this.defaultConfig.defaultMuntinThickness;
     this.color = config.color || this.defaultConfig.muntinColor; // 默认棕色
   }
 

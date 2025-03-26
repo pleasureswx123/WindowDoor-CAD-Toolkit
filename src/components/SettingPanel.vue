@@ -15,6 +15,16 @@
         <label><Icon icon="tabler:border-all" class="setting-icon" /> 框架厚度 (mm):</label>
         <input type="number" v-model.number="frameSize" min="20" max="200" />
       </div>
+      <!-- 增加可以对窗扇框架宽度sashFrameThickness进行设置 -->
+      <div class="setting-group">
+        <label><Icon icon="tabler:border-inner" class="setting-icon" /> 窗扇框架宽度 (mm):</label>
+        <input type="number" v-model.number="sashFrameThickness" min="20" max="100" step="2" />
+      </div>
+      <!-- 增加可以对中挺宽度muntinThickness进行设置 -->
+      <div class="setting-group">
+        <label><Icon icon="tabler:layout-grid" class="setting-icon" /> 中挺宽度 (mm):</label>
+        <input type="number" v-model.number="defaultMuntinThickness" min="20" max="100" step="2" />
+      </div>
       
       <!-- 全局默认配置 -->
       <div class="global-settings">
@@ -413,24 +423,95 @@ const windowStore = useRootWindowStore();
 
 
 watch(defaultConfigValue, (newVal) => {
-  console.log('defaultConfig 111', newVal);
-  const { frameColor, frameStrokeColor, frameStrokeWidth, glassColor, glassOpacity } = newVal;
+  console.log('defaultConfig updated', newVal);
+  const { 
+    frameColor, 
+    frameStrokeColor, 
+    frameStrokeWidth, 
+    glassColor, 
+    glassOpacity, 
+    sashFrameThickness, 
+    defaultMuntinThickness 
+  } = newVal;
+  
   nextTick(() => {
+    // 更新窗框颜色
     windowStore.windowStructure?.frame?.updateColor(frameColor, frameStrokeColor, frameStrokeWidth);
-
+    
+    // 如果有选中的窗扇，应用新的sashFrameThickness
+    if (isSashSelected.value && windowStore.selectedElement && windowStore.selectedElement.updateFrameSize) {
+      windowStore.selectedElement.updateFrameSize(sashFrameThickness);
+    }
+    
+    // 如果有选中的中挺，应用新的muntinThickness
+    if (isMuntinSelected.value && windowStore.selectedElement && windowStore.selectedElement.thickness !== undefined) {
+      const currentElementId = windowStore.selectedElement.id;
+      const direction = windowStore.selectedElement.direction;
+      const position = {
+        x: direction === 'vertical' ? windowStore.selectedElement.x + defaultMuntinThickness / 2 : 0,
+        y: direction === 'horizontal' ? windowStore.selectedElement.y + defaultMuntinThickness / 2 : 0
+      };
+      
+      // 只有当父元素存在并且有splitArea方法时才应用更新
+      if (windowStore.selectedElement.parent && windowStore.selectedElement.parent.splitArea) {
+        windowStore.selectedElement.parent.splitArea(
+          direction,
+          position,
+          defaultMuntinThickness
+        );
+        
+        // 分割区域更新后，确保重新选中同一个元素以触发标注更新
+        nextTick(() => {
+          // 通过ID重新查找并选中元素
+          const sameElement = getElementById(currentElementId);
+          if (sameElement) {
+            // 先取消选中，再重新选中以确保更新
+            windowStore.selectedElement = null;
+            nextTick(() => {
+              windowStore.selectedElement = sameElement;
+            });
+          }
+        });
+      }
+    }
   });
 }, { deep: true });
+
+// 监听全局muntinThickness变化，更新分割厚度
+watch(() => defaultConfigValue.defaultMuntinThickness, (newValue) => {
+  splitThickness.value = newValue;
+});
 
 // 窗户尺寸设置
 const width = ref(windowStore.windowConfig.width);
 const height = ref(windowStore.windowConfig.height);
+
+// 窗扇框架宽度设置
+const sashFrameThickness = computed({
+  get: () => {
+    return defaultConfigValue.sashFrameThickness;
+  },
+  set: (value) => {
+    defaultConfigValue.sashFrameThickness = value;
+  }
+});
+
+// 中挺宽度设置
+const defaultMuntinThickness = computed({
+  get: () => {
+    return defaultConfigValue.defaultMuntinThickness;
+  },
+  set: (value) => {
+    defaultConfigValue.defaultMuntinThickness = value;
+  }
+});
 
 // 窗框大小 - 集成两种情况
 const frameSize = computed({
   get: () => {
     // 如果选中了窗扇，则返回窗扇的frameSize
     if (isSashSelected.value && windowStore.selectedElement) {
-      return windowStore.selectedElement.frameSize || 40;
+      return windowStore.selectedElement.frameSize || defaultConfigValue.frameSize;
     }
     // 否则返回全局窗框大小
     return windowStore.windowConfig.frameSize;
@@ -513,8 +594,8 @@ const muntinDirection = computed(() => {
 // 中挺厚度
 const muntinThickness = computed({
   get: () => {
-    if (!isMuntinSelected.value || !windowStore.selectedElement) return 40;
-    return windowStore.selectedElement.thickness || 40;
+    if (!isMuntinSelected.value || !windowStore.selectedElement) return defaultConfigValue.defaultMuntinThickness;
+    return windowStore.selectedElement.thickness || defaultConfigValue.defaultMuntinThickness;
   },
   set: (value) => {
     if (!isMuntinSelected.value || !windowStore.selectedElement) return;
@@ -586,14 +667,14 @@ const muntinPosition = computed({
     // 调用父元素的splitArea方法更新分割
     if (windowStore.selectedElement.parent && windowStore.selectedElement.parent.splitArea) {
       const position = muntinDirection.value === 'horizontal' 
-        ? { x: 0, y: newPosition + muntinThickness.value / 2 } 
-        : { x: newPosition + muntinThickness.value / 2, y: 0 };
+        ? { x: 0, y: newPosition + defaultMuntinThickness.value / 2 } 
+        : { x: newPosition + defaultMuntinThickness.value / 2, y: 0 };
 
       nextTick(() => {
         windowStore.selectedElement.parent.splitArea(
           muntinDirection.value, 
           position, 
-          muntinThickness.value
+          defaultMuntinThickness.value
         );
         
         // 分割区域更新后，确保重新选中同一个元素以触发标注更新
@@ -615,7 +696,7 @@ const muntinPosition = computed({
 
 // 计算中挺位置的最小值 (1.5倍中挺厚度)
 const minPosition = computed(() => {
-  return Math.ceil(muntinThickness.value * 1.5);
+  return Math.ceil(defaultMuntinThickness.value * 1.5);
 });
 
 // 计算中挺位置的最大值 (父元素尺寸减去安全距离)
@@ -714,7 +795,7 @@ function installSash() {
 const splitDirection = ref<'horizontal' | 'vertical' | null>(null);
 
 // 中挺厚度
-const splitThickness = ref(40);
+const splitThickness = ref(defaultConfigValue.defaultMuntinThickness);
 
 // 空白区域分割
 function confirmSplit() {
@@ -1030,7 +1111,7 @@ const muntinBottomPosition = computed({
     if (!parent) return 0;
     
     // 计算下边距 = 父元素高度 - 中挺位置 - 中挺厚度
-    return parent.height - windowStore.selectedElement.y - muntinThickness.value;
+    return parent.height - windowStore.selectedElement.y - defaultMuntinThickness.value;
   },
   set: (value) => {
     if (!isMuntinSelected.value || !windowStore.selectedElement || muntinDirection.value !== 'horizontal') return;
@@ -1039,20 +1120,20 @@ const muntinBottomPosition = computed({
     if (!parent) return;
     
     // 根据下边距计算中挺位置 = 父元素高度 - 下边距 - 中挺厚度
-    const newPosition = parent.height - value - muntinThickness.value;
+    const newPosition = parent.height - value - defaultMuntinThickness.value;
     
     // 更新中挺位置
     windowStore.selectedElement.y = newPosition;
     
     // 调用父元素的splitArea方法更新分割
     if (windowStore.selectedElement.parent && windowStore.selectedElement.parent.splitArea) {
-      const position = { x: 0, y: newPosition + muntinThickness.value / 2 };
+      const position = { x: 0, y: newPosition + defaultMuntinThickness.value / 2 };
 
       nextTick(() => {
         windowStore.selectedElement.parent.splitArea(
           'horizontal', 
           position, 
-          muntinThickness.value
+          defaultMuntinThickness.value
         );
       });
     }
@@ -1068,7 +1149,7 @@ const muntinRightPosition = computed({
     if (!parent) return 0;
     
     // 计算右边距 = 父元素宽度 - 中挺位置 - 中挺厚度
-    return parent.width - windowStore.selectedElement.x - muntinThickness.value;
+    return parent.width - windowStore.selectedElement.x - defaultMuntinThickness.value;
   },
   set: (value) => {
     if (!isMuntinSelected.value || !windowStore.selectedElement || muntinDirection.value !== 'vertical') return;
@@ -1077,20 +1158,20 @@ const muntinRightPosition = computed({
     if (!parent) return;
     
     // 根据右边距计算中挺位置 = 父元素宽度 - 右边距 - 中挺厚度
-    const newPosition = parent.width - value - muntinThickness.value;
+    const newPosition = parent.width - value - defaultMuntinThickness.value;
     
     // 更新中挺位置
     windowStore.selectedElement.x = newPosition;
     
     // 调用父元素的splitArea方法更新分割
     if (windowStore.selectedElement.parent && windowStore.selectedElement.parent.splitArea) {
-      const position = { x: newPosition + muntinThickness.value / 2, y: 0 };
+      const position = { x: newPosition + defaultMuntinThickness.value / 2, y: 0 };
 
       nextTick(() => {
         windowStore.selectedElement.parent.splitArea(
           'vertical', 
           position, 
-          muntinThickness.value
+          defaultMuntinThickness.value
         );
       });
     }
@@ -1129,23 +1210,23 @@ const validateMuntinPosition = (type: 'left' | 'right' | 'top' | 'bottom') => {
   switch(type) {
     case 'left': // 左边距
       min = 0;
-      max = parentWidth - muntinThickness.value;
+      max = parentWidth - defaultMuntinThickness.value;
       currentValue = currentX;
       break;
     case 'right': // 右边距
       min = 0;
-      max = parentWidth - muntinThickness.value;
-      currentValue = parentWidth - currentX - muntinThickness.value;
+      max = parentWidth - defaultMuntinThickness.value;
+      currentValue = parentWidth - currentX - defaultMuntinThickness.value;
       break;
     case 'top': // 上边距
       min = 0;
-      max = parentHeight - muntinThickness.value;
+      max = parentHeight - defaultMuntinThickness.value;
       currentValue = currentY;
       break;
     case 'bottom': // 下边距
       min = 0;
-      max = parentHeight - muntinThickness.value;
-      currentValue = parentHeight - currentY - muntinThickness.value;
+      max = parentHeight - defaultMuntinThickness.value;
+      currentValue = parentHeight - currentY - defaultMuntinThickness.value;
       break;
   }
   
@@ -1171,7 +1252,7 @@ const updateMuntinPosition = (type: 'left' | 'right' | 'top' | 'bottom', value: 
       break;
     case 'right':
       // 从右边计算x位置
-      windowStore.selectedElement.x = parent.width - value - muntinThickness.value;
+      windowStore.selectedElement.x = parent.width - value - defaultMuntinThickness.value;
       break;
     case 'top':
       // 直接设置y位置
@@ -1179,7 +1260,7 @@ const updateMuntinPosition = (type: 'left' | 'right' | 'top' | 'bottom', value: 
       break;
     case 'bottom':
       // 从底部计算y位置
-      windowStore.selectedElement.y = parent.height - value - muntinThickness.value;
+      windowStore.selectedElement.y = parent.height - value - defaultMuntinThickness.value;
       break;
   }
   
@@ -1187,14 +1268,14 @@ const updateMuntinPosition = (type: 'left' | 'right' | 'top' | 'bottom', value: 
   if (windowStore.selectedElement.parent.splitArea) {
     const direction = (type === 'left' || type === 'right') ? 'vertical' : 'horizontal';
     const position = direction === 'horizontal'
-      ? { x: 0, y: windowStore.selectedElement.y + muntinThickness.value / 2 }
-      : { x: windowStore.selectedElement.x + muntinThickness.value / 2, y: 0 };
+      ? { x: 0, y: windowStore.selectedElement.y + defaultMuntinThickness.value / 2 }
+      : { x: windowStore.selectedElement.x + defaultMuntinThickness.value / 2, y: 0 };
     
     nextTick(() => {
       windowStore.selectedElement.parent.splitArea(
         direction,
         position,
-        muntinThickness.value
+        defaultMuntinThickness.value
       );
       
       // 分割区域更新后，确保重新选中同一个元素以触发标注更新
