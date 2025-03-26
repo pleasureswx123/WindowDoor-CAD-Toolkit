@@ -1,28 +1,35 @@
 <template>
-  <div class="window-base-properties">
+  <div class="window-base-properties" :class="{ 
+    'two-column-layout': col == '2' || col == 2,
+    'three-column-layout': col == '3' || col == 3,
+    'four-column-layout': col == '4' || col == 4,
+    'five-column-layout': col == '5' || col == 5
+  }">
     <!-- 窗户基础属性 -->
     <h3><Icon icon="tabler:window" class="section-icon" /> 窗户基础属性</h3>
-    <div class="setting-group">
-      <label><Icon icon="tabler:ruler-2" class="setting-icon" /> 窗户宽度 (mm):</label>
-      <input type="number" v-model.number="width" @change="updateWindowSize" min="300" max="5000" />
-    </div>
-    <div class="setting-group">
-      <label><Icon icon="tabler:ruler-2" class="setting-icon" /> 窗户高度 (mm):</label>
-      <input type="number" v-model.number="height" @change="updateWindowSize" min="300" max="5000" />
-    </div>
-    <div class="setting-group">
-      <label><Icon icon="tabler:border-all" class="setting-icon" /> 框架厚度 (mm):</label>
-      <input type="number" v-model.number="frameSize" min="20" max="200" />
-    </div>
-    <!-- 窗扇框架宽度设置 -->
-    <div class="setting-group">
-      <label><Icon icon="tabler:border-inner" class="setting-icon" /> 窗扇框架宽度 (mm):</label>
-      <input type="number" v-model.number="sashFrameThickness" min="20" max="100" step="2" />
-    </div>
-    <!-- 中挺宽度设置 -->
-    <div class="setting-group">
-      <label><Icon icon="tabler:layout-grid" class="setting-icon" /> 中挺宽度 (mm):</label>
-      <input type="number" v-model.number="defaultMuntinThickness" min="20" max="100" step="2" />
+    <div class="base-properties-container">
+      <div class="setting-group">
+        <label><Icon icon="tabler:ruler-2" class="setting-icon" /> 窗户宽度 (mm):</label>
+        <input type="number" v-model.number="width" @change="updateWindowSize" min="300" max="5000" />
+      </div>
+      <div class="setting-group">
+        <label><Icon icon="tabler:ruler-2" class="setting-icon" /> 窗户高度 (mm):</label>
+        <input type="number" v-model.number="height" @change="updateWindowSize" min="300" max="5000" />
+      </div>
+      <div class="setting-group">
+        <label><Icon icon="tabler:border-all" class="setting-icon" /> 框架厚度 (mm):</label>
+        <input type="number" v-model.number="frameSize" min="20" max="200" />
+      </div>
+      <!-- 窗扇框架宽度设置 -->
+      <div class="setting-group">
+        <label><Icon icon="tabler:border-inner" class="setting-icon" /> 窗扇框架宽度 (mm):</label>
+        <input type="number" v-model.number="sashFrameThickness" min="20" max="100" step="2" />
+      </div>
+      <!-- 中挺宽度设置 -->
+      <div class="setting-group">
+        <label><Icon icon="tabler:layout-grid" class="setting-icon" /> 中挺宽度 (mm):</label>
+        <input type="number" v-model.number="defaultMuntinThickness" min="20" max="100" step="2" />
+      </div>
     </div>
     
     <!-- 全局默认配置 -->
@@ -109,6 +116,15 @@ import { ref, computed, watch, nextTick } from 'vue';
 import { useRootWindowStore } from '@/stores/rootWindowStore';
 import { defaultConfigValue } from '@/utils/RootWindow';
 import { Icon } from '@iconify/vue';
+
+// 添加props定义，支持1到5列
+defineProps({
+  col: {
+    type: [String, Number],
+    default: '1',
+    validator: (value) => ['1', '2', '3', '4', '5', 1, 2, 3, 4, 5].includes(value)
+  }
+});
 
 const windowStore = useRootWindowStore();
 
@@ -216,10 +232,20 @@ h3 {
   opacity: 0.8;
 }
 
+.base-properties-container {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+
 .setting-group {
   margin-bottom: 12px;
   display: flex;
   flex-direction: column;
+}
+
+.base-properties-container .setting-group {
+  flex: 1 1 100%;
 }
 
 .setting-group label {
@@ -325,26 +351,6 @@ button:hover {
   padding-bottom: 5px;
 }
 
-.color-picker-container {
-  display: flex;
-  align-items: center;
-}
-
-.color-input {
-  border: 1px solid #555;
-  border-radius: 4px;
-  margin-right: 8px;
-  background-color: #333;
-}
-
-.color-text {
-  padding: 8px;
-  border: 1px solid #555;
-  border-radius: 4px;
-  background-color: #333;
-  color: #e0e0e0;
-}
-
 .slider {
   width: 100%;
 }
@@ -357,7 +363,100 @@ button:hover {
   color: #b0b0b0;
 }
 
-/* 响应式适配 */
+/* 多列布局样式 */
+/* 两列布局 */
+.two-column-layout .base-properties-container .setting-group {
+  flex: 0 0 calc(50% - 8px);
+}
+
+.two-column-layout .base-properties-container .setting-group:nth-child(odd) {
+  margin-right: 16px;
+}
+
+.two-column-layout .global-settings {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.two-column-layout .setting-section {
+  margin-bottom: 0;
+}
+
+/* 三列布局 */
+.three-column-layout .base-properties-container .setting-group {
+  flex: 0 0 calc(33.333% - 11px);
+}
+
+.three-column-layout .base-properties-container .setting-group:not(:nth-child(3n)) {
+  margin-right: 16px;
+}
+
+.three-column-layout .global-settings {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.three-column-layout .setting-section {
+  margin-bottom: 0;
+}
+
+/* 四列布局 */
+.four-column-layout .base-properties-container .setting-group {
+  flex: 0 0 calc(25% - 12px);
+}
+
+.four-column-layout .base-properties-container .setting-group:not(:nth-child(4n)) {
+  margin-right: 16px;
+}
+
+.four-column-layout .global-settings {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+}
+
+.four-column-layout .setting-section {
+  margin-bottom: 0;
+}
+
+/* 五列布局 */
+.five-column-layout .base-properties-container .setting-group {
+  flex: 0 0 calc(20% - 13px);
+}
+
+.five-column-layout .base-properties-container .setting-group:not(:nth-child(5n)) {
+  margin-right: 16px;
+}
+
+.five-column-layout .global-settings {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.five-column-layout .setting-section {
+  margin-bottom: 0;
+}
+
+/* 确保标题和描述占据整行（适用于所有多列布局） */
+.two-column-layout .global-settings h4,
+.two-column-layout .setting-desc,
+.two-column-layout .setting-actions,
+.three-column-layout .global-settings h4,
+.three-column-layout .setting-desc,
+.three-column-layout .setting-actions,
+.four-column-layout .global-settings h4,
+.four-column-layout .setting-desc,
+.four-column-layout .setting-actions,
+.five-column-layout .global-settings h4,
+.five-column-layout .setting-desc,
+.five-column-layout .setting-actions {
+  grid-column: 1 / -1;
+}
+
+/* 响应式调整 */
 @media (max-width: 768px) {
   .window-base-properties {
     padding: 10px;
@@ -380,6 +479,22 @@ button:hover {
   button {
     padding: 6px 10px;
     font-size: 12px;
+  }
+
+  /* 在移动设备上将多列布局降级为单列 */
+  .two-column-layout .base-properties-container .setting-group,
+  .three-column-layout .base-properties-container .setting-group,
+  .four-column-layout .base-properties-container .setting-group,
+  .five-column-layout .base-properties-container .setting-group {
+    flex: 1 1 100%;
+    margin-right: 0;
+  }
+  
+  .two-column-layout .global-settings,
+  .three-column-layout .global-settings,
+  .four-column-layout .global-settings,
+  .five-column-layout .global-settings {
+    grid-template-columns: 1fr;
   }
 }
 </style> 

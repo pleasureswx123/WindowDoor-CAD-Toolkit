@@ -67,26 +67,8 @@
     <el-dialog v-model="showSettings" title="设置" width="650px" destroy-on-close>
       <el-tabs>
         <el-tab-pane label="显示设置">
-          <div class="settings-content">
-            <h3>显示选项</h3>
-            <el-form label-position="left" label-width="120px">
-              <el-form-item label="显示预览">
-                <el-switch v-model="showPreview" />
-              </el-form-item>
-              <el-form-item label="显示网格">
-                <el-switch v-model="showGrid" />
-              </el-form-item>
-              <el-form-item label="显示尺寸标注">
-                <el-switch v-model="showDimensions" />
-              </el-form-item>
-            </el-form>
-
-            <h3>单位设置</h3>
-            <el-radio-group v-model="units">
-              <el-radio-button value="mm">毫米</el-radio-button>
-              <el-radio-button value="cm">厘米</el-radio-button>
-              <el-radio-button value="inch">英寸</el-radio-button>
-            </el-radio-group>
+          <div class="setting-panel">
+            <WindowBaseProperties col="5"  />
           </div>
         </el-tab-pane>
         <el-tab-pane label="材料统计">
@@ -112,12 +94,7 @@
     </el-drawer>
 
     <!-- 确认清空对话框 -->
-    <el-dialog
-      v-model="showClearConfirmDialog"
-      title="确认清空"
-      width="300px"
-      :close-on-click-modal="false"
-    >
+    <el-dialog v-model="showClearConfirmDialog" title="确认清空" width="300px" :close-on-click-modal="false">
       <span>确定要清空当前设计吗？此操作可以撤销。</span>
       <template #footer>
         <div class="dialog-footer">
@@ -128,12 +105,7 @@
     </el-dialog>
 
     <!-- 新建窗户设计对话框 -->
-    <el-dialog 
-      v-model="showNewDesignDialog" 
-      title="新建窗户设计" 
-      width="400px" 
-      :close-on-click-modal="false"
-    >
+    <el-dialog v-model="showNewDesignDialog" title="新建窗户设计" width="400px" :close-on-click-modal="false">
       <el-form :model="newDesignForm" label-position="top">
         <el-form-item label="设计名称">
           <el-input v-model="newDesignForm.name" placeholder="请输入设计名称" />
@@ -157,12 +129,7 @@
     </el-dialog>
 
     <!-- 保存设计对话框 -->
-    <el-dialog 
-      v-model="showSaveDesignDialog" 
-      title="保存窗户设计" 
-      width="400px" 
-      :close-on-click-modal="false"
-    >
+    <el-dialog v-model="showSaveDesignDialog" title="保存窗户设计" width="400px" :close-on-click-modal="false">
       <el-form :model="saveDesignForm">
         <el-form-item label="设计名称">
           <el-input v-model="saveDesignForm.name" placeholder="请输入设计名称" />
@@ -177,19 +144,18 @@
     </el-dialog>
 
     <!-- 历史窗户设计列表对话框 -->
-    <el-dialog 
-      v-model="showHistoryDesignDialog" 
-      title="历史窗户设计" 
-      width="800px" 
-      :close-on-click-modal="false"
-      destroy-on-close
-    >
+    <el-dialog v-model="showHistoryDesignDialog" title="历史窗户设计" width="800px" :close-on-click-modal="false"
+      destroy-on-close>
       <div v-if="windowStore.isLoading" class="loading-container">
-        <el-icon class="is-loading"><loading /></el-icon>
+        <el-icon class="is-loading">
+          <loading />
+        </el-icon>
         <span>加载中...</span>
       </div>
       <div v-else-if="windowStore.windowDesignList.length === 0" class="empty-designs">
-        <el-icon><CirclePlus /></el-icon>
+        <el-icon>
+          <CirclePlus />
+        </el-icon>
         <p>没有历史设计，点击新建创建一个新的窗户设计</p>
       </div>
       <el-scrollbar v-else height="500px">
@@ -219,12 +185,7 @@
     </el-dialog>
 
     <!-- 确认删除设计对话框 -->
-    <el-dialog
-      v-model="showDeleteDesignConfirmDialog"
-      title="确认删除"
-      width="300px"
-      :close-on-click-modal="false"
-    >
+    <el-dialog v-model="showDeleteDesignConfirmDialog" title="确认删除" width="300px" :close-on-click-modal="false">
       <span>确定要删除设计 "{{ designToDelete?.name || '' }}" 吗？此操作不可恢复。</span>
       <template #footer>
         <div class="dialog-footer">
@@ -563,6 +524,10 @@ watch(() => windowStore.selectedElement, (newValue) => {
 </script>
 
 <style scoped>
+.setting-panel {
+  background-color: #252525;
+  padding: 10px;
+}
 .window-door-design {
   display: flex;
   flex-direction: column;
