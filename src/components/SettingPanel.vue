@@ -24,10 +24,7 @@
       <!-- 中挺颜色设置 -->
       <div class="setting-group">
         <label><Icon icon="tabler:color-swatch" class="setting-icon" /> 中挺颜色:</label>
-        <div class="color-picker-container">
-          <input type="color" v-model="muntinColor" class="color-input" />
-          <input type="text" v-model="muntinColor" class="color-text" placeholder="#颜色代码" />
-        </div>
+        <el-color-picker v-model="muntinColor" show-alpha />
       </div>
       
       <!-- 中挺位置设置 -->
@@ -104,19 +101,13 @@
       <!-- 窗扇颜色设置 -->
       <div class="setting-group">
         <label>窗扇颜色:</label>
-        <div class="color-picker-container">
-          <input type="color" v-model="sashColor" class="color-input" />
-          <input type="text" v-model="sashColor" class="color-text" placeholder="#颜色代码" />
-        </div>
+        <el-color-picker v-model="sashColor" show-alpha />
       </div>
 
       <!-- 窗扇边线颜色设置 -->
       <div class="setting-group">
         <label>边线颜色:</label>
-        <div class="color-picker-container">
-          <input type="color" v-model="sashStrokeColor" class="color-input" />
-          <input type="text" v-model="sashStrokeColor" class="color-text" placeholder="#颜色代码" />
-        </div>
+        <el-color-picker v-model="sashStrokeColor" show-alpha />
       </div>
       
       <!-- 窗扇边线宽度设置 -->
@@ -141,10 +132,7 @@
       <!-- 玻璃颜色设置 -->
       <div class="setting-group">
         <label>玻璃颜色:</label>
-        <div class="color-picker-container">
-          <input type="color" v-model="glassColor" class="color-input" />
-          <input type="text" v-model="glassColor" class="color-text" placeholder="#颜色代码" />
-        </div>
+        <el-color-picker v-model="glassColor" show-alpha />
       </div>
       
       <!-- 玻璃透明度设置 -->
@@ -259,19 +247,13 @@
       <!-- 窗框颜色设置 -->
       <div class="setting-group">
         <label>窗框颜色:</label>
-        <div class="color-picker-container">
-          <input type="color" v-model="frameColor" class="color-input" />
-          <input type="text" v-model="frameColor" class="color-text" placeholder="#颜色代码" />
-        </div>
+        <el-color-picker v-model="frameColor" show-alpha />
       </div>
 
       <!-- 窗框边线颜色设置 -->
       <div class="setting-group">
         <label>边线颜色:</label>
-        <div class="color-picker-container">
-          <input type="color" v-model="frameStrokeColor" class="color-input" />
-          <input type="text" v-model="frameStrokeColor" class="color-text" placeholder="#颜色代码" />
-        </div>
+        <el-color-picker v-model="frameStrokeColor" show-alpha />
       </div>
       
       <!-- 窗框边线宽度设置 -->

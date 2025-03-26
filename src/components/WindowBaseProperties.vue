@@ -35,17 +35,11 @@
         <h5><Icon icon="tabler:border-outer" class="setting-icon" /> 窗框配置</h5>
         <div class="setting-group">
           <label><Icon icon="tabler:color-swatch" class="setting-icon" /> 窗框颜色:</label>
-          <div class="color-picker-container">
-            <input type="color" v-model="defaultConfigValue.frameColor" class="color-input" />
-            <input type="text" v-model="defaultConfigValue.frameColor" class="color-text" placeholder="#颜色代码" />
-          </div>
+          <el-color-picker v-model="defaultConfigValue.frameColor" show-alpha />
         </div>
         <div class="setting-group">
           <label><Icon icon="tabler:border-style" class="setting-icon" /> 窗框边线颜色:</label>
-          <div class="color-picker-container">
-            <input type="color" v-model="defaultConfigValue.frameStrokeColor" class="color-input" />
-            <input type="text" v-model="defaultConfigValue.frameStrokeColor" class="color-text" placeholder="#颜色代码" />
-          </div>
+          <el-color-picker v-model="defaultConfigValue.frameStrokeColor" show-alpha />
         </div>
         <div class="setting-group">
           <label><Icon icon="tabler:line-height" class="setting-icon" /> 窗框边线宽度 (px):</label>
@@ -57,10 +51,7 @@
         <h5><Icon icon="tabler:layout-grid" class="setting-icon" /> 中挺配置</h5>
         <div class="setting-group">
           <label><Icon icon="tabler:color-swatch" class="setting-icon" /> 中挺颜色:</label>
-          <div class="color-picker-container">
-            <input type="color" v-model="defaultConfigValue.muntinColor" class="color-input" />
-            <input type="text" v-model="defaultConfigValue.muntinColor" class="color-text" placeholder="#颜色代码" />
-          </div>
+          <el-color-picker v-model="defaultConfigValue.muntinColor" show-alpha />
         </div>
       </div>
       
@@ -68,17 +59,11 @@
         <h5><Icon icon="tabler:layout-board" class="setting-icon" /> 窗扇配置</h5>
         <div class="setting-group">
           <label><Icon icon="tabler:color-swatch" class="setting-icon" /> 窗扇颜色:</label>
-          <div class="color-picker-container">
-            <input type="color" v-model="defaultConfigValue.sashColor" class="color-input" />
-            <input type="text" v-model="defaultConfigValue.sashColor" class="color-text" placeholder="#颜色代码" />
-          </div>
+          <el-color-picker v-model="defaultConfigValue.sashColor" show-alpha />
         </div>
         <div class="setting-group">
           <label><Icon icon="tabler:border-style" class="setting-icon" /> 窗扇边线颜色:</label>
-          <div class="color-picker-container">
-            <input type="color" v-model="defaultConfigValue.sashStrokeColor" class="color-input" />
-            <input type="text" v-model="defaultConfigValue.sashStrokeColor" class="color-text" placeholder="#颜色代码" />
-          </div>
+          <el-color-picker v-model="defaultConfigValue.sashStrokeColor" show-alpha />
         </div>
         <div class="setting-group">
           <label><Icon icon="tabler:line-height" class="setting-icon" /> 窗扇边线宽度 (px):</label>
@@ -90,10 +75,7 @@
         <h5><Icon icon="tabler:glass" class="setting-icon" /> 玻璃配置</h5>
         <div class="setting-group">
           <label><Icon icon="tabler:color-swatch" class="setting-icon" /> 玻璃颜色:</label>
-          <div class="color-picker-container">
-            <input type="color" v-model="defaultConfigValue.glassColor" class="color-input" />
-            <input type="text" v-model="defaultConfigValue.glassColor" class="color-text" placeholder="#颜色代码" />
-          </div>
+          <el-color-picker v-model="defaultConfigValue.glassColor" show-alpha />
         </div>
         <div class="setting-group">
           <label><Icon icon="tabler:opacity" class="setting-icon" /> 玻璃透明度: {{ (defaultConfigValue.glassOpacity * 100).toFixed(0) }}%</label>
