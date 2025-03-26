@@ -95,7 +95,7 @@
       <!-- 窗框大小设置（可编辑） -->
       <div class="setting-group">
         <label>窗框大小 (mm):</label>
-        <input type="number" v-model.number="frameSize" min="20" max="100" step="2" />
+        <input type="number" v-model.number="frameSize" min="0" max="100" step="2" />
       </div>
 
       <!-- 窗扇颜色设置 -->
@@ -374,7 +374,7 @@ const frameSize = computed({
   get: () => {
     // 如果选中了窗扇，则返回窗扇的frameSize
     if (isSashSelected.value && windowStore.selectedElement) {
-      return windowStore.selectedElement.frameSize || defaultConfigValue.frameSize;
+      return windowStore.selectedElement.frameSize;
     }
     // 否则返回全局窗框大小
     return windowStore.windowConfig.frameSize;
