@@ -112,6 +112,7 @@ declare module 'vue' {
     TestButton: typeof import('./components/TestButton.vue')['default']
     TheWelcome: typeof import('./components/TheWelcome.vue')['default']
     WelcomeItem: typeof import('./components/WelcomeItem.vue')['default']
+    WindowBaseProperties: typeof import('./components/WindowBaseProperties.vue')['default']
     WindowCanvas: typeof import('./components/WindowCanvas.vue')['default']
     WindowDoorApp: typeof import('./components/WindowDoor/WindowDoorApp.vue')['default']
     ZoomControls: typeof import('./components/WindowDoor/ZoomControls.vue')['default']

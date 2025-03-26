@@ -2,124 +2,7 @@
   <div class="setting-panel">
     <!-- 默认显示窗口尺寸设置 -->
     <div v-if="!hasSelectedElement" class="window-settings">
-      <h3><Icon icon="tabler:window" class="section-icon" /> 窗户基础属性</h3>
-      <div class="setting-group">
-        <label><Icon icon="tabler:ruler-2" class="setting-icon" /> 窗户宽度 (mm):</label>
-        <input type="number" v-model.number="width" @change="updateSize" min="300" max="5000" />
-      </div>
-      <div class="setting-group">
-        <label><Icon icon="tabler:ruler-2" class="setting-icon" /> 窗户高度 (mm):</label>
-        <input type="number" v-model.number="height" @change="updateSize" min="300" max="5000" />
-      </div>
-      <div class="setting-group">
-        <label><Icon icon="tabler:border-all" class="setting-icon" /> 框架厚度 (mm):</label>
-        <input type="number" v-model.number="frameSize" min="20" max="200" />
-      </div>
-      <!-- 增加可以对窗扇框架宽度sashFrameThickness进行设置 -->
-      <div class="setting-group">
-        <label><Icon icon="tabler:border-inner" class="setting-icon" /> 窗扇框架宽度 (mm):</label>
-        <input type="number" v-model.number="sashFrameThickness" min="20" max="100" step="2" />
-      </div>
-      <!-- 增加可以对中挺宽度muntinThickness进行设置 -->
-      <div class="setting-group">
-        <label><Icon icon="tabler:layout-grid" class="setting-icon" /> 中挺宽度 (mm):</label>
-        <input type="number" v-model.number="defaultMuntinThickness" min="20" max="100" step="2" />
-      </div>
-      
-      <!-- 全局默认配置 -->
-      <div class="global-settings">
-        <h4><Icon icon="tabler:settings" class="section-icon" /> 全局默认配置</h4>
-        <p class="setting-desc">设置下列项目后，新创建的元素将使用这些默认值</p>
-        
-        <!-- 默认颜色配置 -->
-        <div class="setting-section">
-          <h5><Icon icon="tabler:border-outer" class="setting-icon" /> 窗框配置</h5>
-          <div class="setting-group">
-            <label><Icon icon="tabler:color-swatch" class="setting-icon" /> 窗框颜色:</label>
-            <div class="color-picker-container">
-              <input type="color" v-model="defaultConfigValue.frameColor" class="color-input" />
-              <input type="text" v-model="defaultConfigValue.frameColor" class="color-text" placeholder="#颜色代码" />
-            </div>
-          </div>
-          <div class="setting-group">
-            <label><Icon icon="tabler:border-style" class="setting-icon" /> 窗框边线颜色:</label>
-            <div class="color-picker-container">
-              <input type="color" v-model="defaultConfigValue.frameStrokeColor" class="color-input" />
-              <input type="text" v-model="defaultConfigValue.frameStrokeColor" class="color-text" placeholder="#颜色代码" />
-            </div>
-          </div>
-          <div class="setting-group">
-            <label><Icon icon="tabler:line-height" class="setting-icon" /> 窗框边线宽度 (px):</label>
-            <input type="number" v-model.number="defaultConfigValue.frameStrokeWidth" min="0" max="5" step="0.5" />
-          </div>
-        </div>
-        
-        <div class="setting-section">
-          <h5><Icon icon="tabler:layout-grid" class="setting-icon" /> 中挺配置</h5>
-          <div class="setting-group">
-            <label><Icon icon="tabler:color-swatch" class="setting-icon" /> 中挺颜色:</label>
-            <div class="color-picker-container">
-              <input type="color" v-model="defaultConfigValue.muntinColor" class="color-input" />
-              <input type="text" v-model="defaultConfigValue.muntinColor" class="color-text" placeholder="#颜色代码" />
-            </div>
-          </div>
-        </div>
-        
-        <div class="setting-section">
-          <h5><Icon icon="tabler:layout-board" class="setting-icon" /> 窗扇配置</h5>
-          <div class="setting-group">
-            <label><Icon icon="tabler:color-swatch" class="setting-icon" /> 窗扇颜色:</label>
-            <div class="color-picker-container">
-              <input type="color" v-model="defaultConfigValue.sashColor" class="color-input" />
-              <input type="text" v-model="defaultConfigValue.sashColor" class="color-text" placeholder="#颜色代码" />
-            </div>
-          </div>
-          <div class="setting-group">
-            <label><Icon icon="tabler:border-style" class="setting-icon" /> 窗扇边线颜色:</label>
-            <div class="color-picker-container">
-              <input type="color" v-model="defaultConfigValue.sashStrokeColor" class="color-input" />
-              <input type="text" v-model="defaultConfigValue.sashStrokeColor" class="color-text" placeholder="#颜色代码" />
-            </div>
-          </div>
-          <div class="setting-group">
-            <label><Icon icon="tabler:line-height" class="setting-icon" /> 窗扇边线宽度 (px):</label>
-            <input type="number" v-model.number="defaultConfigValue.sashStrokeWidth" min="0" max="5" step="0.5" />
-          </div>
-        </div>
-        
-        <div class="setting-section">
-          <h5><Icon icon="tabler:glass" class="setting-icon" /> 玻璃配置</h5>
-          <div class="setting-group">
-            <label><Icon icon="tabler:color-swatch" class="setting-icon" /> 玻璃颜色:</label>
-            <div class="color-picker-container">
-              <input type="color" v-model="defaultConfigValue.glassColor" class="color-input" />
-              <input type="text" v-model="defaultConfigValue.glassColor" class="color-text" placeholder="#颜色代码" />
-            </div>
-          </div>
-          <div class="setting-group">
-            <label><Icon icon="tabler:opacity" class="setting-icon" /> 玻璃透明度: {{ (defaultConfigValue.glassOpacity * 100).toFixed(0) }}%</label>
-            <input type="range" v-model.number="defaultConfigValue.glassOpacity" min="0" max="1" step="0.05" class="slider" />
-            <div class="opacity-hint">
-              <span>不透明</span>
-              <span>透明</span>
-            </div>
-          </div>
-        </div>
-        
-        <!-- 应用默认配置按钮 -->
-        <div class="setting-actions">
-          <button class="apply-all-button" @click="applyToAllElements">
-            <Icon icon="tabler:wand" /> 应用到所有元素
-          </button>
-        </div>
-      </div>
-      
-      <!-- 提示信息 -->
-      <div class="setting-tips">
-        <p><Icon icon="tabler:info-circle" /> 提示: 调整窗户尺寸将重新绘制整个窗户</p>
-        <p><Icon icon="tabler:info-circle" /> 全局默认配置将影响新创建的元素</p>
-        <p><Icon icon="tabler:info-circle" /> 点击"应用到所有元素"可将当前配置应用到所有现有元素</p>
-      </div>
+      <WindowBaseProperties />
     </div>
 
     <!-- 中挺设置面板 -->
@@ -418,10 +301,11 @@ import { useRootWindowStore } from '@/stores/rootWindowStore';
 import { WindowMuntin, defaultConfigValue } from '@/utils/RootWindow';
 import { useEventListener, onKeyStroke } from '@vueuse/core';
 import { Icon } from '@iconify/vue';
+import WindowBaseProperties from './WindowBaseProperties.vue';
 
 const windowStore = useRootWindowStore();
 
-
+// 监听defaultConfigValue变化，用于更新选中的元素
 watch(defaultConfigValue, (newVal) => {
   console.log('defaultConfig updated', newVal);
   const { 
@@ -435,9 +319,6 @@ watch(defaultConfigValue, (newVal) => {
   } = newVal;
   
   nextTick(() => {
-    // 更新窗框颜色
-    windowStore.windowStructure?.frame?.updateColor(frameColor, frameStrokeColor, frameStrokeWidth);
-    
     // 如果有选中的窗扇，应用新的sashFrameThickness
     if (isSashSelected.value && windowStore.selectedElement && windowStore.selectedElement.updateFrameSize) {
       windowStore.selectedElement.updateFrameSize(sashFrameThickness);
@@ -667,14 +548,14 @@ const muntinPosition = computed({
     // 调用父元素的splitArea方法更新分割
     if (windowStore.selectedElement.parent && windowStore.selectedElement.parent.splitArea) {
       const position = muntinDirection.value === 'horizontal' 
-        ? { x: 0, y: newPosition + defaultMuntinThickness.value / 2 } 
-        : { x: newPosition + defaultMuntinThickness.value / 2, y: 0 };
+        ? { x: 0, y: newPosition + defaultConfigValue.defaultMuntinThickness / 2 } 
+        : { x: newPosition + defaultConfigValue.defaultMuntinThickness / 2, y: 0 };
 
       nextTick(() => {
         windowStore.selectedElement.parent.splitArea(
           muntinDirection.value, 
           position, 
-          defaultMuntinThickness.value
+          defaultConfigValue.defaultMuntinThickness
         );
         
         // 分割区域更新后，确保重新选中同一个元素以触发标注更新
@@ -696,7 +577,7 @@ const muntinPosition = computed({
 
 // 计算中挺位置的最小值 (1.5倍中挺厚度)
 const minPosition = computed(() => {
-  return Math.ceil(defaultMuntinThickness.value * 1.5);
+  return Math.ceil(defaultConfigValue.defaultMuntinThickness * 1.5);
 });
 
 // 计算中挺位置的最大值 (父元素尺寸减去安全距离)
@@ -1111,7 +992,7 @@ const muntinBottomPosition = computed({
     if (!parent) return 0;
     
     // 计算下边距 = 父元素高度 - 中挺位置 - 中挺厚度
-    return parent.height - windowStore.selectedElement.y - defaultMuntinThickness.value;
+    return parent.height - windowStore.selectedElement.y - defaultConfigValue.defaultMuntinThickness;
   },
   set: (value) => {
     if (!isMuntinSelected.value || !windowStore.selectedElement || muntinDirection.value !== 'horizontal') return;
@@ -1120,20 +1001,20 @@ const muntinBottomPosition = computed({
     if (!parent) return;
     
     // 根据下边距计算中挺位置 = 父元素高度 - 下边距 - 中挺厚度
-    const newPosition = parent.height - value - defaultMuntinThickness.value;
+    const newPosition = parent.height - value - defaultConfigValue.defaultMuntinThickness;
     
     // 更新中挺位置
     windowStore.selectedElement.y = newPosition;
     
     // 调用父元素的splitArea方法更新分割
     if (windowStore.selectedElement.parent && windowStore.selectedElement.parent.splitArea) {
-      const position = { x: 0, y: newPosition + defaultMuntinThickness.value / 2 };
+      const position = { x: 0, y: newPosition + defaultConfigValue.defaultMuntinThickness / 2 };
 
       nextTick(() => {
         windowStore.selectedElement.parent.splitArea(
           'horizontal', 
           position, 
-          defaultMuntinThickness.value
+          defaultConfigValue.defaultMuntinThickness
         );
       });
     }
@@ -1149,7 +1030,7 @@ const muntinRightPosition = computed({
     if (!parent) return 0;
     
     // 计算右边距 = 父元素宽度 - 中挺位置 - 中挺厚度
-    return parent.width - windowStore.selectedElement.x - defaultMuntinThickness.value;
+    return parent.width - windowStore.selectedElement.x - defaultConfigValue.defaultMuntinThickness;
   },
   set: (value) => {
     if (!isMuntinSelected.value || !windowStore.selectedElement || muntinDirection.value !== 'vertical') return;
@@ -1158,35 +1039,27 @@ const muntinRightPosition = computed({
     if (!parent) return;
     
     // 根据右边距计算中挺位置 = 父元素宽度 - 右边距 - 中挺厚度
-    const newPosition = parent.width - value - defaultMuntinThickness.value;
+    const newPosition = parent.width - value - defaultConfigValue.defaultMuntinThickness;
     
     // 更新中挺位置
     windowStore.selectedElement.x = newPosition;
     
     // 调用父元素的splitArea方法更新分割
     if (windowStore.selectedElement.parent && windowStore.selectedElement.parent.splitArea) {
-      const position = { x: newPosition + defaultMuntinThickness.value / 2, y: 0 };
+      const position = { x: newPosition + defaultConfigValue.defaultMuntinThickness / 2, y: 0 };
 
       nextTick(() => {
         windowStore.selectedElement.parent.splitArea(
           'vertical', 
           position, 
-          defaultMuntinThickness.value
+          defaultConfigValue.defaultMuntinThickness
         );
       });
     }
   }
 });
 
-// 应用到所有元素
-function applyToAllElements() {
-  // 应用到所有元素
-  if (windowStore.windowStructure) {
-    windowStore.windowStructure.applyDefaultConfigToAll();
-  }
-}
-
-// 添加validateMuntinPosition方法
+// 验证中挺位置
 const validateMuntinPosition = (type: 'left' | 'right' | 'top' | 'bottom') => {
   if (!isMuntinSelected.value || !windowStore.selectedElement) return;
   
@@ -1210,23 +1083,23 @@ const validateMuntinPosition = (type: 'left' | 'right' | 'top' | 'bottom') => {
   switch(type) {
     case 'left': // 左边距
       min = 0;
-      max = parentWidth - defaultMuntinThickness.value;
+      max = parentWidth - defaultConfigValue.defaultMuntinThickness;
       currentValue = currentX;
       break;
     case 'right': // 右边距
       min = 0;
-      max = parentWidth - defaultMuntinThickness.value;
-      currentValue = parentWidth - currentX - defaultMuntinThickness.value;
+      max = parentWidth - defaultConfigValue.defaultMuntinThickness;
+      currentValue = parentWidth - currentX - defaultConfigValue.defaultMuntinThickness;
       break;
     case 'top': // 上边距
       min = 0;
-      max = parentHeight - defaultMuntinThickness.value;
+      max = parentHeight - defaultConfigValue.defaultMuntinThickness;
       currentValue = currentY;
       break;
     case 'bottom': // 下边距
       min = 0;
-      max = parentHeight - defaultMuntinThickness.value;
-      currentValue = parentHeight - currentY - defaultMuntinThickness.value;
+      max = parentHeight - defaultConfigValue.defaultMuntinThickness;
+      currentValue = parentHeight - currentY - defaultConfigValue.defaultMuntinThickness;
       break;
   }
   
@@ -1252,7 +1125,7 @@ const updateMuntinPosition = (type: 'left' | 'right' | 'top' | 'bottom', value: 
       break;
     case 'right':
       // 从右边计算x位置
-      windowStore.selectedElement.x = parent.width - value - defaultMuntinThickness.value;
+      windowStore.selectedElement.x = parent.width - value - defaultConfigValue.defaultMuntinThickness;
       break;
     case 'top':
       // 直接设置y位置
@@ -1260,7 +1133,7 @@ const updateMuntinPosition = (type: 'left' | 'right' | 'top' | 'bottom', value: 
       break;
     case 'bottom':
       // 从底部计算y位置
-      windowStore.selectedElement.y = parent.height - value - defaultMuntinThickness.value;
+      windowStore.selectedElement.y = parent.height - value - defaultConfigValue.defaultMuntinThickness;
       break;
   }
   
@@ -1268,14 +1141,14 @@ const updateMuntinPosition = (type: 'left' | 'right' | 'top' | 'bottom', value: 
   if (windowStore.selectedElement.parent.splitArea) {
     const direction = (type === 'left' || type === 'right') ? 'vertical' : 'horizontal';
     const position = direction === 'horizontal'
-      ? { x: 0, y: windowStore.selectedElement.y + defaultMuntinThickness.value / 2 }
-      : { x: windowStore.selectedElement.x + defaultMuntinThickness.value / 2, y: 0 };
+      ? { x: 0, y: windowStore.selectedElement.y + defaultConfigValue.defaultMuntinThickness / 2 }
+      : { x: windowStore.selectedElement.x + defaultConfigValue.defaultMuntinThickness / 2, y: 0 };
     
     nextTick(() => {
       windowStore.selectedElement.parent.splitArea(
         direction,
         position,
-        defaultMuntinThickness.value
+        defaultConfigValue.defaultMuntinThickness
       );
       
       // 分割区域更新后，确保重新选中同一个元素以触发标注更新
