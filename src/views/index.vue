@@ -1,10 +1,3 @@
-<!-- 新版门窗设计工具 -->
-<!-- 结合利用 @vue-konva.min.js 、 @RootWindow.ts，
- 在当前文件实现 @RootWindow.ts 中提到的所有功能， 
- 实现完善 @NewWindowDoorDesign.vue 实现高保真页面及交互功能，
- 擅于利用 vue3 的 computed、watch、watchEffect、ref、reactive 等特性
- 实现 @rootWindowStore.ts 数据管理，组件都提取到 @ src/components/new-window-door 文件夹中去，优化 @RootWindow.ts  -->
-
 <template>
   <div class="window-door-design" :class="{ 'compact-mode': isCompactMode }">
     <el-header class="app-header" height="40px">
@@ -136,11 +129,11 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount, h } from 'vue';
 import { Icon } from '@iconify/vue';
 import { Setting } from '@element-plus/icons-vue';
-import DesignToolbar from '../components/new-window-door/DesignToolbar.vue';
-import WindowCanvas from '../components/new-window-door/WindowCanvas.vue';
+import DesignToolbar from '../components/DesignToolbar.vue';
+import WindowCanvas from '../components/WindowCanvas.vue';
 import { useRootWindowStore } from '../stores/rootWindowStore';
-import SettingPanel from '../components/new-window-door/SettingPanel.vue';
-import MaterialStatsTable from '../components/new-window-door/MaterialStatsTable.vue';
+import SettingPanel from '../components/SettingPanel.vue';
+import MaterialStatsTable from '../components/MaterialStatsTable.vue';
 
 // 导入 Iconify 图标 - 创建组件而不是使用 markRaw
 const RefreshRight = () => h(Icon, { icon: 'tabler:arrow-back-up' });

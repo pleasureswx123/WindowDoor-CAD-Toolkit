@@ -404,8 +404,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
-import { useRootWindowStore } from '../../stores/rootWindowStore';
-import { WindowMuntin, defaultConfigValue } from '../../utils/RootWindow';
+import { useRootWindowStore } from '@/stores/rootWindowStore';
+import { WindowMuntin, defaultConfigValue } from '@/utils/RootWindow';
 import { useEventListener, onKeyStroke } from '@vueuse/core';
 import { Icon } from '@iconify/vue';
 

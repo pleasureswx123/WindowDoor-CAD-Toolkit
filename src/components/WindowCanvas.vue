@@ -121,9 +121,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick, reactive } from 'vue';
-import { useRootWindowStore } from '../../stores/rootWindowStore';
+import { useRootWindowStore } from '@/stores/rootWindowStore';
 import AnnotationMarker from './AnnotationMarker.vue';
-import { WindowStructure, getElementById } from '../../utils/RootWindow';
+import { WindowStructure, getElementById } from '@/utils/RootWindow';
 import { Icon } from '@iconify/vue';
 
 // 获取窗户状态

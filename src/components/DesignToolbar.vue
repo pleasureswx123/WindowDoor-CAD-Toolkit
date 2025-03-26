@@ -271,7 +271,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { useRootWindowStore } from '../../stores/rootWindowStore';
+import { useRootWindowStore } from '@/stores/rootWindowStore';
 import { Icon } from '@iconify/vue';
 import { ArrowDown } from '@element-plus/icons-vue';
 import { loadIcon } from '@iconify/vue';

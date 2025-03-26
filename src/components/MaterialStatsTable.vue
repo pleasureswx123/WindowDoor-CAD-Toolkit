@@ -37,8 +37,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRootWindowStore } from '../../stores/rootWindowStore';
-import { WindowStructure, WindowFrame, WindowEmptyArea, WindowMuntin, WindowSash, WindowSashFrame, WindowSashGlass } from '../../utils/RootWindow';
+import { useRootWindowStore } from '@/stores/rootWindowStore';
+import { WindowStructure, WindowFrame, WindowEmptyArea, WindowMuntin, WindowSash, WindowSashFrame, WindowSashGlass } from '@/utils/RootWindow';
 
 // 定义材料统计项数据结构
 interface MaterialItem {
