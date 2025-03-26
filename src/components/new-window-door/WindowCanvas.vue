@@ -42,7 +42,11 @@
         <!-- 如果时activeTool为split，点击预览线允许穿透，执行stage上的click事件 -->
         <v-line v-if="showPreviewLine" :config="{
           points: previewLinePoints,
-          stroke: isSnapping ? snapLineColor : normalLineColor,
+          stroke: isSnapping 
+            ? (snapTarget && snapTarget.config && snapTarget.config.percentPosition 
+              ? percentSnapLineColor 
+              : snapLineColor) 
+            : normalLineColor,
           strokeWidth: isSnapping ? 3 : 2,
           dash: isSnapping ? [] : [5, 5],
           listening: false
@@ -51,9 +55,24 @@
         <!-- 吸附辅助线 -->
         <v-line v-if="isSnapping && snapLinePoints.length > 0" :config="{
           points: snapLinePoints,
-          stroke: snapLineColor,
+          stroke: snapTarget && snapTarget.config && snapTarget.config.percentPosition ? percentSnapLineColor : snapLineColor,
           strokeWidth: 2,
           dash: [2, 2],
+          listening: false
+        }" />
+
+        <!-- 百分比位置标记 -->
+        <v-text v-if="isSnapping && snapTarget && snapTarget.config && snapTarget.config.percentPosition" :config="{
+          x: windowStore.splitDirection === 'vertical' 
+            ? snapTarget.config.x - 15
+            : windowStore.windowConfig.width / 2 - 15,
+          y: windowStore.splitDirection === 'vertical'
+            ? windowStore.windowConfig.height / 2 - 10
+            : snapTarget.config.y - 15,
+          text: `${snapTarget.config.percentPosition}%`,
+          fontSize: 14,
+          fontFamily: 'Arial',
+          fill: percentSnapLineColor,
           listening: false
         }" />
 
@@ -142,6 +161,7 @@ const isSnapping = ref(false); // 是否正在吸附
 const snapTarget = ref<any>(null); // 吸附目标对象
 const snapThreshold = ref(10); // 吸附阈值（像素）
 const snapLineColor = ref('#00ff00'); // 吸附线颜色
+const percentSnapLineColor = ref('#ff9900'); // 百分比吸附线颜色
 const normalLineColor = ref('#f00'); // 普通预览线颜色
 const snapLinePoints = ref<number[]>([]); // 吸附辅助线的点
 
@@ -409,11 +429,29 @@ function handleStageClick(e: any) {
       if (isSnapping.value && snapTarget.value) {
         // 使用吸附位置
         if (windowStore.splitDirection === 'vertical') {
-          const snapX = snapTarget.value.config.x + snapTarget.value.config.width / 2 - clickedNode.attrs.x;
-          splitPos = { x: snapX, y: 0 };
+          // 检查是否是百分比位置吸附
+          if (snapTarget.value.config && snapTarget.value.config.percentPosition !== undefined) {
+            // 使用百分比位置
+            const percent = snapTarget.value.config.percentPosition;
+            const splitX = (windowStore.windowConfig.width * percent) / 100;
+            splitPos = { x: splitX - clickedNode.attrs.x, y: 0 };
+          } else {
+            // 使用中挺吸附位置
+            const snapX = snapTarget.value.config.x + snapTarget.value.config.width / 2 - clickedNode.attrs.x;
+            splitPos = { x: snapX, y: 0 };
+          }
         } else {
-          const snapY = snapTarget.value.config.y + snapTarget.value.config.height / 2 - clickedNode.attrs.y;
-          splitPos = { x: 0, y: snapY };
+          // 检查是否是百分比位置吸附
+          if (snapTarget.value.config && snapTarget.value.config.percentPosition !== undefined) {
+            // 使用百分比位置
+            const percent = snapTarget.value.config.percentPosition;
+            const splitY = (windowStore.windowConfig.height * percent) / 100;
+            splitPos = { x: 0, y: splitY - clickedNode.attrs.y };
+          } else {
+            // 使用中挺吸附位置
+            const snapY = snapTarget.value.config.y + snapTarget.value.config.height / 2 - clickedNode.attrs.y;
+            splitPos = { x: 0, y: snapY };
+          }
         }
       } else {
         // 使用鼠标位置
@@ -549,10 +587,25 @@ function showSplitPreview(e: any) {
     comp.config && comp.config.ele === 'window-muntin'
   );
   
-  // 垂直分割时查找水平方向最接近的中挺
+  // 计算百分比位置
+  const windowWidth = windowStore.windowConfig.width;
+  const windowHeight = windowStore.windowConfig.height;
+  const percentPositions = [
+    { percent: 25, position: 0 }, 
+    { percent: 50, position: 0 }, 
+    { percent: 75, position: 0 }
+  ];
+  
+  // 垂直分割时查找水平方向最接近的中挺或百分比位置
   if (windowStore.splitDirection === 'vertical') {
+    // 更新百分比位置的实际坐标
+    percentPositions.forEach(pos => {
+      pos.position = (windowWidth * pos.percent) / 100;
+    });
+    
     let closestMuntin = null;
     let minDistance = Infinity;
+    let closestPercent = null;
     
     // 查找所有垂直中挺(方向为vertical)
     const verticalMuntins = muntins.filter(m => 
@@ -571,15 +624,27 @@ function showSplitPreview(e: any) {
       }
     }
     
-    // 判断是否需要吸附
-    if (closestMuntin && minDistance < snapThreshold.value / scale.value) {
-      // 吸附到中挺中心
+    // 寻找距离最近的百分比位置
+    let minPercentDistance = Infinity;
+    for (const pos of percentPositions) {
+      const distance = Math.abs(x - pos.position);
+      if (distance < minPercentDistance) {
+        minPercentDistance = distance;
+        closestPercent = pos;
+      }
+    }
+    
+    // 判断是否需要吸附到中挺或百分比位置
+    const snapThresholdValue = snapThreshold.value / scale.value;
+    
+    if (closestMuntin && minDistance < snapThresholdValue) {
+      // 优先吸附到中挺中心
       const snapX = closestMuntin.config.x + closestMuntin.config.width / 2;
       
       // 绘制垂直分割线（吸附到中挺）
       previewLinePoints.value = [
         snapX, 0,
-        snapX, windowStore.windowConfig.height
+        snapX, windowHeight
       ];
       
       // 设置吸附状态
@@ -591,18 +656,51 @@ function showSplitPreview(e: any) {
         snapX, closestMuntin.config.y,
         snapX, closestMuntin.config.y + closestMuntin.config.height
       ];
+    } else if (closestPercent && minPercentDistance < snapThresholdValue) {
+      // 吸附到百分比位置
+      const snapX = closestPercent.position;
+      
+      // 绘制垂直分割线（吸附到百分比位置）
+      previewLinePoints.value = [
+        snapX, 0,
+        snapX, windowHeight
+      ];
+      
+      // 设置吸附状态
+      isSnapping.value = true;
+      snapTarget.value = {
+        config: {
+          x: snapX - 0.5, // 调整为线的中心位置
+          y: 0,
+          width: 1,
+          height: windowHeight,
+          percentPosition: closestPercent.percent
+        }
+      };
+      
+      // 添加辅助指示线 - 显示一个短的提示线表示百分比位置
+      snapLinePoints.value = [
+        snapX, 0,                 // 修改为从顶部
+        snapX, windowHeight      // 到底部的完整线条
+      ];
     } else {
       // 正常绘制垂直分割线
       previewLinePoints.value = [
         x, 0,
-        x, windowStore.windowConfig.height
+        x, windowHeight
       ];
       snapLinePoints.value = [];
     }
   } else {
-    // 水平分割时查找垂直方向最接近的中挺
+    // 水平分割时查找垂直方向最接近的中挺或百分比位置
+    // 更新百分比位置的实际坐标
+    percentPositions.forEach(pos => {
+      pos.position = (windowHeight * pos.percent) / 100;
+    });
+    
     let closestMuntin = null;
     let minDistance = Infinity;
+    let closestPercent = null;
     
     // 查找所有水平中挺(方向为horizontal)
     const horizontalMuntins = muntins.filter(m => 
@@ -621,15 +719,27 @@ function showSplitPreview(e: any) {
       }
     }
     
-    // 判断是否需要吸附
-    if (closestMuntin && minDistance < snapThreshold.value / scale.value) {
-      // 吸附到中挺中心
+    // 寻找距离最近的百分比位置
+    let minPercentDistance = Infinity;
+    for (const pos of percentPositions) {
+      const distance = Math.abs(y - pos.position);
+      if (distance < minPercentDistance) {
+        minPercentDistance = distance;
+        closestPercent = pos;
+      }
+    }
+    
+    // 判断是否需要吸附到中挺或百分比位置
+    const snapThresholdValue = snapThreshold.value / scale.value;
+    
+    if (closestMuntin && minDistance < snapThresholdValue) {
+      // 优先吸附到中挺中心
       const snapY = closestMuntin.config.y + closestMuntin.config.height / 2;
       
       // 绘制水平分割线（吸附到中挺）
       previewLinePoints.value = [
         0, snapY,
-        windowStore.windowConfig.width, snapY
+        windowWidth, snapY
       ];
       
       // 设置吸附状态
@@ -641,11 +751,38 @@ function showSplitPreview(e: any) {
         closestMuntin.config.x, snapY,
         closestMuntin.config.x + closestMuntin.config.width, snapY
       ];
+    } else if (closestPercent && minPercentDistance < snapThresholdValue) {
+      // 吸附到百分比位置
+      const snapY = closestPercent.position;
+      
+      // 绘制水平分割线（吸附到百分比位置）
+      previewLinePoints.value = [
+        0, snapY,
+        windowWidth, snapY
+      ];
+      
+      // 设置吸附状态
+      isSnapping.value = true;
+      snapTarget.value = {
+        config: {
+          x: 0,
+          y: snapY - 0.5, // 调整为线的中心位置
+          width: windowWidth,
+          height: 1,
+          percentPosition: closestPercent.percent
+        }
+      };
+      
+      // 添加辅助指示线 - 显示一个短的提示线表示百分比位置
+      snapLinePoints.value = [
+        0, snapY,                // 修改为从左侧
+        windowWidth, snapY       // 到右侧的完整线条
+      ];
     } else {
       // 正常绘制水平分割线
       previewLinePoints.value = [
         0, y,
-        windowStore.windowConfig.width, y
+        windowWidth, y
       ];
       snapLinePoints.value = [];
     }
