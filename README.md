@@ -1,59 +1,121 @@
 # 门窗设计工具
 
-## 功能概述
+一个基于Vue 3 + TypeScript + Konva的专业门窗设计工具，用于创建和编辑门窗的CAD效果图。
 
-这是一个基于Vue 3、Pinia和Vue Konva的门窗设计工具，用于门窗行业的工程制图。该工具允许用户：
+## 功能特点
 
-1. 创建和编辑门窗布局
-2. 调整框架尺寸和类型
-3. 按垂直或水平方向分割区域
-4. 设置不同的开启方式（左开、右开、倾斜等）
-5. 自动显示度量标注
+- 🎨 专业的门窗设计界面
+- 📏 精确的尺寸标注系统
+- 🎯 智能吸附对齐
+- 🔄 实时预览
+- 📊 材料统计
+- 💾 设计方案保存与加载
+- 🖼️ 多种视图模式
+- 🛠️ 丰富的设计工具
 
-## 组件结构
+## 技术栈
+
+- Vue 3.5.13
+- TypeScript 5.7.3
+- Vite 6.1.0
+- Element Plus 2.9.6
+- vue-konva 3.2.0
+- Konva 9.3.18
+- Pinia 3.0.1
+- Vue Router 4.5.0
+
+## 项目结构
 
 ```
-WindowDoor/
-├── WindowDoorApp.vue      # 入口组件
-├── RootFrame.vue          # 主画布框架组件
-├── Section.vue            # 区域组件
-├── SectionEdit.vue        # 区域编辑控制组件
-├── Sash.vue               # 窗框组件
-├── Glass.vue              # 玻璃组件
-├── Handle.vue             # 把手组件
-├── OpeningDirection.vue   # 开启方向组件
-├── Devider.vue            # 分隔线组件
-├── Metrics.vue            # 度量组件
-├── VerticalMetric.vue     # 垂直度量组件
-└── HorizontalMetric.vue   # 水平度量组件
+src/
+├── assets/        # 静态资源
+├── components/    # 组件
+│   ├── WindowCanvas.vue        # 画布主组件
+│   ├── DesignToolbar.vue      # 设计工具栏
+│   ├── SettingPanel.vue       # 设置面板
+│   ├── MaterialStatsTable.vue # 材料统计表
+│   └── AnnotationMarker.vue   # 标注组件
+├── stores/        # 状态管理
+├── types/         # 类型定义
+├── utils/         # 工具函数
+├── views/         # 页面视图
+└── router/        # 路由配置
 ```
 
-## 状态管理
+## 开发环境要求
 
-使用Pinia进行状态管理，主要存储：
+- Node.js >= 18.0.0
+- npm >= 9.0.0
 
-```typescript
-// src/stores/windowDoorStore.ts
+## 安装
+
+```bash
+# 安装依赖
+cnpm install
 ```
 
-这个存储维护了整个门窗设计的数据结构，包括区域、分隔线、选中状态等。
+## 开发
 
-## 使用方法
+```bash
+# 启动开发服务器
+cnpm run dev
+```
 
-1. 在路由中访问 `/window-door-design` 进入设计界面
-2. 点击任意区域进行选择
-3. 使用控制面板更改区域类型和框架尺寸
-4. 使用"垂直分割"或"水平分割"按钮创建复杂布局
-5. 查看自动生成的尺寸标注
+## 构建
 
-## 扩展点
+```bash
+# 构建生产版本
+cnpm run build
+```
 
-1. 添加保存和加载功能
-2. 增加更多的门窗类型和开启方式
-3. 支持更复杂的尺寸约束
-4. 添加材质和配件选择
-5. 集成报价计算功能
+## 预览
 
-## 参考资料
+```bash
+# 预览生产构建
+cnpm run preview
+```
 
-此组件基于React版本的同类工具重新实现，使用了Vue 3的组合式API和Pinia状态管理。 
+## 主要功能模块
+
+### 1. 画布系统 (WindowCanvas)
+- 支持缩放、平移
+- 智能吸附对齐
+- 实时预览
+- 标注系统
+
+### 2. 设计工具栏 (DesignToolbar)
+- 分割工具
+- 中挺设置
+- 材料选择
+- 样式调整
+
+### 3. 设置面板 (SettingPanel)
+- 窗户属性设置
+- 材料参数配置
+- 样式定制
+- 保存加载
+
+### 4. 材料统计 (MaterialStatsTable)
+- 实时材料用量计算
+- 成本估算
+- 数据导出
+
+## 使用说明
+
+1. 创建新项目
+2. 设置基础参数
+3. 使用分割工具设计布局
+4. 添加中挺和配件
+5. 调整材料和样式
+6. 添加标注
+7. 导出设计方案
+
+## 注意事项
+
+- 保存前请确保所有参数设置正确
+- 建议定期保存设计方案
+- 大型项目可能需要更多的系统资源
+
+## 许可证
+
+[MIT License](LICENSE) 
