@@ -2,6 +2,8 @@ import { ref, computed, watch, reactive } from 'vue'
 import { defineStore } from 'pinia'
 import { WindowStructure, getElementById, elementIdMap } from '../utils/RootWindow'
 import { v4 as uuidv4 } from 'uuid';
+import { saveWindowDesign, getWindowDesignById, getWindowDesignList, deleteWindowDesign, generateThumbnail } from '../utils/IndexedDBService';
+import type { WindowDesign } from '../utils/IndexedDBService';
 
 export const useRootWindowStore = defineStore('rootWindowStore', () => {
   // 窗户基本配置
@@ -18,6 +20,16 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
   const historyStep = ref(-1); // 当前历史位置
   const maxHistoryLength = 50; // 最大历史长度
   const isUndoRedoAction = ref(false); // 是否正在执行撤销/重做操作
+  
+  // 当前窗户设计的ID和名称
+  const currentDesignId = ref<string | null>(null);
+  const currentDesignName = ref<string>('未命名设计');
+  
+  // 保存窗户设计列表
+  const windowDesignList = ref<WindowDesign[]>([]);
+  
+  // 加载中状态
+  const isLoading = ref(false);
 
   function setSelectedElement(id: string) {
     if (id) {
@@ -55,6 +67,10 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
       windowConfig.height,
       windowConfig.frameSize
     );
+    
+    // 重置当前设计ID和名称
+    currentDesignId.value = null;
+    currentDesignName.value = '未命名设计';
     
     // 初始化后记录初始状态
     if (!isUndoRedoAction.value) {
@@ -121,6 +137,8 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
   
   // 重建窗户结构
   function rebuildWindowStructure(config: any) {
+    if (!config) return;
+
     // 创建新的窗户结构
     windowStructure.value = new WindowStructure(
       config.width || windowConfig.width,
@@ -132,9 +150,48 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
     if (config.width) windowConfig.width = config.width;
     if (config.height) windowConfig.height = config.height;
     if (config.frameSize) windowConfig.frameSize = config.frameSize;
-    
-    // TODO: 可以进一步根据保存的配置重建所有中挺和窗扇
-    // 这需要一个完整的递归实现，根据保存的结构和类型重建每个元素
+
+    // 递归重建窗户结构
+    function rebuildElement(element: any, parentArea: any = null) {
+      if (!element || !windowStructure.value) return;
+
+      const area = parentArea || windowStructure.value.mainArea;
+
+      // 处理分割区域
+      if (element.splitDirection && element.children && element.children.length > 0) {
+        // 计算分割位置
+        const splitPosition = {
+          x: element.splitDirection === 'vertical' ? 
+            element.children[1].x + element.children[1].width / 2 : 
+            0,
+          y: element.splitDirection === 'horizontal' ? 
+            element.children[1].y + element.children[1].height / 2 : 
+            0
+        };
+
+        // 分割区域
+        area.splitArea(element.splitDirection, splitPosition);
+
+        // 递归处理子区域
+        element.children.forEach((child: any, index: number) => {
+          // 跳过中挺（index === 1）
+          if (index !== 1 && area.children) {
+            // 使用对应的子区域作为父区域
+            const childArea = index === 0 ? area.children[0] : area.children[2];
+            rebuildElement(child, childArea);
+          }
+        });
+      }
+      // 处理窗扇
+      else if (element.sash && !area.children.length) {
+        area.addSash(element.sash.sashType || 'fixed');
+      }
+    }
+
+    // 开始从主区域重建
+    if (config.mainArea) {
+      rebuildElement(config.mainArea);
+    }
   }
   
   // 删除选中元素
@@ -244,6 +301,157 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
     
     // 添加后记录新状态
     recordCurrentState();
+  }
+  
+  // 创建新窗户
+  function createNewWindow(width: number, height: number, frameSize: number, name: string = '未命名设计') {
+    // 更新窗户配置
+    windowConfig.width = width;
+    windowConfig.height = height;
+    windowConfig.frameSize = frameSize;
+    
+    // 更新设计名称
+    currentDesignName.value = name;
+    currentDesignId.value = null;
+    
+    // 初始化窗户
+    initializeWindow();
+    
+    // 重置视图
+    resetView();
+    
+    return true;
+  }
+  
+  // 保存窗户设计到IndexedDB
+  async function saveWindowDesignToDB(name?: string, getThumbnail?: () => string): Promise<string | null> {
+    try {
+      if (!windowStructure.value) {
+        console.error('没有可保存的窗户设计');
+        return null;
+      }
+      
+      // 如果提供了新名称，则更新当前设计名称
+      if (name) {
+        currentDesignName.value = name;
+      }
+      
+      // 导出窗户配置
+      const config = exportWindowConfig();
+      
+      // 获取缩略图
+      let thumbnail = '';
+      if (getThumbnail) {
+        thumbnail = getThumbnail();
+      }
+      
+      // 保存到数据库
+      const savedId = await saveWindowDesign({
+        id: currentDesignId.value || undefined,
+        name: currentDesignName.value,
+        width: windowConfig.width,
+        height: windowConfig.height,
+        frameSize: windowConfig.frameSize,
+        thumbnail,
+        data: config
+      });
+      
+      // 更新当前设计ID
+      currentDesignId.value = savedId;
+      
+      // 刷新窗户设计列表
+      await loadWindowDesignList();
+      
+      console.log('窗户设计保存成功:', savedId);
+      return savedId;
+    } catch (error) {
+      console.error('保存窗户设计失败:', error);
+      return null;
+    }
+  }
+  
+  // 加载窗户设计列表
+  async function loadWindowDesignList() {
+    try {
+      isLoading.value = true;
+      windowDesignList.value = await getWindowDesignList();
+      console.log('加载窗户设计列表成功, 共', windowDesignList.value.length, '个设计');
+    } catch (error) {
+      console.error('加载窗户设计列表失败:', error);
+    } finally {
+      isLoading.value = false;
+    }
+  }
+  
+  // 清除历史记录
+  function clearHistory() {
+    // 清除选中元素
+    selectedElement.value = null;
+    selectedArea.value = null;
+    selectedMuntin.value = null;
+    selectedSash.value = null;
+    
+    // 重置视图
+    resetView();
+    
+    // 重置历史记录
+    history.value = [];
+    historyStep.value = -1;
+
+    // 清空元素ID映射
+    for (const key of elementIdMap.keys()) {
+      elementIdMap.delete(key);
+    }
+  }
+  
+  // 加载窗户设计
+  async function loadWindowDesign(id: string) {
+    try {
+      const design = await getWindowDesignById(id);
+      if (!design) {
+        throw new Error('未找到窗户设计');
+      }
+
+      // 更新当前设计ID和名称
+      currentDesignId.value = design.id;
+      currentDesignName.value = design.name;
+
+      // 清除历史记录
+      clearHistory();
+
+      // 重建窗户结构
+      rebuildWindowStructure(design.data);
+
+      // 记录初始状态
+      recordCurrentState();
+
+      return true;
+    } catch (error) {
+      console.error('加载窗户设计失败:', error);
+      throw error;
+    }
+  }
+  
+  // 删除窗户设计
+  async function deleteWindowDesignFromDB(id: string): Promise<boolean> {
+    try {
+      await deleteWindowDesign(id);
+      
+      // 如果删除的是当前设计，则重置当前设计
+      if (currentDesignId.value === id) {
+        initializeWindow();
+        resetView();
+      }
+      
+      // 刷新窗户设计列表
+      await loadWindowDesignList();
+      
+      console.log('删除窗户设计成功:', id);
+      return true;
+    } catch (error) {
+      console.error('删除窗户设计失败:', error);
+      return false;
+    }
   }
   
   // 导出窗户配置
@@ -363,6 +571,16 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
     clearDesign,
     // 暴露历史相关状态用于调试
     history,
-    historyStep
+    historyStep,
+    // 暴露IndexedDB相关方法和状态
+    createNewWindow,
+    saveWindowDesignToDB,
+    loadWindowDesignList,
+    loadWindowDesign,
+    deleteWindowDesignFromDB,
+    windowDesignList,
+    currentDesignId,
+    currentDesignName,
+    isLoading
   }
 })

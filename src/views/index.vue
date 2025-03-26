@@ -7,10 +7,14 @@
           <el-button :icon="DeleteFilled" size="small" title="清空设计" @click="confirmClear" />
         </el-button-group>
         <el-divider direction="vertical" />
-        <el-button :icon="Message" size="small" @click="saveDesign">保存设计</el-button>
+        <el-button-group>
+          <el-button :icon="Plus" size="small" @click="showNewDesignDialog = true">新建</el-button>
+          <el-button :icon="FolderOpened" size="small" @click="openHistoryDesigns">历史</el-button>
+          <el-button :icon="Message" size="small" @click="saveDesign">保存</el-button>
+        </el-button-group>
       </div>
       <div class="header-title">
-        <span>门窗设计工具</span>
+        <span>{{ windowStore.currentDesignName || '未命名设计' }}</span>
       </div>
       <div class="header-right">
         <el-tooltip content="切换紧凑模式" placement="bottom">
@@ -79,9 +83,9 @@
 
             <h3>单位设置</h3>
             <el-radio-group v-model="units">
-              <el-radio-button label="mm">毫米</el-radio-button>
-              <el-radio-button label="cm">厘米</el-radio-button>
-              <el-radio-button label="inch">英寸</el-radio-button>
+              <el-radio-button value="mm">毫米</el-radio-button>
+              <el-radio-button value="cm">厘米</el-radio-button>
+              <el-radio-button value="inch">英寸</el-radio-button>
             </el-radio-group>
           </div>
         </el-tab-pane>
@@ -122,18 +126,127 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 新建窗户设计对话框 -->
+    <el-dialog 
+      v-model="showNewDesignDialog" 
+      title="新建窗户设计" 
+      width="400px" 
+      :close-on-click-modal="false"
+    >
+      <el-form :model="newDesignForm" label-position="top">
+        <el-form-item label="设计名称">
+          <el-input v-model="newDesignForm.name" placeholder="请输入设计名称" />
+        </el-form-item>
+        <el-form-item label="窗户宽度 (mm)">
+          <el-input-number v-model="newDesignForm.width" :min="500" :max="10000" :step="50" />
+        </el-form-item>
+        <el-form-item label="窗户高度 (mm)">
+          <el-input-number v-model="newDesignForm.height" :min="500" :max="10000" :step="50" />
+        </el-form-item>
+        <el-form-item label="窗框尺寸 (mm)">
+          <el-input-number v-model="newDesignForm.frameSize" :min="30" :max="200" :step="5" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="showNewDesignDialog = false">取消</el-button>
+          <el-button type="primary" @click="createNewDesign">创建</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 保存设计对话框 -->
+    <el-dialog 
+      v-model="showSaveDesignDialog" 
+      title="保存窗户设计" 
+      width="400px" 
+      :close-on-click-modal="false"
+    >
+      <el-form :model="saveDesignForm">
+        <el-form-item label="设计名称">
+          <el-input v-model="saveDesignForm.name" placeholder="请输入设计名称" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="showSaveDesignDialog = false">取消</el-button>
+          <el-button type="primary" @click="saveDesignToIndexedDB">保存</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 历史窗户设计列表对话框 -->
+    <el-dialog 
+      v-model="showHistoryDesignDialog" 
+      title="历史窗户设计" 
+      width="800px" 
+      :close-on-click-modal="false"
+      destroy-on-close
+    >
+      <div v-if="windowStore.isLoading" class="loading-container">
+        <el-icon class="is-loading"><loading /></el-icon>
+        <span>加载中...</span>
+      </div>
+      <div v-else-if="windowStore.windowDesignList.length === 0" class="empty-designs">
+        <el-icon><CirclePlus /></el-icon>
+        <p>没有历史设计，点击新建创建一个新的窗户设计</p>
+      </div>
+      <el-scrollbar v-else height="500px">
+        <div class="design-list">
+          <div v-for="design in windowStore.windowDesignList" :key="design.id" class="design-item">
+            <div class="design-thumbnail" @click="loadDesign(design.id)">
+              <img v-if="design.thumbnail" :src="design.thumbnail" alt="设计缩略图" />
+              <div v-else class="no-thumbnail">
+                <span>暂无预览</span>
+              </div>
+            </div>
+            <div class="design-info">
+              <h3>{{ design.name }}</h3>
+              <p>尺寸: {{ design.width }} × {{ design.height }} mm</p>
+              <p>创建时间: {{ formatDate(design.createdAt) }}</p>
+              <p>更新时间: {{ formatDate(design.updatedAt) }}</p>
+            </div>
+            <div class="design-actions">
+              <el-button-group>
+                <el-button type="primary" size="small" @click="loadDesign(design.id)">打开</el-button>
+                <el-button type="danger" size="small" @click="confirmDeleteDesign(design)">删除</el-button>
+              </el-button-group>
+            </div>
+          </div>
+        </div>
+      </el-scrollbar>
+    </el-dialog>
+
+    <!-- 确认删除设计对话框 -->
+    <el-dialog
+      v-model="showDeleteDesignConfirmDialog"
+      title="确认删除"
+      width="300px"
+      :close-on-click-modal="false"
+    >
+      <span>确定要删除设计 "{{ designToDelete?.name || '' }}" 吗？此操作不可恢复。</span>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="showDeleteDesignConfirmDialog = false">取消</el-button>
+          <el-button type="danger" @click="deleteDesign">确定删除</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, h } from 'vue';
+import { ElMessage } from 'element-plus';
 import { Icon } from '@iconify/vue';
-import { Setting } from '@element-plus/icons-vue';
+import { Setting, Loading, CirclePlus } from '@element-plus/icons-vue';
 import DesignToolbar from '../components/DesignToolbar.vue';
 import WindowCanvas from '../components/WindowCanvas.vue';
 import { useRootWindowStore } from '../stores/rootWindowStore';
 import SettingPanel from '../components/SettingPanel.vue';
 import MaterialStatsTable from '../components/MaterialStatsTable.vue';
+import type { WindowDesign } from '../utils/IndexedDBService';
 
 // 导入 Iconify 图标 - 创建组件而不是使用 markRaw
 const RefreshRight = () => h(Icon, { icon: 'tabler:arrow-back-up' });
@@ -145,6 +258,8 @@ const FoldIcon = () => h(Icon, { icon: 'tabler:layout-sidebar-right-collapse' })
 const ExpandIcon = () => h(Icon, { icon: 'tabler:layout-sidebar-right-expand' });
 const Delete = () => h(Icon, { icon: 'tabler:trash' });
 const DeleteFilled = () => h(Icon, { icon: 'tabler:trash-filled' });
+const Plus = () => h(Icon, { icon: 'tabler:plus' });
+const FolderOpened = () => h(Icon, { icon: 'tabler:folder' });
 
 // store
 const windowStore = useRootWindowStore();
@@ -162,6 +277,29 @@ const showGrid = ref(true);
 const showDimensions = ref(true);
 const units = ref('mm');
 const showClearConfirmDialog = ref(false);
+
+// 新建设计相关
+const showNewDesignDialog = ref(false);
+const newDesignForm = ref({
+  name: '新窗户设计',
+  width: 1000,
+  height: 1000,
+  frameSize: 50
+});
+
+// 保存设计相关
+const showSaveDesignDialog = ref(false);
+const saveDesignForm = ref({
+  name: ''
+});
+
+// 历史设计相关
+const showHistoryDesignDialog = ref(false);
+const showDeleteDesignConfirmDialog = ref(false);
+const designToDelete = ref<WindowDesign | null>(null);
+
+// Canvas引用
+const canvasRef = ref<typeof WindowCanvas | null>(null);
 
 // 记录是否为移动设备
 const isMobile = ref(window.innerWidth < 768);
@@ -246,35 +384,122 @@ function applySettings() {
   showSettings.value = false;
 }
 
+// 格式化日期
+function formatDate(date: Date | string): string {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+}
+
+// 创建新窗户设计
+function createNewDesign() {
+  windowStore.createNewWindow(
+    newDesignForm.value.width,
+    newDesignForm.value.height,
+    newDesignForm.value.frameSize,
+    newDesignForm.value.name
+  );
+  
+  showNewDesignDialog.value = false;
+}
+
 // 保存设计
 function saveDesign() {
-  windowStore.exportWindowConfig();
+  saveDesignForm.value.name = windowStore.currentDesignName;
+  showSaveDesignDialog.value = true;
 }
 
-// 响应窗口大小变化
-function handleResize() {
-  isMobile.value = window.innerWidth < 768;
-  if (isMobile.value) {
-    isCompactMode.value = true;
-  }
-}
-
-// 监听移动设备状态，自动打开侧边栏
-watch(isCompactMode, (newValue) => {
-  if (newValue && isMobile.value) {
-    // 在紧凑模式下，如果有选中元素，自动打开设置抽屉
-    if (windowStore.selectedElement) {
-      showSettingDrawer.value = true;
+// 保存设计到IndexedDB
+async function saveDesignToIndexedDB() {
+  // 获取窗口Canvas组件引用，以便生成缩略图
+  const canvasElement = document.querySelector('.design-canvas canvas') as HTMLCanvasElement | null;
+  
+  // 保存到IndexedDB
+  const getThumbnail = () => {
+    if (canvasElement) {
+      try {
+        return canvasElement.toDataURL('image/png');
+      } catch (e) {
+        console.error('生成缩略图失败:', e);
+      }
     }
+    return '';
+  };
+  
+  const savedId = await windowStore.saveWindowDesignToDB(saveDesignForm.value.name, getThumbnail);
+  
+  if (savedId) {
+    // 显示成功消息
+    ElMessage({
+      message: '设计保存成功',
+      type: 'success'
+    });
+  } else {
+    // 显示错误消息
+    ElMessage({
+      message: '设计保存失败',
+      type: 'error'
+    });
   }
-});
+  
+  showSaveDesignDialog.value = false;
+}
 
-// 监听元素选择状态，在紧凑模式下自动打开设置抽屉
-watch(() => windowStore.selectedElement, (newValue) => {
-  if (newValue && isCompactMode.value && isMobile.value) {
-    showSettingDrawer.value = true;
+// 打开历史窗户设计列表
+async function openHistoryDesigns() {
+  // 加载历史设计列表
+  await windowStore.loadWindowDesignList();
+  showHistoryDesignDialog.value = true;
+}
+
+// 加载指定ID的设计
+async function loadDesign(id: string) {
+  const success = await windowStore.loadWindowDesign(id);
+  
+  if (success) {
+    showHistoryDesignDialog.value = false;
+    // 显示成功消息
+    ElMessage({
+      message: '设计加载成功',
+      type: 'success'
+    });
+  } else {
+    // 显示错误消息
+    ElMessage({
+      message: '设计加载失败',
+      type: 'error'
+    });
   }
-});
+}
+
+// 确认删除设计
+function confirmDeleteDesign(design: WindowDesign) {
+  designToDelete.value = design;
+  showDeleteDesignConfirmDialog.value = true;
+}
+
+// 删除设计
+async function deleteDesign() {
+  if (!designToDelete.value) return;
+  
+  const success = await windowStore.deleteWindowDesignFromDB(designToDelete.value.id);
+  
+  if (success) {
+    // 显示成功消息
+    ElMessage({
+      message: '设计删除成功',
+      type: 'success'
+    });
+  } else {
+    // 显示错误消息
+    ElMessage({
+      message: '设计删除失败',
+      type: 'error'
+    });
+  }
+  
+  showDeleteDesignConfirmDialog.value = false;
+  designToDelete.value = null;
+}
 
 // 显示材料统计对话框
 function showMaterialStats() {
@@ -300,10 +525,40 @@ function clearDesign() {
 onMounted(() => {
   window.addEventListener('resize', handleResize);
   handleResize();
+  
+  // 初始化窗户设计
+  if (!windowStore.windowStructure.value) {
+    windowStore.initializeWindow();
+  }
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
+});
+
+// 响应窗口大小变化
+function handleResize() {
+  isMobile.value = window.innerWidth < 768;
+  if (isMobile.value) {
+    isCompactMode.value = true;
+  }
+}
+
+// 监听移动设备状态，自动打开侧边栏
+watch(isCompactMode, (newValue) => {
+  if (newValue && isMobile.value) {
+    // 在紧凑模式下，如果有选中元素，自动打开设置抽屉
+    if (windowStore.selectedElement) {
+      showSettingDrawer.value = true;
+    }
+  }
+});
+
+// 监听元素选择状态，在紧凑模式下自动打开设置抽屉
+watch(() => windowStore.selectedElement, (newValue) => {
+  if (newValue && isCompactMode.value && isMobile.value) {
+    showSettingDrawer.value = true;
+  }
 });
 </script>
 
@@ -443,5 +698,98 @@ onBeforeUnmount(() => {
   .header-title {
     font-size: 12px;
   }
+}
+
+/* 添加历史设计列表样式 */
+.design-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  padding: 10px;
+}
+
+.design-item {
+  border: 1px solid #3e3e3e;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #252525;
+  display: flex;
+  flex-direction: column;
+}
+
+.design-thumbnail {
+  height: 200px;
+  background-color: #1e1e1e;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.design-thumbnail img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.no-thumbnail {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  color: #777;
+  font-size: 14px;
+}
+
+.design-info {
+  padding: 10px;
+  flex: 1;
+}
+
+.design-info h3 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  color: #fff;
+}
+
+.design-info p {
+  margin: 5px 0;
+  font-size: 12px;
+  color: #bbb;
+}
+
+.design-actions {
+  padding: 10px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #3e3e3e;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.loading-container .el-icon {
+  font-size: 30px;
+}
+
+.empty-designs {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  color: #777;
+}
+
+.empty-designs .el-icon {
+  font-size: 40px;
+  margin-bottom: 20px;
 }
 </style>
