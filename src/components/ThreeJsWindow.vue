@@ -862,17 +862,17 @@ function animateWindow(windowObj, open) {
   if (open) {
     // 根据铰链边缘设置旋转轴和角度
     if (hingeEdge === 'left') {
-      // 左侧铰链 - 向外打开45度，绕Y轴正方向旋转
-      windowObj.rotation.set(0, Math.PI / 4, 0); // 45度
-      console.log(`设置左侧铰链旋转: Y轴 ${Math.PI / 4} 弧度（45度）`);
-    } else if (hingeEdge === 'right') {
-      // 右侧铰链 - 向外打开45度，绕Y轴负方向旋转
+      // 左侧铰链 - 向内打开45度，绕Y轴负方向旋转
       windowObj.rotation.set(0, -Math.PI / 4, 0); // -45度
-      console.log(`设置右侧铰链旋转: Y轴 ${-Math.PI / 4} 弧度（-45度）`);
+      console.log(`设置左侧铰链旋转: Y轴 ${-Math.PI / 4} 弧度（-45度）- 向内打开`);
+    } else if (hingeEdge === 'right') {
+      // 右侧铰链 - 向内打开45度，绕Y轴正方向旋转
+      windowObj.rotation.set(0, Math.PI / 4, 0); // 45度
+      console.log(`设置右侧铰链旋转: Y轴 ${Math.PI / 4} 弧度（45度）- 向内打开`);
     } else if (hingeEdge === 'bottom') {
-      // 底部铰链 - 向外打开45度，绕X轴正方向旋转
-      windowObj.rotation.set(Math.PI / 4, 0, 0); // 45度
-      console.log(`设置底部铰链旋转: X轴 ${Math.PI / 4} 弧度（45度）`);
+      // 底部铰链 - 向内打开45度，绕X轴负方向旋转
+      windowObj.rotation.set(-Math.PI / 4, 0, 0); // -45度
+      console.log(`设置底部铰链旋转: X轴 ${-Math.PI / 4} 弧度（-45度）- 向内打开`);
     }
     
     // 添加动画标志
