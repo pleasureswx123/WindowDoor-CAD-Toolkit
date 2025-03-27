@@ -196,8 +196,8 @@
     </el-dialog>
     
     <!-- 3D视图对话框 -->
-    <el-dialog v-model="show3DViewDialog" title="3D窗户视图" width="80%" :close-on-click-modal="true"
-      :fullscreen="isMobile" destroy-on-close>
+    <el-dialog v-model="show3DViewDialog" title="3D窗户视图" width="90%" :close-on-click-modal="true"
+      :fullscreen="true" destroy-on-close>
       <div class="three-js-container">
         <ThreeJsWindow ref="threeJsWindowRef" :width="threeJsWidth" :height="threeJsHeight" />
       </div>
@@ -520,7 +520,7 @@ const updateThreeJsContainerSize = () => {
   const container = document.querySelector('.three-js-container');
   if (container) {
     threeJsWidth.value = container.clientWidth;
-    threeJsHeight.value = Math.min(container.clientWidth * 0.75, window.innerHeight * 0.7);
+    threeJsHeight.value = Math.min(container.clientWidth * 0.75, window.innerHeight * 0.8);
   }
 };
 
@@ -818,7 +818,7 @@ watch(() => windowStore.selectedElement, (newValue) => {
 
 .three-js-container {
   width: 100%;
-  height: 70vh;
+  height: 80vh;
   min-height: 400px;
 }
 
