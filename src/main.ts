@@ -15,6 +15,8 @@ import 'element-plus/dist/index.css'
 // @ts-ignore 忽略zh-cn.mjs的类型声明
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 
+// 引入Element Plus图标
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 const app = createApp(App)
 
@@ -30,6 +32,11 @@ app.use(ElementPlus, {
 
 // 全局注册 Icon 组件
 app.component('Icon', Icon);
+
+// 全局注册所有 Element Plus 图标组件
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(key, component)
+}
 
 // 引入VueKonva
 app.use(VueKonva)

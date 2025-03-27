@@ -193,6 +193,14 @@
             </el-button>
           </div>
         </el-tooltip>
+
+        <el-tooltip content="3D视图" placement="right">
+          <div class="tool-wrapper">
+            <el-button class="tool-button" @click="show3DView" @tap="show3DView">
+              <Icon icon="tabler:3d-cube-sphere" class="tool-icon" />
+            </el-button>
+          </div>
+        </el-tooltip>
       </div>
     </div>
 
@@ -275,6 +283,16 @@ import { useRootWindowStore } from '@/stores/rootWindowStore';
 import { Icon } from '@iconify/vue';
 import { ArrowDown } from '@element-plus/icons-vue';
 import { loadIcon } from '@iconify/vue';
+import { 
+  ArrowDownBold, 
+  ArrowRightBold, 
+  Pointer, 
+  ZoomIn, 
+  ZoomOut, 
+  View, 
+  DataAnalysis,
+  ThreeDRotation
+} from '@element-plus/icons-vue';
 
 const props = defineProps({
   isCompact: {
@@ -284,7 +302,7 @@ const props = defineProps({
 });
 
 // Emits
-const emit = defineEmits(['toggle-preview', 'show-material-stats']);
+const emit = defineEmits(['toggle-preview', 'show-material-stats', 'show-3d-view']);
 
 const windowStore = useRootWindowStore();
 
@@ -513,6 +531,11 @@ function showMaterialStats() {
   // 触发自定义事件，让父组件显示材料统计
   emit('show-material-stats');
 }
+
+// 3D视图
+const show3DView = () => {
+  emit('show-3d-view');
+};
 
 // 在onMounted中添加空格键相关事件监听
 onMounted(() => {

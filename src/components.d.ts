@@ -111,6 +111,7 @@ declare module 'vue' {
     SizeControlPanel: typeof import('./components/WindowDoor/SizeControlPanel.vue')['default']
     TestButton: typeof import('./components/TestButton.vue')['default']
     TheWelcome: typeof import('./components/TheWelcome.vue')['default']
+    ThreeJsWindow: typeof import('./components/ThreeJsWindow.vue')['default']
     WelcomeItem: typeof import('./components/WelcomeItem.vue')['default']
     WindowBaseProperties: typeof import('./components/WindowBaseProperties.vue')['default']
     WindowCanvas: typeof import('./components/WindowCanvas.vue')['default']

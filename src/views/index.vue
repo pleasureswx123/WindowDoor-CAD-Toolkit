@@ -30,7 +30,7 @@
       <el-container>
         <el-aside :width="isCompactMode ? '60px' : '75px'" class="design-toolbar-container">
           <DesignToolbar class="design-toolbar" :is-compact="isCompactMode" @toggle-preview="togglePreview"
-            @show-material-stats="showMaterialStats" />
+            @show-material-stats="showMaterialStats" @show-3d-view="show3DView" />
         </el-aside>
 
         <el-main class="design-workspace">
@@ -194,11 +194,27 @@
         </div>
       </template>
     </el-dialog>
+    
+    <!-- 3D视图对话框 -->
+    <el-dialog v-model="show3DViewDialog" title="3D窗户视图" width="80%" :close-on-click-modal="true"
+      :fullscreen="isMobile" destroy-on-close>
+      <div class="three-js-container">
+        <ThreeJsWindow ref="threeJsWindowRef" :width="threeJsWidth" :height="threeJsHeight" />
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="show3DViewDialog = false">关闭</el-button>
+          <el-button type="primary" @click="toggleWindowOpen">
+            {{ isWindowOpen ? '关闭窗户' : '打开窗户' }}
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount, h } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount, h, nextTick } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Icon } from '@iconify/vue';
 import { Setting, Loading, CirclePlus } from '@element-plus/icons-vue';
@@ -208,6 +224,8 @@ import { useRootWindowStore } from '../stores/rootWindowStore';
 import SettingPanel from '../components/SettingPanel.vue';
 import MaterialStatsTable from '../components/MaterialStatsTable.vue';
 import type { WindowDesign } from '../utils/IndexedDBService';
+import WindowBaseProperties from '@/components/WindowBaseProperties.vue';
+import ThreeJsWindow from '@/components/ThreeJsWindow.vue';
 
 // 导入 Iconify 图标 - 创建组件而不是使用 markRaw
 const RefreshRight = () => h(Icon, { icon: 'tabler:arrow-back-up' });
@@ -262,8 +280,13 @@ const designToDelete = ref<WindowDesign | null>(null);
 // Canvas引用
 const canvasRef = ref<typeof WindowCanvas | null>(null);
 
-// 记录是否为移动设备
-const isMobile = ref(window.innerWidth < 768);
+// 3D视图相关
+const show3DViewDialog = ref(false);
+const threeJsWindowRef = ref(null);
+const isWindowOpen = ref(false);
+const threeJsWidth = ref(800);
+const threeJsHeight = ref(600);
+const isMobile = ref(false);
 
 // 判断选中的元素类型
 const selectedElementInfo = computed(() => {
@@ -483,6 +506,32 @@ function clearDesign() {
   showClearConfirmDialog.value = false;
 }
 
+// 打开3D视图
+const show3DView = () => {
+  show3DViewDialog.value = true;
+  // 重新计算3D视图大小
+  nextTick(() => {
+    updateThreeJsContainerSize();
+  });
+};
+
+// 更新3D视图容器大小
+const updateThreeJsContainerSize = () => {
+  const container = document.querySelector('.three-js-container');
+  if (container) {
+    threeJsWidth.value = container.clientWidth;
+    threeJsHeight.value = Math.min(container.clientWidth * 0.75, window.innerHeight * 0.7);
+  }
+};
+
+// 切换窗户开关状态
+const toggleWindowOpen = () => {
+  isWindowOpen.value = !isWindowOpen.value;
+  if (threeJsWindowRef.value) {
+    threeJsWindowRef.value.toggleWindowOpen();
+  }
+};
+
 onMounted(() => {
   window.addEventListener('resize', handleResize);
   handleResize();
@@ -491,10 +540,19 @@ onMounted(() => {
   if (!windowStore.windowStructure.value) {
     windowStore.initializeWindow();
   }
+
+  window.addEventListener('resize', () => {
+    isMobile.value = window.innerWidth <= 768;
+    // 如果3D视图对话框打开，则更新容器大小
+    if (show3DViewDialog.value) {
+      updateThreeJsContainerSize();
+    }
+  });
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
+  window.removeEventListener('resize', () => {});
 });
 
 // 响应窗口大小变化
@@ -756,5 +814,17 @@ watch(() => windowStore.selectedElement, (newValue) => {
 .empty-designs .el-icon {
   font-size: 40px;
   margin-bottom: 20px;
+}
+
+.three-js-container {
+  width: 100%;
+  height: 70vh;
+  min-height: 400px;
+}
+
+@media (max-width: 768px) {
+  .three-js-container {
+    height: calc(100vh - 120px);
+  }
 }
 </style>
