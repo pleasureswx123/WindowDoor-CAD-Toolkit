@@ -21,7 +21,7 @@
           <el-button :icon="isCompactMode ? ExpandIcon : FoldIcon" size="small" circle @click="toggleCompactMode" />
         </el-tooltip>
         <el-tooltip content="设置" placement="bottom">
-          <el-button :icon="Setting" size="small" circle @click="showSettings = true" />
+          <el-button :icon="SettingIcon" size="small" circle @click="showSettings = true" />
         </el-tooltip>
       </div>
     </el-header>
@@ -148,13 +148,13 @@
       destroy-on-close>
       <div v-if="windowStore.isLoading" class="loading-container">
         <el-icon class="is-loading">
-          <loading />
+          <LoadingIcon />
         </el-icon>
         <span>加载中...</span>
       </div>
       <div v-else-if="windowStore.windowDesignList.length === 0" class="empty-designs">
         <el-icon>
-          <CirclePlus />
+          <CirclePlusIcon />
         </el-icon>
         <p>没有历史设计，点击新建创建一个新的窗户设计</p>
       </div>
@@ -199,7 +199,12 @@
     <el-dialog v-model="show3DViewDialog" title="3D窗户视图" width="90%" :close-on-click-modal="true"
       :fullscreen="true" destroy-on-close>
       <div class="three-js-container">
-        <ThreeJsWindow ref="threeJsWindowRef" :width="threeJsWidth" :height="threeJsHeight" />
+        <ThreeJsWindow 
+          ref="threeJsWindowRef" 
+          :width="threeJsWidth" 
+          :height="threeJsHeight" 
+          :window-structure="windowStore.windowStructure || undefined"
+          :window-config="windowStore.windowConfig" />
       </div>
       <template #footer>
         <div class="dialog-footer">
@@ -217,7 +222,6 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount, h, nextTick } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Icon } from '@iconify/vue';
-import { Setting, Loading, CirclePlus } from '@element-plus/icons-vue';
 import DesignToolbar from '../components/DesignToolbar.vue';
 import WindowCanvas from '../components/WindowCanvas.vue';
 import { useRootWindowStore } from '../stores/rootWindowStore';
@@ -239,6 +243,9 @@ const Delete = () => h(Icon, { icon: 'tabler:trash' });
 const DeleteFilled = () => h(Icon, { icon: 'tabler:trash-filled' });
 const Plus = () => h(Icon, { icon: 'tabler:plus' });
 const FolderOpened = () => h(Icon, { icon: 'tabler:folder' });
+const SettingIcon = () => h(Icon, { icon: 'tabler:settings' });
+const LoadingIcon = () => h(Icon, { icon: 'tabler:loader' });
+const CirclePlusIcon = () => h(Icon, { icon: 'tabler:circle-plus' });
 
 // store
 const windowStore = useRootWindowStore();
@@ -282,7 +289,7 @@ const canvasRef = ref<typeof WindowCanvas | null>(null);
 
 // 3D视图相关
 const show3DViewDialog = ref(false);
-const threeJsWindowRef = ref(null);
+const threeJsWindowRef = ref<InstanceType<typeof ThreeJsWindow> | null>(null);
 const isWindowOpen = ref(false);
 const threeJsWidth = ref(800);
 const threeJsHeight = ref(600);
@@ -537,7 +544,7 @@ onMounted(() => {
   handleResize();
   
   // 初始化窗户设计
-  if (!windowStore.windowStructure.value) {
+  if (!windowStore.windowStructure) {
     windowStore.initializeWindow();
   }
 

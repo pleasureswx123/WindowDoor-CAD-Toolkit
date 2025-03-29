@@ -2,7 +2,7 @@
   <div class="three-js-window" ref="container">
     <!-- 加载状态指示器 -->
     <div class="loading-overlay" v-if="isLoading">
-      <el-icon class="is-loading"><loading /></el-icon>
+      <el-icon class="is-loading"><LoadingIcon /></el-icon>
       <span>正在渲染3D模型...</span>
     </div>
     
@@ -11,7 +11,31 @@
       <div class="control-buttons">
         <el-tooltip content="重置视图" placement="top">
           <el-button circle size="small" @click="resetCamera">
-            <el-icon><Refresh /></el-icon>
+            <el-icon><RefreshIcon /></el-icon>
+          </el-button>
+        </el-tooltip>
+        
+        <el-tooltip content="3D视角" placement="top">
+          <el-button circle size="small" @click="view3D">
+            <el-icon><Icon3d /></el-icon>
+          </el-button>
+        </el-tooltip>
+        
+        <el-tooltip content="正面视图" placement="top">
+          <el-button circle size="small" @click="viewFront">
+            <el-icon><IconFront /></el-icon>
+          </el-button>
+        </el-tooltip>
+        
+        <el-tooltip content="侧面视图" placement="top">
+          <el-button circle size="small" @click="viewSide">
+            <el-icon><IconSide /></el-icon>
+          </el-button>
+        </el-tooltip>
+        
+        <el-tooltip content="顶部视图" placement="top">
+          <el-button circle size="small" @click="viewTop">
+            <el-icon><IconTop /></el-icon>
           </el-button>
         </el-tooltip>
         
@@ -22,7 +46,7 @@
             circle 
             size="small" 
             @click="toggleWindowOpen">
-            <el-icon><SwitchButton /></el-icon>
+            <el-icon><SwitchIcon /></el-icon>
           </el-button>
         </el-tooltip>
       </div>
@@ -43,12 +67,82 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, watch, nextTick, h } from 'vue';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSG } from 'three-csg-ts';
-import { useRootWindowStore } from '@/stores/rootWindowStore';
-import { Refresh } from '@element-plus/icons-vue';
+import { Icon } from '@iconify/vue';
+
+// 创建iconify图标组件
+const RefreshIcon = () => h(Icon, { icon: 'tabler:refresh' });
+const SwitchIcon = () => h(Icon, { icon: 'tabler:toggle-right' });
+const LoadingIcon = () => h(Icon, { icon: 'tabler:loading' });
+const Icon3d = () => h(Icon, { icon: 'tabler:view-3d' });
+const IconFront = () => h(Icon, { icon: 'tabler:layout-navbar' });
+const IconSide = () => h(Icon, { icon: 'tabler:layout-sidebar' });
+const IconTop = () => h(Icon, { icon: 'tabler:layout-bottombar' });
+
+// 添加窗户结构和配置的接口定义
+interface WindowConfig {
+  width: number;
+  height: number;
+  frameSize: number;
+}
+
+interface WindowArea {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  tag?: string;
+  direction?: 'vertical' | 'horizontal';
+  thickness?: number;
+  children?: WindowArea[];
+  sash?: {
+    sashType: string;
+    frameSize: number;
+    glass?: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+    handle?: {
+      x: number;
+      y: number;
+    };
+  };
+  mainArea?: WindowArea;
+}
+
+interface WindowStructure {
+  frame: any;
+  mainArea: WindowArea;
+  frameSize: number;
+  width: number;
+  height: number;
+}
+
+// 窗户用户数据类型定义
+interface WindowUserData {
+  isWindow?: boolean;
+  isAnimatable?: boolean;
+  originalSashType?: string;
+  sashType?: string;
+  width?: number;
+  height?: number;
+  hingeEdge?: string;
+  handlePos?: {x: number, y: number};
+  isOpen?: boolean;
+  type?: string;
+}
+
+// 性能和调试设置
+const DEBUG_MODE = false; // 是否启用调试日志
+const USE_TEXTURE_CACHE = true; // 是否缓存纹理
+const USE_GEOMETRY_CACHE = true; // 是否缓存几何体
+const TARGET_FPS = 60; // 目标帧率
 
 // Props定义
 const props = defineProps({
@@ -59,16 +153,30 @@ const props = defineProps({
   height: {
     type: Number,
     default: 600
+  },
+  windowStructure: {
+    type: Object as () => WindowStructure,
+    required: true
+  },
+  windowConfig: {
+    type: Object as () => WindowConfig,
+    required: true
+  },
+  initialOpen: {
+    type: Boolean,
+    default: false
   }
 });
 
-// 状态管理
-const windowStore = useRootWindowStore();
+// 定义事件
+const emit = defineEmits(['window-open-changed', 'loading-changed']);
+
+// 状态管理 - 移除对store的引用
 const container = ref<HTMLElement | null>(null);
 const isLoading = ref(true);
 const showAnimationControls = ref(false);
 const animationSpeed = ref(1.0);
-const isWindowOpen = ref(false);
+const isWindowOpen = ref(props.initialOpen);
 
 // Three.js相关变量
 let scene: THREE.Scene;
@@ -104,69 +212,234 @@ const materials: {
 
 // 环境贴图
 let envMap: THREE.Texture | null = null;
+
+// 资源缓存
+const textureCache = new Map<string, THREE.Texture>();
+const geometryCache = {
+  box: new Map<string, THREE.BoxGeometry>(),
+  cylinder: new Map<string, THREE.CylinderGeometry>(),
+  sphere: new Map<string, THREE.SphereGeometry>()
+};
+
+// 性能监控变量
+let frameCount = 0;
+let lastFpsTime = 0;
+let currentFps = 0;
+
+// 添加相机位置和目标的ref声明，用于跟踪相机移动
+const cameraPosition = ref(new THREE.Vector3());
+const controlsTarget = ref(new THREE.Vector3());
+
+// 创建窗口动画变量
+const isAnimationRunning = ref(true);
+const windowCasement = ref<THREE.Group | null>(null);
+const isWindowMoving = ref(false);
+const lastAnimTime = ref(Date.now());
+const windowAnimSpeed = ref(1.5);
+const isOpening = ref(false);
+const windowOpenAngle = ref(0);
+const maxOpenAngle = ref(Math.PI / 4); // 45度
+const animationFrameId = ref<number | null>(null);
+
+// 创建相机位置动画变量
+const cameraAnimationFrame = ref<number | null>(null);
+let cameraAnimationStartTime = 0;
+let cameraAnimationStartPosition = new THREE.Vector3();
+let cameraAnimationTargetPosition = new THREE.Vector3();
+let cameraAnimationStartTarget = new THREE.Vector3();
+let cameraAnimationEndTarget = new THREE.Vector3();
+let cameraAnimationDuration = 500;
+
+// 调试日志函数
+function debugLog(...args: any[]): void {
+  if (DEBUG_MODE) {
+    console.log(...args);
+  }
+}
+
+// 资源管理模块
+const ResourceManager = {
+  // 纹理缓存
+  textureCache: new Map<string, THREE.Texture>(),
+  
+  // 几何体缓存
+  geometryCache: {
+    box: new Map<string, THREE.BoxGeometry>(),
+    cylinder: new Map<string, THREE.CylinderGeometry>(),
+    sphere: new Map<string, THREE.SphereGeometry>()
+  },
+  
+  // 加载纹理
+  loadTexture(url: string, callback: (texture: THREE.Texture) => void): void {
+    if (USE_TEXTURE_CACHE && this.textureCache.has(url)) {
+      debugLog(`使用缓存的纹理: ${url}`);
+      callback(this.textureCache.get(url)!);
+      return;
+    }
+    
+    textureLoader.load(
+      url, // 正确传递url作为第一个参数
+      // 成功回调
+      (texture: THREE.Texture) => { // 明确指定texture类型
+        if (USE_TEXTURE_CACHE) {
+          this.textureCache.set(url, texture);
+          debugLog(`缓存纹理: ${url}`);
+        }
+        callback(texture);
+      },
+      // 进度回调
+      undefined,
+      // 错误回调
+      (err) => {
+        console.error(`加载纹理失败: ${url}`, err);
+      }
+    );
+  },
+  
+  // 获取几何体 - 盒子
+  getBoxGeometry(width: number, height: number, depth: number): THREE.BoxGeometry {
+    if (!USE_GEOMETRY_CACHE) {
+      return new THREE.BoxGeometry(width, height, depth);
+    }
+    
+    const key = `${width.toFixed(4)}_${height.toFixed(4)}_${depth.toFixed(4)}`;
+    if (!this.geometryCache.box.has(key)) {
+      this.geometryCache.box.set(key, new THREE.BoxGeometry(width, height, depth));
+      debugLog(`创建新的盒体几何体: ${key}`);
+    } else {
+      debugLog(`使用缓存的盒体几何体: ${key}`);
+    }
+    return this.geometryCache.box.get(key)!;
+  },
+  
+  // 获取几何体 - 圆柱体
+  getCylinderGeometry(radiusTop: number, radiusBottom: number, height: number): THREE.CylinderGeometry {
+    if (!USE_GEOMETRY_CACHE) {
+      return new THREE.CylinderGeometry(radiusTop, radiusBottom, height);
+    }
+    
+    const key = `${radiusTop.toFixed(4)}_${radiusBottom.toFixed(4)}_${height.toFixed(4)}`;
+    if (!this.geometryCache.cylinder.has(key)) {
+      this.geometryCache.cylinder.set(key, new THREE.CylinderGeometry(radiusTop, radiusBottom, height));
+      debugLog(`创建新的圆柱体几何体: ${key}`);
+    } else {
+      debugLog(`使用缓存的圆柱体几何体: ${key}`);
+    }
+    return this.geometryCache.cylinder.get(key)!;
+  },
+  
+  // 获取几何体 - 球体
+  getSphereGeometry(radius: number): THREE.SphereGeometry {
+    if (!USE_GEOMETRY_CACHE) {
+      return new THREE.SphereGeometry(radius);
+    }
+    
+    const key = `${radius.toFixed(4)}`;
+    if (!this.geometryCache.sphere.has(key)) {
+      this.geometryCache.sphere.set(key, new THREE.SphereGeometry(radius));
+      debugLog(`创建新的球体几何体: ${key}`);
+    } else {
+      debugLog(`使用缓存的球体几何体: ${key}`);
+    }
+    return this.geometryCache.sphere.get(key)!;
+  },
+  
+  // 清理资源
+  dispose(): void {
+    // 清理几何体缓存
+    if (USE_GEOMETRY_CACHE) {
+      this.geometryCache.box.forEach(geometry => geometry.dispose());
+      this.geometryCache.box.clear();
+      
+      this.geometryCache.cylinder.forEach(geometry => geometry.dispose());
+      this.geometryCache.cylinder.clear();
+      
+      this.geometryCache.sphere.forEach(geometry => geometry.dispose());
+      this.geometryCache.sphere.clear();
+    }
+    
+    // 清理纹理缓存
+    if (USE_TEXTURE_CACHE) {
+      this.textureCache.forEach(texture => texture.dispose());
+      this.textureCache.clear();
+    }
+  }
+};
+
 // 纹理加载器
 const textureLoader = new THREE.TextureLoader();
-// 纹理加载计数
-let texturesLoaded = 0;
-const totalTexturesToLoad = 4; // 要加载的纹理总数
 
 // 加载纹理
 function loadTextures() {
   isLoading.value = true;
   
-  // 加载木材纹理
-  const woodColorMap = textureLoader.load('/textures/Wood066_1K-JPG/Wood066_1K-JPG_Color.jpg', textureLoaded);
-  const woodNormalMap = textureLoader.load('/textures/Wood066_1K-JPG/Wood066_1K-JPG_NormalGL.jpg', textureLoaded);
-  const woodRoughnessMap = textureLoader.load('/textures/Wood066_1K-JPG/Wood066_1K-JPG_Roughness.jpg', textureLoaded);
+  // 纹理URL
+  const woodColorMapUrl = '/textures/Wood066_1K-JPG/Wood066_1K-JPG_Color.jpg';
+  const woodNormalMapUrl = '/textures/Wood066_1K-JPG/Wood066_1K-JPG_NormalGL.jpg';
+  const woodRoughnessMapUrl = '/textures/Wood066_1K-JPG/Wood066_1K-JPG_Roughness.jpg';
   
-  // 设置纹理重复
-  woodColorMap.wrapS = woodColorMap.wrapT = THREE.RepeatWrapping;
-  woodNormalMap.wrapS = woodNormalMap.wrapT = THREE.RepeatWrapping;
-  woodRoughnessMap.wrapS = woodRoughnessMap.wrapT = THREE.RepeatWrapping;
+  // 跟踪加载进度
+  let loadedCount = 0;
+  const totalToLoad = 3;
   
-  // 创建木材材质
-  materials.frame = new THREE.MeshStandardMaterial({ 
-    map: woodColorMap,
-    normalMap: woodNormalMap,
-    roughnessMap: woodRoughnessMap,
-    color: 0xffffff, // 使用白色让纹理显示原色
-    roughness: 0.7,
-    metalness: 0.1
+  // 当所有纹理加载完毕时调用此函数
+  const checkAllLoaded = () => {
+    loadedCount++;
+    debugLog(`纹理加载进度: ${loadedCount}/${totalToLoad}`);
+    
+    if (loadedCount >= totalToLoad) {
+      debugLog('所有纹理加载完成');
+      createWindow();
+    }
+  };
+  
+  // 加载木材颜色纹理
+  ResourceManager.loadTexture(woodColorMapUrl, (woodColorMap) => {
+    woodColorMap.wrapS = woodColorMap.wrapT = THREE.RepeatWrapping;
+    
+    // 加载木材法线纹理
+    ResourceManager.loadTexture(woodNormalMapUrl, (woodNormalMap) => {
+      woodNormalMap.wrapS = woodNormalMap.wrapT = THREE.RepeatWrapping;
+      
+      // 加载木材粗糙度纹理
+      ResourceManager.loadTexture(woodRoughnessMapUrl, (woodRoughnessMap) => {
+        woodRoughnessMap.wrapS = woodRoughnessMap.wrapT = THREE.RepeatWrapping;
+        
+        // 创建木材材质
+        materials.frame = new THREE.MeshStandardMaterial({ 
+          map: woodColorMap,
+          normalMap: woodNormalMap,
+          roughnessMap: woodRoughnessMap,
+          color: 0xffffff, // 使用白色让纹理显示原色
+          roughness: 0.7,
+          metalness: 0.1
+        });
+        
+        // 创建完全透明的玻璃材质
+        materials.glass = new THREE.MeshPhysicalMaterial({
+          color: 0xffffff,
+          transmission: 1.0,     // 完全透射
+          thickness: 0.2,        // 减小厚度
+          roughness: 0.0,        // 完全平滑
+          metalness: 0.0,        // 无金属感
+          clearcoat: 0.0,        // 移除清漆效果
+          ior: 1.45,             // 玻璃的折射率
+          reflectivity: 0.2,     // 低反射率
+          transparent: true,     // 启用透明
+          opacity: 0.2,          // 非常低的不透明度
+          side: THREE.DoubleSide,// 双面渲染
+          envMapIntensity: 0.5,  // 减少环境贴图强度
+          depthWrite: false      // 禁用深度写入以改善透明渲染
+        });
+        
+        checkAllLoaded();
+      });
+      
+      checkAllLoaded();
+    });
+    
+    checkAllLoaded();
   });
-  
-  // 创建完全透明的玻璃材质
-  materials.glass = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff,
-    transmission: 1.0,     // 完全透射
-    thickness: 0.2,        // 减小厚度
-    roughness: 0.0,        // 完全平滑
-    metalness: 0.0,        // 无金属感
-    clearcoat: 0.0,        // 移除清漆效果
-    ior: 1.45,             // 玻璃的折射率
-    reflectivity: 0.2,     // 低反射率
-    transparent: true,     // 启用透明
-    opacity: 0.2,          // 非常低的不透明度
-    side: THREE.DoubleSide,// 双面渲染
-    envMapIntensity: 0.5,  // 减少环境贴图强度
-    depthWrite: false      // 禁用深度写入以改善透明渲染
-  });
-  
-  texturesLoaded += 4; // 标记所有纹理已加载
-  
-  // 所有纹理都加载完成后，创建窗户模型
-  if (texturesLoaded >= totalTexturesToLoad) {
-    createWindow();
-  }
-}
-
-// 纹理加载完成回调
-function textureLoaded() {
-  texturesLoaded++;
-  
-  // 所有纹理都加载完成后，创建窗户模型
-  if (texturesLoaded >= totalTexturesToLoad) {
-    createWindow();
-  }
 }
 
 // 初始化场景
@@ -225,8 +498,12 @@ function useBackupEnvironment() {
 // 初始化相机
 function initCamera() {
   const aspect = props.width / props.height;
-  camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
+  camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000); // 增加FOV到60度，提供更广阔的视野
   camera.position.set(0, 0, 5);
+  
+  // 启用相机动画效果的设置
+  camera.userData.targetPosition = new THREE.Vector3(0, 0, 5);
+  camera.userData.animationDuration = 500; // 动画持续时间(毫秒)
 }
 
 // 初始化渲染器
@@ -254,10 +531,14 @@ function initControls() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
-  controls.rotateSpeed = 0.7;
-  controls.maxPolarAngle = Math.PI / 1.5;
-  controls.minDistance = 2;
-  controls.maxDistance = 20;
+  controls.rotateSpeed = 0.8; // 增加旋转速度
+  controls.maxPolarAngle = Math.PI * 0.85; // 允许更广的仰角
+  controls.minPolarAngle = 0.1; // 设置最小极角，避免从正下方观察
+  controls.minDistance = 1;   // 减小最小距离
+  controls.maxDistance = 30;  // 增加最大距离
+  controls.enablePan = true;  // 启用平移
+  controls.panSpeed = 0.8;    // 设置平移速度
+  controls.screenSpacePanning = true; // 使用屏幕空间平移，更加直观
   controls.target.set(0, 0, 0);
 }
 
@@ -288,8 +569,9 @@ function addHelpers() {
 // 创建窗户模型
 function createWindow() {
   try {
-    console.log('开始创建窗户模型');
+    debugLog('开始创建窗户模型');
     isLoading.value = true;
+    emit('loading-changed', true);
     
     // 清除之前的窗户组
     if (windowGroup) {
@@ -303,20 +585,22 @@ function createWindow() {
     scene.add(windowGroup);
     
     // 获取窗户配置
-    const windowConfig = windowStore.windowConfig;
+    const windowConfig = props.windowConfig;
     if (!windowConfig) {
       console.warn('窗户配置不存在');
       isLoading.value = false;
+      emit('loading-changed', false);
       return;
     }
     
-    console.log('窗户配置:', windowConfig);
+    debugLog('窗户配置:', windowConfig);
     
     // 获取窗户数据
-    const windowStructure = windowStore.windowStructure;
+    const windowStructure = props.windowStructure;
     if (!windowStructure || !windowStructure.mainArea) {
       console.warn('窗户结构或主区域不存在');
       isLoading.value = false;
+      emit('loading-changed', false);
       return;
     }
     
@@ -338,16 +622,21 @@ function createWindow() {
     // 设置相机位置以查看整个窗户
     resetCamera();
     
-    console.log('窗户模型创建完成');
+    debugLog('窗户模型创建完成');
   } catch (error) {
     console.error('创建窗户模型失败:', error);
   } finally {
     isLoading.value = false;
+    emit('loading-changed', false);
   }
 }
 
 // 构建窗户模型主函数
-function buildWindowModel(windowStructure, windowConfig, scaleFactor) {
+function buildWindowModel(
+  windowStructure: WindowStructure, 
+  windowConfig: WindowConfig, 
+  scaleFactor: number
+) {
   const { width, height, frameSize } = windowConfig;
   
   // 计算缩放后的尺寸
@@ -355,8 +644,8 @@ function buildWindowModel(windowStructure, windowConfig, scaleFactor) {
   const scaledHeight = height * scaleFactor;
   const scaledFrameSize = frameSize * scaleFactor;
   
-  console.log(`窗户物理尺寸: ${width}x${height}mm, 框架厚度: ${frameSize}mm`);
-  console.log(`转换为Three.js单位: ${scaledWidth}x${scaledHeight}, 框架: ${scaledFrameSize}`);
+  debugLog(`窗户物理尺寸: ${width}x${height}mm, 框架厚度: ${frameSize}mm`);
+  debugLog(`转换为Three.js单位: ${scaledWidth}x${scaledHeight}, 框架: ${scaledFrameSize}`);
   
   // 创建外框 - 居中放置
   createOuterFrame(scaledWidth, scaledHeight, scaledFrameSize);
@@ -366,13 +655,17 @@ function buildWindowModel(windowStructure, windowConfig, scaleFactor) {
 }
 
 // 创建外框
-function createOuterFrame(totalWidth, totalHeight, frameThickness) {
+function createOuterFrame(
+  totalWidth: number, 
+  totalHeight: number, 
+  frameThickness: number
+) {
   // 创建窗户外框几何体
   try {
     // 外框尺寸
     const outerBox = new THREE.Mesh(
-      new THREE.BoxGeometry(totalWidth, totalHeight, 0.05),
-      materials.frame
+      ResourceManager.getBoxGeometry(totalWidth, totalHeight, 0.05),
+      materials.frame || new THREE.MeshStandardMaterial({ color: 0x8B4513 })
     );
     
     // 内框尺寸（用于挖空）
@@ -380,28 +673,34 @@ function createOuterFrame(totalWidth, totalHeight, frameThickness) {
     const innerHeight = totalHeight - frameThickness * 2;
     
     const innerBox = new THREE.Mesh(
-      new THREE.BoxGeometry(innerWidth, innerHeight, 0.06),
-      materials.frame
+      ResourceManager.getBoxGeometry(innerWidth, innerHeight, 0.06),
+      materials.frame || new THREE.MeshStandardMaterial({ color: 0x8B4513 })
     );
     
     // 执行CSG减法操作创建带孔的外框
     const frameCSG = CSG.subtract(outerBox, innerBox);
-    frameCSG.material = materials.frame;
+    frameCSG.material = materials.frame || new THREE.MeshStandardMaterial({ color: 0x8B4513 });
     frameCSG.position.set(innerWidth / 2, innerHeight / 2, 0);
     frameCSG.name = "outerFrame";
     
     // 将外框添加到窗户组中
     windowGroup.add(frameCSG);
     
-    console.log(`创建窗户外框: ${totalWidth}x${totalHeight}, 框架厚度: ${frameThickness}`);
-    console.log(`外框位置: (${frameCSG.position.x}, ${frameCSG.position.y}, ${frameCSG.position.z})`);
+    debugLog(`创建窗户外框: ${totalWidth}x${totalHeight}, 框架厚度: ${frameThickness}`);
+    debugLog(`外框位置: (${frameCSG.position.x}, ${frameCSG.position.y}, ${frameCSG.position.z})`);
   } catch (error) {
     console.error('创建窗户外框失败:', error);
   }
 }
 
 // 创建窗户内容区域
-function createWindowContent(mainArea, totalWidth, totalHeight, frameThickness, scaleFactor) {
+function createWindowContent(
+  mainArea: WindowArea, 
+  totalWidth: number,
+  totalHeight: number, 
+  frameThickness: number, 
+  scaleFactor: number
+) {
   // 创建内容容器
   const contentGroup = new THREE.Group();
   contentGroup.name = "contentGroup";
@@ -417,7 +716,12 @@ function createWindowContent(mainArea, totalWidth, totalHeight, frameThickness, 
 }
 
 // 递归处理窗户区域
-function processWindowArea(area, parentGroup, scaleFactor, depth = 0) {
+function processWindowArea(
+  area: WindowArea, 
+  parentGroup: THREE.Group, 
+  scaleFactor: number, 
+  depth = 0
+) {
   if (!area) return;
   
   // 获取缩放后的尺寸和位置
@@ -455,13 +759,13 @@ function processWindowArea(area, parentGroup, scaleFactor, depth = 0) {
   
   // 打印区域信息
   const indent = '  '.repeat(depth);
-  console.log(`${indent}处理区域: ${area.id}, 类型: ${area.tag || 'area'}`);
-  console.log(`${indent}位置: (${areaX}, ${areaY}), 尺寸: ${areaWidth}x${areaHeight}`);
-  console.log(`${indent}在场景中的位置: (${areaGroup.position.x}, ${areaGroup.position.y}, ${areaGroup.position.z})`);
+  debugLog(`${indent}处理区域: ${area.id}, 类型: ${area.tag || 'area'}`);
+  debugLog(`${indent}位置: (${areaX}, ${areaY}), 尺寸: ${areaWidth}x${areaHeight}`);
+  debugLog(`${indent}在场景中的位置: (${areaGroup.position.x}, ${areaGroup.position.y}, ${areaGroup.position.z})`);
   
   // 记录额外信息
   if (area.sash) {
-    console.log(`${indent}窗扇类型: ${area.sash.sashType}`);
+    debugLog(`${indent}窗扇类型: ${area.sash.sashType}`);
     areaGroup.userData.originalSashType = area.sash.sashType;
   }
   
@@ -477,15 +781,15 @@ function processWindowArea(area, parentGroup, scaleFactor, depth = 0) {
     // 特别标记可动画区域
     if (area.sash.sashType !== 'fixed') {
       areaGroup.userData.isAnimatable = true;
-      console.log(`${indent}标记可动画窗扇: ${area.id}, 类型: ${area.sash.sashType}`);
+      debugLog(`${indent}标记可动画窗扇: ${area.id}, 类型: ${area.sash.sashType}`);
     }
   }
   else if (area.children && area.children.length > 0) {
     // 处理子区域
-    console.log(`${indent}处理子区域: 数量=${area.children.length}`);
+    debugLog(`${indent}处理子区域: 数量=${area.children.length}`);
     
     // 递归处理子区域
-    area.children.forEach((child, index) => {
+    area.children.forEach((child: WindowArea, index: number) => {
       if (child) {
         processWindowArea(child, areaGroup, scaleFactor, depth + 1);
       }
@@ -498,23 +802,34 @@ function processWindowArea(area, parentGroup, scaleFactor, depth = 0) {
 }
 
 // 创建中挺
-function createMuntin(area, parentGroup, width, height, scaleFactor) {
+function createMuntin(
+  area: WindowArea, 
+  parentGroup: THREE.Group, 
+  width: number, 
+  height: number, 
+  scaleFactor: number
+) {
   let muntinWidth, muntinHeight, posX, posY;
   
   if (area.direction === 'vertical') {
-    muntinWidth = area.thickness * scaleFactor;
+    muntinWidth = (area.thickness || 20) * scaleFactor;
     muntinHeight = height;
     posX = width / 2;
     posY = height / 2;
   } else {
     muntinWidth = width;
-    muntinHeight = area.thickness * scaleFactor;
+    muntinHeight = (area.thickness || 20) * scaleFactor;
     posX = width / 2;
     posY = height / 2;
   }
   
-  const muntinGeometry = new THREE.BoxGeometry(muntinWidth, muntinHeight, 0.04);
-  const muntinMesh = new THREE.Mesh(muntinGeometry, materials.frame);
+  // 使用缓存的几何体
+  const geometry = ResourceManager.getBoxGeometry(muntinWidth, muntinHeight, 0.04);
+  
+  const muntinMesh = new THREE.Mesh(
+    geometry, 
+    materials.frame || new THREE.MeshStandardMaterial({ color: 0x8B4513 })
+  );
   muntinMesh.position.set(posX, posY, 0.01);
   muntinMesh.castShadow = true;
   muntinMesh.receiveShadow = true;
@@ -522,16 +837,24 @@ function createMuntin(area, parentGroup, width, height, scaleFactor) {
   
   parentGroup.add(muntinMesh);
   
-  console.log(`创建中挺: 方向=${area.direction}, 尺寸=${muntinWidth}x${muntinHeight}`);
-  console.log(`中挺位置: (${posX}, ${posY}, 0.01)`);
+  debugLog(`创建中挺: 方向=${area.direction}, 尺寸=${muntinWidth}x${muntinHeight}`);
+  debugLog(`中挺位置: (${posX}, ${posY}, 0.01)`);
 }
 
 // 创建窗扇
-function createSash(area, parentGroup, width, height, scaleFactor) {
-  console.log(`创建窗扇: 类型=${area.sash.sashType}, 尺寸=${width}x${height}`);
+function createSash(
+  area: WindowArea, 
+  parentGroup: THREE.Group, 
+  width: number, 
+  height: number, 
+  scaleFactor: number
+) {
+  if (!area.sash) return;
+  
+  debugLog(`创建窗扇: 类型=${area.sash.sashType}, 尺寸=${width}x${height}`);
   
   // 创建窗扇框架
-  const frameThickness = area.sash.frameSize * scaleFactor || 0.02;
+  let frameThickness = area.sash.frameSize * scaleFactor || 0.02;
   
   // 设置窗扇对应的数据
   let hingeEdge = 'none'; // 铰链边位置
@@ -541,15 +864,15 @@ function createSash(area, parentGroup, width, height, scaleFactor) {
   if (area.sash.sashType === 'left') {
     // 左开窗扇 - 把手在右侧，铰链在左侧
     hingeEdge = 'left';
-    console.log(`左开窗扇: 铰链在左侧，把手在右侧`);
+    debugLog(`左开窗扇: 铰链在左侧，把手在右侧`);
   } else if (area.sash.sashType === 'right') {
     // 右开窗扇 - 把手在左侧，铰链在右侧
     hingeEdge = 'right';
-    console.log(`右开窗扇: 铰链在右侧，把手在左侧`);
+    debugLog(`右开窗扇: 铰链在右侧，把手在左侧`);
   } else if (area.sash.sashType.includes('tilt')) {
     // 倾斜窗扇 - 把手在顶部，铰链在底部
     hingeEdge = 'bottom';
-    console.log(`倾斜窗扇: 铰链在底部，把手在顶部`);
+    debugLog(`倾斜窗扇: 铰链在底部，把手在顶部`);
   }
   
   if (area.sash.sashType !== 'fixed') {
@@ -567,7 +890,10 @@ function createSash(area, parentGroup, width, height, scaleFactor) {
     
     // 添加窗扇框架到窗扇内容组
     const outerFrameGeometry = new THREE.BoxGeometry(width, height, 0.04);
-    const outerFrameMesh = new THREE.Mesh(outerFrameGeometry, materials.frame);
+    const outerFrameMesh = new THREE.Mesh(
+      outerFrameGeometry, 
+      materials.frame || new THREE.MeshStandardMaterial({ color: 0x8B4513 })
+    );
     
     // 创建内框几何体（用于挖空）
     const innerWidth = width - frameThickness * 2;
@@ -580,38 +906,49 @@ function createSash(area, parentGroup, width, height, scaleFactor) {
     
     // 执行CSG减法操作创建带孔的框架
     const frameMesh = CSG.subtract(outerFrameMesh, innerFrameMesh);
-    frameMesh.material = materials.frame;
+    frameMesh.material = materials.frame || new THREE.MeshStandardMaterial({ color: 0x8B4513 });
     frameMesh.position.set(width/2, height/2, 0);
     frameMesh.castShadow = true;
     frameMesh.receiveShadow = true;
     sashGroup.add(frameMesh);
     
-    // 如果有玻璃信息，添加玻璃
+    // 如果有玻璃信息，则创建对应的玻璃
     if (area.sash.glass) {
-      const glassWidth = area.sash.glass.width * scaleFactor;
-      const glassHeight = area.sash.glass.height * scaleFactor;
+      // 玻璃的尺寸和位置
       const glassX = area.sash.glass.x * scaleFactor;
       const glassY = area.sash.glass.y * scaleFactor;
+      const glassWidth = area.sash.glass.width * scaleFactor;
+      const glassHeight = area.sash.glass.height * scaleFactor;
       
       const glassGeometry = new THREE.BoxGeometry(glassWidth, glassHeight, 0.02);
-      const glassMesh = new THREE.Mesh(glassGeometry, materials.glass);
+      const glassMesh = new THREE.Mesh(
+        glassGeometry,
+        materials.glass || new THREE.MeshPhysicalMaterial({
+          color: 0xffffff,
+          transmission: 1.0,
+          transparent: true
+        })
+      );
       glassMesh.position.set(glassX + glassWidth/2, glassY + glassHeight/2, 0.01);
       glassMesh.castShadow = false;
       glassMesh.receiveShadow = true;
       sashGroup.add(glassMesh);
-      
-      console.log(`窗扇玻璃: (${glassX}, ${glassY}), 尺寸=${glassWidth}x${glassHeight}`);
     } else {
       // 如果没有特定的玻璃信息，则在框架内部添加默认玻璃
       const glassGeometry = new THREE.BoxGeometry(innerWidth, innerHeight, 0.02);
-      const glassMesh = new THREE.Mesh(glassGeometry, materials.glass);
+      const glassMesh = new THREE.Mesh(
+        glassGeometry,
+        materials.glass || new THREE.MeshPhysicalMaterial({
+          color: 0xffffff,
+          transmission: 1.0,
+          transparent: true
+        })
+      );
       // 玻璃位置与内框位置相同，但稍微前移，确保在框架之上
       glassMesh.position.set(width/2, height/2, 0.01);
       glassMesh.castShadow = false;
       glassMesh.receiveShadow = true;
       sashGroup.add(glassMesh);
-      
-      console.log(`窗扇默认玻璃: 尺寸=${innerWidth}x${innerHeight}`);
     }
     
     // 如果有把手信息，添加把手
@@ -630,7 +967,7 @@ function createSash(area, parentGroup, width, height, scaleFactor) {
       handlePos.x = handleX;
       handlePos.y = handleY;
       
-      console.log(`窗扇把手: (${handleX}, ${handleY})`);
+      debugLog(`窗扇把手: (${handleX}, ${handleY})`);
     }
     
     // 添加调试边框
@@ -706,14 +1043,17 @@ function createSash(area, parentGroup, width, height, scaleFactor) {
     
   } else {
     // 固定窗扇 - 直接创建和添加窗扇
-    
+    frameThickness = 0;
     // 创建窗扇组
     const sashGroup = new THREE.Group();
     sashGroup.name = "sash_" + area.id;
     
     // 添加窗扇框架
     const outerFrameGeometry = new THREE.BoxGeometry(width, height, 0.04);
-    const outerFrameMesh = new THREE.Mesh(outerFrameGeometry, materials.frame);
+    const outerFrameMesh = new THREE.Mesh(
+      outerFrameGeometry, 
+      materials.frame || new THREE.MeshStandardMaterial({ color: 0x8B4513 })
+    );
     
     // 创建内框几何体（用于挖空）
     const innerWidth = width - frameThickness * 2;
@@ -726,7 +1066,7 @@ function createSash(area, parentGroup, width, height, scaleFactor) {
     
     // 执行CSG减法操作创建带孔的框架
     const frameMesh = CSG.subtract(outerFrameMesh, innerFrameMesh);
-    frameMesh.material = materials.frame;
+    frameMesh.material = materials.frame || new THREE.MeshStandardMaterial({ color: 0x8B4513 });
     frameMesh.position.set(width/2, height/2, 0);
     frameMesh.castShadow = true;
     frameMesh.receiveShadow = true;
@@ -734,7 +1074,14 @@ function createSash(area, parentGroup, width, height, scaleFactor) {
     
     // 添加默认玻璃
     const glassGeometry = new THREE.BoxGeometry(innerWidth, innerHeight, 0.02);
-    const glassMesh = new THREE.Mesh(glassGeometry, materials.glass);
+    const glassMesh = new THREE.Mesh(
+      glassGeometry, 
+      materials.glass || new THREE.MeshPhysicalMaterial({
+        color: 0xffffff,
+        transmission: 1.0,
+        transparent: true
+      })
+    );
     glassMesh.position.set(width/2, height/2, 0.01);
     glassMesh.castShadow = false;
     glassMesh.receiveShadow = true;
@@ -746,9 +1093,15 @@ function createSash(area, parentGroup, width, height, scaleFactor) {
 }
 
 // 添加铰链标记
-function addHingeMarkers(hingeEdge, pivotGroup, width, height, parentGroup) {
+function addHingeMarkers(
+  hingeEdge: string, 
+  pivotGroup: THREE.Group, 
+  width: number, 
+  height: number, 
+  parentGroup: THREE.Group
+) {
   // 创建铰链标记 - 黄色圆柱体
-  const hingeGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.08);
+  const hingeGeo = ResourceManager.getCylinderGeometry(0.02, 0.02, 0.08);
   const hingeMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00 });
   
   // 获取轴心组的世界位置
@@ -758,7 +1111,7 @@ function addHingeMarkers(hingeEdge, pivotGroup, width, height, parentGroup) {
   if (hingeEdge === 'left') {
     // 左侧铰链 - 放置在窗扇左侧
     for (let i = 0; i < 3; i++) {
-      const hinge = new THREE.Mesh(hingeGeometry, hingeMaterial);
+      const hinge = new THREE.Mesh(hingeGeo, hingeMaterial);
       hinge.rotation.z = Math.PI / 2; // 旋转90度使圆柱体水平
       hinge.position.set(pivotWorldPosition.x, height * (i+1)/4, 0.02);
       hinge.name = `hinge_left_${i}`;
@@ -768,7 +1121,7 @@ function addHingeMarkers(hingeEdge, pivotGroup, width, height, parentGroup) {
   } else if (hingeEdge === 'right') {
     // 右侧铰链 - 放置在窗扇右侧
     for (let i = 0; i < 3; i++) {
-      const hinge = new THREE.Mesh(hingeGeometry, hingeMaterial);
+      const hinge = new THREE.Mesh(hingeGeo, hingeMaterial);
       hinge.rotation.z = Math.PI / 2; // 旋转90度使圆柱体水平
       hinge.position.set(pivotWorldPosition.x, height * (i+1)/4, 0.02);
       hinge.name = `hinge_right_${i}`;
@@ -778,7 +1131,7 @@ function addHingeMarkers(hingeEdge, pivotGroup, width, height, parentGroup) {
   } else if (hingeEdge === 'bottom') {
     // 底部铰链 - 放置在窗扇底部
     for (let i = 0; i < 3; i++) {
-      const hinge = new THREE.Mesh(hingeGeometry, hingeMaterial);
+      const hinge = new THREE.Mesh(hingeGeo, hingeMaterial);
       hinge.rotation.x = Math.PI / 2; // 旋转90度使圆柱体垂直于窗扇平面
       hinge.position.set(width * (i+1)/4, pivotWorldPosition.y, 0.02);
       hinge.name = `hinge_bottom_${i}`;
@@ -789,10 +1142,21 @@ function addHingeMarkers(hingeEdge, pivotGroup, width, height, parentGroup) {
 }
 
 // 创建普通玻璃面板
-function createGlassPanel(parentGroup, width, height) {
+function createGlassPanel(
+  parentGroup: THREE.Group, 
+  width: number, 
+  height: number
+) {
   // 使用更薄的几何体
-  const glassGeometry = new THREE.BoxGeometry(width, height, 0.005);
-  const glassMesh = new THREE.Mesh(glassGeometry, materials.glass);
+  const glassGeometry = ResourceManager.getBoxGeometry(width, height, 0.005);
+  const glassMesh = new THREE.Mesh(
+    glassGeometry, 
+    materials.glass || new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      transmission: 1.0,
+      transparent: true
+    })
+  );
   glassMesh.position.set(width/2, height/2, 0);
   glassMesh.castShadow = false;
   glassMesh.receiveShadow = false; // 禁用接收阴影以提高透明度
@@ -801,7 +1165,7 @@ function createGlassPanel(parentGroup, width, height) {
   
   parentGroup.add(glassMesh);
   
-  console.log(`创建玻璃面板: 尺寸=${width}x${height}`);
+  debugLog(`创建玻璃面板: 尺寸=${width}x${height}`);
 }
 
 // 检查是否有可动画的窗扇
@@ -816,21 +1180,22 @@ function hasAnimatableSashes() {
         object.userData.sashType !== 'fixed') {
       hasAnimatable = true;
       animatableCount++;
-      console.log(`找到可动画窗扇: ID=${object.name}, 类型=${object.userData.sashType}`);
+      debugLog(`找到可动画窗扇: ID=${object.name}, 类型=${object.userData.sashType}`);
     }
   });
   
-  console.log(`总共找到 ${animatableCount} 个可动画窗扇`);
+  debugLog(`总共找到 ${animatableCount} 个可动画窗扇`);
   return hasAnimatable;
 }
 
 // 切换窗户开关状态
 function toggleWindowOpen() {
   isWindowOpen.value = !isWindowOpen.value;
-  console.log(`切换窗户状态为: ${isWindowOpen.value ? '打开' : '关闭'}`);
+  emit('window-open-changed', isWindowOpen.value);
+  debugLog(`切换窗户状态为: ${isWindowOpen.value ? '打开' : '关闭'}`);
   
   if (!windowGroup) {
-    console.warn('窗户组不存在，无法执行动画');
+    debugLog('窗户组不存在，无法执行动画');
     return;
   }
   
@@ -839,20 +1204,20 @@ function toggleWindowOpen() {
   // 遍历所有窗扇并应用动画
   windowGroup.traverse((object) => {
     if (object.userData && object.userData.isWindow && object.userData.sashType !== 'fixed') {
-      console.log(`找到窗扇: ${object.name}, 类型=${object.userData.sashType}`);
+      debugLog(`找到窗扇: ${object.name}, 类型=${object.userData.sashType}`);
       animateWindow(object, isWindowOpen.value);
       animatedCount++;
     }
   });
   
   if (animatedCount === 0) {
-    console.warn('没有找到可动画的窗扇');
+    debugLog('没有找到可动画的窗扇');
   }
 }
 
 // 窗户开关动画
-function animateWindow(windowObj, open) {
-  console.log(`执行窗扇动画: open=${open}, object=${windowObj.name}`);
+function animateWindow(windowObj: THREE.Object3D, open: boolean) {
+  debugLog(`执行窗扇动画: open=${open}, object=${windowObj.name}`);
   const { sashType, width, height, hingeEdge } = windowObj.userData;
   
   // 创建动画
@@ -864,27 +1229,27 @@ function animateWindow(windowObj, open) {
     if (hingeEdge === 'left') {
       // 左侧铰链 - 向内打开45度，绕Y轴负方向旋转
       windowObj.rotation.set(0, -Math.PI / 4, 0); // -45度
-      console.log(`设置左侧铰链旋转: Y轴 ${-Math.PI / 4} 弧度（-45度）- 向内打开`);
+      debugLog(`设置左侧铰链旋转: Y轴 ${-Math.PI / 4} 弧度（-45度）- 向内打开`);
     } else if (hingeEdge === 'right') {
       // 右侧铰链 - 向内打开45度，绕Y轴正方向旋转
       windowObj.rotation.set(0, Math.PI / 4, 0); // 45度
-      console.log(`设置右侧铰链旋转: Y轴 ${Math.PI / 4} 弧度（45度）- 向内打开`);
+      debugLog(`设置右侧铰链旋转: Y轴 ${Math.PI / 4} 弧度（45度）- 向内打开`);
     } else if (hingeEdge === 'bottom') {
       // 底部铰链 - 向内打开45度，绕X轴负方向旋转
       windowObj.rotation.set(-Math.PI / 4, 0, 0); // -45度
-      console.log(`设置底部铰链旋转: X轴 ${-Math.PI / 4} 弧度（-45度）- 向内打开`);
+      debugLog(`设置底部铰链旋转: X轴 ${-Math.PI / 4} 弧度（-45度）- 向内打开`);
     }
     
     // 添加动画标志
     windowObj.userData.isOpen = true;
-    console.log(`窗扇已打开: ${sashType}, 铰链边: ${hingeEdge}, 当前角度: (${windowObj.rotation.x}, ${windowObj.rotation.y}, ${windowObj.rotation.z})`);
+    debugLog(`窗扇已打开: ${sashType}, 铰链边: ${hingeEdge}, 当前角度: (${windowObj.rotation.x}, ${windowObj.rotation.y}, ${windowObj.rotation.z})`);
   } else {
     // 关闭窗扇 - 恢复到原始状态
     windowObj.rotation.set(0, 0, 0);
     
     // 移除打开标志
     windowObj.userData.isOpen = false;
-    console.log(`窗扇已关闭: ${sashType}`);
+    debugLog(`窗扇已关闭: ${sashType}`);
   }
   
   // 强制场景更新
@@ -892,15 +1257,15 @@ function animateWindow(windowObj, open) {
     renderer.render(scene, camera);
   }
   
-  console.log(`窗扇动画完成: ${open ? '打开' : '关闭'}`);
+  debugLog(`窗扇动画完成: ${open ? '打开' : '关闭'}`);
 }
 
 // 添加调试标记
-function addDebugMarker(obj, color = 0xff0000) {
+function addDebugMarker(obj: THREE.Object3D, color = 0xff0000) {
   // 创建一个小球作为标记
-  const markerGeometry = new THREE.SphereGeometry(0.05);
+  const markerGeo = ResourceManager.getSphereGeometry(0.05);
   const markerMaterial = new THREE.MeshBasicMaterial({ color: color });
-  const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+  const marker = new THREE.Mesh(markerGeo, markerMaterial);
   marker.name = "debugMarker";
   
   // 移除之前的标记
@@ -912,45 +1277,261 @@ function addDebugMarker(obj, color = 0xff0000) {
   
   // 添加到对象
   obj.add(marker);
-  console.log(`添加调试标记到: ${obj.name}`);
+  debugLog(`添加调试标记到: ${obj.name}`);
   
   // 确保渲染更新
-  renderer.render(scene, camera);
+  if (renderer && scene && camera) {
+    renderer.render(scene, camera);
+  }
 }
 
-// 重置相机位置
-function resetCamera() {
-  if (!camera) return;
+// 使用平滑动画移动相机
+function moveCamera(
+  targetPosition: THREE.Vector3, 
+  targetLookAt: THREE.Vector3, 
+  duration: number = 500
+) {
+  if (!camera || !controls) return;
   
-  // 设置相机位置为正面视图
-  camera.position.set(0, 0, 5); 
-  
-  // 设置相机视角中心为场景中心
-  if (controls) {
-    controls.target.set(0, 0, 0);
-    controls.update();
+  // 取消之前正在进行的动画
+  if (cameraAnimationFrame.value !== null) {
+    cancelAnimationFrame(cameraAnimationFrame.value);
   }
+  
+  // 设置动画参数
+  cameraAnimationStartTime = Date.now();
+  cameraAnimationDuration = duration;
+  cameraAnimationStartPosition.copy(camera.position);
+  cameraAnimationTargetPosition.copy(targetPosition);
+  cameraAnimationStartTarget.copy(controls.target);
+  cameraAnimationEndTarget.copy(targetLookAt);
+  
+  // 开始动画
+  animateCameraPosition();
+}
+
+// 相机位置动画函数
+function animateCameraPosition() {
+  const now = Date.now();
+  const elapsed = now - cameraAnimationStartTime;
+  const progress = Math.min(elapsed / cameraAnimationDuration, 1.0);
+  
+  // 使用缓动函数使动画更加平滑
+  const easeProgress = easeInOutCubic(progress);
+  
+  // 更新相机位置
+  camera.position.lerpVectors(
+    cameraAnimationStartPosition, 
+    cameraAnimationTargetPosition, 
+    easeProgress
+  );
+  
+  // 更新控制器目标点
+  controls.target.lerpVectors(
+    cameraAnimationStartTarget,
+    cameraAnimationEndTarget,
+    easeProgress
+  );
+  
+  // 更新控制器
+  controls.update();
+  
+  // 渲染场景
+  if (renderer && scene) {
+    renderer.render(scene, camera);
+  }
+  
+  // 如果动画未完成，继续下一帧
+  if (progress < 1.0) {
+    cameraAnimationFrame.value = requestAnimationFrame(animateCameraPosition);
+  } else {
+    cameraAnimationFrame.value = null;
+  }
+}
+
+// 缓动函数
+function easeInOutCubic(t: number): number {
+  return t < 0.5 
+    ? 4 * t * t * t 
+    : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+// 重置相机位置也使用平滑动画
+function resetCamera() {
+  if (!camera || !windowGroup) return;
+  
+  // 计算窗户模型的包围盒，以便自动调整相机位置
+  const boundingBox = new THREE.Box3().setFromObject(windowGroup);
+  const center = new THREE.Vector3();
+  const size = new THREE.Vector3();
+  
+  // 获取模型的中心点和尺寸
+  boundingBox.getCenter(center);
+  boundingBox.getSize(size);
+  
+  // 根据模型尺寸计算最佳观察距离
+  const maxDim = Math.max(size.x, size.y);
+  const fov = camera.fov * (Math.PI / 180);
+  let cameraDistance = maxDim / (2 * Math.tan(fov / 2)) * 1.5;
+  
+  // 使用平滑动画重置相机
+  const targetPosition = new THREE.Vector3(0, 0, cameraDistance);
+  moveCamera(targetPosition, center);
+  
+  debugLog(`相机重置为正面视图，距离: ${cameraDistance}`);
+}
+
+// 从正面查看窗户 - 使用平滑动画
+function viewFront() {
+  if (!camera || !windowGroup || !controls) return;
+  
+  const boundingBox = new THREE.Box3().setFromObject(windowGroup);
+  const center = new THREE.Vector3();
+  boundingBox.getCenter(center);
+  
+  // 计算合适的距离
+  const size = new THREE.Vector3();
+  boundingBox.getSize(size);
+  const maxDim = Math.max(size.x, size.y);
+  const fov = camera.fov * (Math.PI / 180);
+  const cameraDistance = maxDim / (2 * Math.tan(fov / 2)) * 1.5;
+  
+  // 从正面(Z轴)观察 - 使用平滑动画
+  const targetPosition = new THREE.Vector3(0, 0, cameraDistance);
+  moveCamera(targetPosition, center);
+}
+
+// 从侧面查看窗户 - 使用平滑动画
+function viewSide() {
+  if (!camera || !windowGroup || !controls) return;
+  
+  const boundingBox = new THREE.Box3().setFromObject(windowGroup);
+  const center = new THREE.Vector3();
+  boundingBox.getCenter(center);
+  
+  // 计算合适的距离
+  const size = new THREE.Vector3();
+  boundingBox.getSize(size);
+  const maxDim = Math.max(size.z, size.y);
+  const fov = camera.fov * (Math.PI / 180);
+  const cameraDistance = maxDim / (2 * Math.tan(fov / 2)) * 1.5;
+  
+  // 从侧面(X轴)观察 - 使用平滑动画
+  const targetPosition = new THREE.Vector3(cameraDistance, 0, 0);
+  moveCamera(targetPosition, center);
+}
+
+// 从顶部查看窗户 - 使用平滑动画
+function viewTop() {
+  if (!camera || !windowGroup || !controls) return;
+  
+  const boundingBox = new THREE.Box3().setFromObject(windowGroup);
+  const center = new THREE.Vector3();
+  boundingBox.getCenter(center);
+  
+  // 计算合适的距离
+  const size = new THREE.Vector3();
+  boundingBox.getSize(size);
+  const maxDim = Math.max(size.x, size.z);
+  const fov = camera.fov * (Math.PI / 180);
+  const cameraDistance = maxDim / (2 * Math.tan(fov / 2)) * 1.5;
+  
+  // 从顶部(Y轴)观察 - 使用平滑动画
+  const targetPosition = new THREE.Vector3(0, cameraDistance, 0);
+  moveCamera(targetPosition, center);
+}
+
+// 3D角度查看窗户 - 使用平滑动画
+function view3D() {
+  if (!camera || !windowGroup || !controls) return;
+  
+  const boundingBox = new THREE.Box3().setFromObject(windowGroup);
+  const center = new THREE.Vector3();
+  boundingBox.getCenter(center);
+  
+  // 计算合适的距离
+  const size = new THREE.Vector3();
+  boundingBox.getSize(size);
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const fov = camera.fov * (Math.PI / 180);
+  const cameraDistance = maxDim / (2 * Math.tan(fov / 2)) * 1.8;
+  
+  // 设定一个俯视+侧视的组合视角，45度角观察 - 使用平滑动画
+  const angle = Math.PI / 4; // 45度角
+  const x = cameraDistance * Math.sin(angle);
+  const y = cameraDistance * Math.sin(angle) * 0.8;
+  const z = cameraDistance * Math.cos(angle);
+  
+  const targetPosition = new THREE.Vector3(x, y, z);
+  moveCamera(targetPosition, center);
 }
 
 // 动画循环
 function animate() {
-  frameId = requestAnimationFrame(animate);
+  if (!isAnimationRunning.value) return;
   
   // 更新控制器
   if (controls) {
     controls.update();
   }
   
-  // 更新动画混合器
-  if (clock && animationMixers.length > 0) {
-    const delta = clock.getDelta();
-    animationMixers.forEach(mixer => mixer.update(delta));
+  // 检查相机是否移动（替代原来的 controls.changed）
+  // 保存上一帧的相机位置和目标用于比较
+  const prevCameraPosition = cameraPosition.value.clone();
+  const prevControlsTarget = controlsTarget.value.clone();
+  
+  // 更新当前相机位置和目标
+  if (camera) {
+    cameraPosition.value.copy(camera.position);
+  }
+  if (controls) {
+    controlsTarget.value.copy(controls.target);
   }
   
-  // 渲染场景
-  if (renderer && scene && camera) {
-    renderer.render(scene, camera);
+  // 检查相机是否移动
+  const cameraHasMoved = !prevCameraPosition.equals(cameraPosition.value) || 
+                         !prevControlsTarget.equals(controlsTarget.value);
+  
+  // 更新窗口动画，如果需要的话
+  let needsRender = false;
+  
+  // 如果窗户正在打开或关闭
+  if (isWindowMoving.value) {
+    const currentTime = Date.now();
+    const deltaTime = currentTime - lastAnimTime.value;
+    lastAnimTime.value = currentTime;
+    
+    const angleToAdd = windowAnimSpeed.value * (deltaTime / 1000) * (isOpening.value ? 1 : -1);
+    windowOpenAngle.value += angleToAdd;
+    
+    // 限制角度范围
+    if (isOpening.value && windowOpenAngle.value >= maxOpenAngle.value) {
+      windowOpenAngle.value = maxOpenAngle.value;
+      isWindowMoving.value = false;
+      emit('window-open-changed', true);
+    } else if (!isOpening.value && windowOpenAngle.value <= 0) {
+      windowOpenAngle.value = 0;
+      isWindowMoving.value = false;
+      emit('window-open-changed', false);
+    }
+    
+    // 更新窗户旋转
+    if (windowCasement.value) {
+      windowCasement.value.rotation.y = windowOpenAngle.value;
+    }
+    
+    needsRender = true;
   }
+  
+  // 只有在相机移动或窗口移动时才渲染
+  if (cameraHasMoved || needsRender) {
+    if (renderer && scene && camera) {
+      renderer.render(scene, camera);
+    }
+  }
+  
+  // 继续动画循环
+  frameId = requestAnimationFrame(animate);
 }
 
 // 初始化3D渲染
@@ -983,6 +1564,11 @@ onUnmounted(() => {
     cancelAnimationFrame(frameId);
   }
   
+  // 取消相机动画
+  if (cameraAnimationFrame.value !== null) {
+    cancelAnimationFrame(cameraAnimationFrame.value);
+  }
+  
   window.removeEventListener('resize', onWindowResize);
   
   // 清理Three.js资源
@@ -998,48 +1584,36 @@ onUnmounted(() => {
     envMap.dispose();
   }
   
-  // 清理场景对象
-  if (scene) {
-    scene.traverse((object) => {
-      if (object instanceof THREE.Mesh) {
-        if (object.geometry) object.geometry.dispose();
-        
-        if (object.material) {
-          if (Array.isArray(object.material)) {
-            object.material.forEach(material => {
-              if (material.map) material.map.dispose();
-              if (material.normalMap) material.normalMap.dispose();
-              if (material.roughnessMap) material.roughnessMap.dispose();
-              if (material.alphaMap) material.alphaMap.dispose();
-              material.dispose();
-            });
-          } else {
-            if (object.material.map) object.material.map.dispose();
-            if (object.material.normalMap) object.material.normalMap.dispose();
-            if (object.material.roughnessMap) object.material.roughnessMap.dispose();
-            if (object.material.alphaMap) object.material.alphaMap.dispose();
-            object.material.dispose();
-          }
-        }
-      }
-    });
-  }
+  // 调用清理资源函数
+  ResourceManager.dispose();
 });
 
 // 监听窗户数据变化，更新3D模型
-watch(() => windowStore.windowStructure, () => {
+watch([() => props.windowStructure, () => props.windowConfig], () => {
+  debugLog('检测到props.windowStructure或props.windowConfig变化，重新创建窗户模型');
   isLoading.value = true;
   
   // 延迟更新，确保数据已经完全更新
-  setTimeout(() => {
+  nextTick(() => {
     createWindow();
-  }, 100);
+  });
 }, { deep: true });
+
+// 监听initialOpen属性变化
+watch(() => props.initialOpen, (newValue) => {
+  if (newValue !== isWindowOpen.value) {
+    toggleWindowOpen();
+  }
+});
 
 // 导出组件方法
 defineExpose({
   resetCamera,
-  toggleWindowOpen
+  toggleWindowOpen,
+  viewFront,
+  viewSide,
+  viewTop,
+  view3D
 });
 </script>
 

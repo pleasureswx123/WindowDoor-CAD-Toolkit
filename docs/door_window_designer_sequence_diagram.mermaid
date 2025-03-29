@@ -1,0 +1,140 @@
+sequenceDiagram
+    %% Main actors
+    actor User
+    participant UI as UI Components
+    participant AC as AuthController
+    participant PC as ProjectController
+    participant DC as DesignController
+    participant RS as RenderingService
+    participant DB as Database
+    participant FS as FileStorage
+
+    %% User Authentication Flow
+    User->>UI: 输入登录信息
+    UI->>AC: login(email, password)
+    AC->>DB: validateCredentials(email, password)
+    DB-->>AC: 返回验证结果
+    alt 认证成功
+        AC->>AC: generateToken(user)
+        AC-->>UI: 返回认证令牌和用户信息
+        UI-->>User: 显示登录成功，跳转至项目页面
+    else 认证失败
+        AC-->>UI: 返回认证错误
+        UI-->>User: 显示错误消息
+    end
+
+    %% Project Management Flow
+    User->>UI: 创建新项目
+    UI->>PC: createProject(name, description)
+    PC->>AC: validateToken(token)
+    AC-->>PC: 验证结果
+    PC->>DB: saveProject(projectData)
+    DB-->>PC: 返回项目ID
+    PC-->>UI: 返回新项目信息
+    UI-->>User: 显示项目创建成功
+
+    %% Design Creation Flow
+    User->>UI: 创建新设计
+    UI->>DC: createDesign(projectId, designData)
+    DC->>PC: checkProjectAccess(userId, projectId)
+    PC-->>DC: 访问权限确认
+    DC->>DB: saveDesign(designData)
+    DB-->>DC: 返回设计ID
+    DC-->>UI: 返回新设计信息
+    UI-->>User: 跳转至设计编辑器
+
+    %% Design Editing Flow
+    User->>UI: 绘制/编辑门窗
+    UI->>UI: 本地更新设计视图
+    User->>UI: 保存变更
+    UI->>DC: updateDesign(designId, changes)
+    DC->>DB: saveChanges(designId, changes)
+    DB-->>DC: 保存确认
+    DC-->>UI: 返回更新成功
+    UI-->>User: 显示保存成功通知
+
+    %% 3D Rendering Flow
+    User->>UI: 切换到3D视图
+    UI->>RS: renderDesign3D(designData)
+    RS->>RS: setupScene()
+    RS->>RS: createModels(designData)
+    RS->>RS: applyMaterials()
+    RS->>RS: setupLighting()
+    RS-->>UI: 返回渲染场景
+    UI-->>User: 显示3D预览
+
+    %% Parameter Editing Flow
+    User->>UI: 调整门窗参数
+    UI->>UI: 更新参数值
+    UI->>RS: updateModelParameters(elementId, params)
+    RS->>RS: recalculateGeometry()
+    RS->>RS: updateMaterials()
+    RS-->>UI: 返回更新后的模型
+    UI-->>User: 显示更新后的设计
+
+    %% Materials Calculation Flow
+    User->>UI: 生成材料清单
+    UI->>DC: calculateMaterials(designId)
+    DC->>DB: retrieveDesignData(designId)
+    DB-->>DC: 返回设计数据
+    DC->>DC: processElementMaterials()
+    DC->>DC: aggregateMaterials()
+    DC-->>UI: 返回材料清单
+    UI-->>User: 显示材料清单
+
+    %% Export Flow
+    User->>UI: 导出设计
+    UI->>DC: exportDesign(designId, format)
+    DC->>DB: retrieveDesignData(designId)
+    DB-->>DC: 返回设计数据
+    alt PDF格式
+        DC->>DC: generatePDF(designData)
+    else 图片格式
+        DC->>RS: renderForExport(designData)
+        RS-->>DC: 返回渲染结果
+        DC->>DC: convertToImage(renderResult)
+    else CAD格式
+        DC->>DC: convertToCAD(designData)
+    end
+    DC->>FS: storeFile(exportedFile)
+    FS-->>DC: 返回文件URL
+    DC-->>UI: 返回下载链接
+    UI-->>User: 提供下载选项
+
+    %% Template Usage Flow
+    User->>UI: 应用模板
+    UI->>DC: applyTemplate(templateId, designId)
+    DC->>DB: retrieveTemplate(templateId)
+    DB-->>DC: 返回模板数据
+    DC->>DB: retrieveDesign(designId)
+    DB-->>DC: 返回设计数据
+    DC->>DC: mergeTemplateWithDesign()
+    DC->>DB: saveUpdatedDesign()
+    DB-->>DC: 保存确认
+    DC-->>UI: 返回更新后的设计
+    UI-->>UI: refreshDesignView()
+    UI-->>User: 显示应用模板后的设计
+
+    %% Collaboration Flow
+    User->>UI: 邀请协作者
+    UI->>PC: inviteCollaborator(projectId, email)
+    PC->>DB: checkUserExists(email)
+    DB-->>PC: 用户信息
+    PC->>DB: addCollaborator(projectId, userId)
+    DB-->>PC: 更新确认
+    PC->>PC: generateNotification(userId)
+    PC-->>UI: 返回邀请状态
+    UI-->>User: 显示邀请已发送
+
+    %% Real-time Collaboration Flow
+    User->>UI: 编辑共享设计
+    UI->>DC: startCollaboration(designId)
+    DC->>DC: createCollaborationSession()
+    DC-->>UI: 返回会话ID
+    UI->>UI: connectToWebSocket(sessionId)
+    UI-->>User: 显示协作状态
+    User->>UI: 修改设计元素
+    UI->>DC: broadcastChange(sessionId, change)
+    DC->>DC: propagateChangeToCollaborators()
+    DC-->>UI: 其他用户接收变更
+    UI-->>User: 实时更新设计视图

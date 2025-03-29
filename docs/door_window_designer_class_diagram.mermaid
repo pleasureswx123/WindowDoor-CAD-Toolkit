@@ -1,0 +1,323 @@
+classDiagram
+    %% User Management
+    class User {
+        +String id
+        +String username
+        +String email
+        +String passwordHash
+        +String role
+        +Date createdAt
+        +Date lastLogin
+        +register(username, email, password): User
+        +login(email, password): AuthToken
+        +updateProfile(userData): User
+        +getProjects(): Project[]
+    }
+
+    class AuthService {
+        +generateToken(user): String
+        +verifyToken(token): Boolean
+        +refreshToken(token): String
+        +revokeToken(token): Boolean
+    }
+
+    %% Project Management
+    class Project {
+        +String id
+        +String name
+        +String description
+        +User owner
+        +User[] collaborators
+        +Design[] designs
+        +Date createdAt
+        +Date updatedAt
+        +createProject(data): Project
+        +updateProject(id, data): Project
+        +deleteProject(id): Boolean
+        +addCollaborator(userId): Boolean
+        +removeCollaborator(userId): Boolean
+        +getDesigns(): Design[]
+    }
+
+    %% Design Core
+    class Design {
+        +String id
+        +String name
+        +Project project
+        +DesignElement[] elements
+        +Properties properties
+        +Date createdAt
+        +Date updatedAt
+        +Version[] versions
+        +createDesign(data): Design
+        +updateDesign(id, data): Design
+        +deleteDesign(id): Boolean
+        +duplicate(): Design
+        +saveVersion(): Version
+        +export(format): File
+    }
+
+    class DesignElement {
+        <<abstract>>
+        +String id
+        +String type
+        +Point position
+        +Number rotation
+        +Properties properties
+        +render(): Object
+        +move(Point newPosition): void
+        +rotate(Number angle): void
+        +scale(Number factor): void
+        +delete(): Boolean
+        +duplicate(): DesignElement
+    }
+
+    class Window {
+        +Number width
+        +Number height
+        +String frameType
+        +Number frameThickness
+        +String openingType
+        +String glassType
+        +Panel[] panels
+        +calculateMaterials(): MaterialList
+    }
+
+    class Door {
+        +Number width
+        +Number height
+        +String doorType
+        +Number thickness
+        +String material
+        +String openingDirection
+        +Boolean hasWindow
+        +Panel[] panels
+        +calculateMaterials(): MaterialList
+    }
+
+    class Panel {
+        +String id
+        +Number width
+        +Number height
+        +String material
+        +Boolean isOpenable
+        +String openingDirection
+        +calculateArea(): Number
+    }
+
+    class Properties {
+        +Map~String, Any~ values
+        +get(key): Any
+        +set(key, value): void
+        +getAll(): Map
+    }
+
+    class Point {
+        +Number x
+        +Number y
+        +Number z
+    }
+
+    class Version {
+        +String id
+        +Date createdAt
+        +String createdBy
+        +String comment
+        +Object designData
+        +restore(): Boolean
+        +compare(versionId): Diff
+    }
+
+    %% Material Management
+    class Material {
+        +String id
+        +String name
+        +String category
+        +String description
+        +Map properties
+        +Number unitCost
+        +String unitType
+        +Texture texture
+    }
+
+    class MaterialLibrary {
+        +Material[] materials
+        +getMaterials(filter): Material[]
+        +addMaterial(data): Material
+        +updateMaterial(id, data): Material
+        +deleteMaterial(id): Boolean
+    }
+
+    class MaterialList {
+        +Map~Material, Number~ items
+        +addItem(material, quantity): void
+        +removeItem(material): void
+        +updateQuantity(material, quantity): void
+        +calculateTotalCost(): Number
+        +generateReport(): Object
+    }
+
+    class Texture {
+        +String id
+        +String name
+        +String url
+        +Map properties
+        +load(): Image
+    }
+
+    %% Rendering and View
+    class Renderer {
+        <<interface>>
+        +render(design): Object
+    }
+
+    class Renderer2D {
+        +Canvas context
+        +render(design): Canvas
+        +exportImage(format): File
+    }
+
+    class Renderer3D {
+        +WebGLContext context
+        +Scene scene
+        +Camera camera
+        +render(design): Scene
+        +setViewAngle(angle): void
+        +setLighting(lighting): void
+        +generateScreenshot(): Image
+    }
+
+    class ViewController {
+        +Number zoom
+        +Point cameraPosition
+        +Boolean is3DMode
+        +zoomIn(): void
+        +zoomOut(): void
+        +pan(direction): void
+        +resetView(): void
+        +toggle3D(): void
+        +getCurrentView(): ViewState
+    }
+
+    %% Templates
+    class Template {
+        +String id
+        +String name
+        +String category
+        +String description
+        +Object designData
+        +Boolean isPublic
+        +User creator
+        +applyTemplate(design): void
+        +saveAsTemplate(design): Template
+    }
+
+    class TemplateLibrary {
+        +Template[] templates
+        +getTemplates(filter): Template[]
+        +addTemplate(data): Template
+        +updateTemplate(id, data): Template
+        +deleteTemplate(id): Boolean
+        +searchTemplates(query): Template[]
+    }
+
+    %% Quote System
+    class Quotation {
+        +String id
+        +Design design
+        +User creator
+        +Date createdAt
+        +String customerInfo
+        +MaterialList materials
+        +Number laborCost
+        +Number totalCost
+        +Boolean isFinal
+        +String notes
+        +calculateTotals(): void
+        +generatePDF(): File
+        +sendToCustomer(email): Boolean
+    }
+
+    %% Export & Import
+    class ExportService {
+        +exportToPDF(design): File
+        +exportToImage(design, format): File
+        +exportToCAD(design): File
+        +exportData(design): Object
+    }
+
+    class ImportService {
+        +importFromCAD(file): Design
+        +importFromJSON(data): Design
+        +validateImport(data): ValidationResult
+    }
+
+    %% Collaboration
+    class CollaborationService {
+        +Session[] activeSessions
+        +createSession(designId): Session
+        +joinSession(sessionId): Boolean
+        +leaveSession(sessionId): void
+        +broadcastChange(change): void
+        +resolveConflict(changes): Change
+    }
+
+    class Session {
+        +String id
+        +Design design
+        +User[] participants
+        +Date startedAt
+        +Change[] changes
+        +addChange(change): void
+        +getHistory(): Change[]
+    }
+
+    class Change {
+        +String id
+        +User creator
+        +Date timestamp
+        +String elementId
+        +String changeType
+        +Object oldValue
+        +Object newValue
+        +apply(): void
+        +revert(): void
+    }
+
+    %% Notifications
+    class NotificationService {
+        +Notification[] notifications
+        +send(user, message): void
+        +markAsRead(id): void
+        +getUnreadCount(user): Number
+    }
+
+    class Notification {
+        +String id
+        +User recipient
+        +String message
+        +String type
+        +Object referenceData
+        +Date createdAt
+        +Boolean isRead
+    }
+
+    %% Relationships
+    User "1" -- "*" Project: owns
+    Project "1" -- "*" Design: contains
+    Design "1" -- "*" DesignElement: has
+    DesignElement <|-- Window: extends
+    DesignElement <|-- Door: extends
+    Window "1" -- "*" Panel: contains
+    Door "1" -- "*" Panel: contains
+    Design "1" -- "*" Version: has
+    MaterialLibrary "1" -- "*" Material: contains
+    Material "1" -- "1" Texture: has
+    Quotation "1" -- "1" MaterialList: contains
+    Quotation "1" -- "1" Design: based on
+    Template "1" -- "1" Object: contains design data
+    TemplateLibrary "1" -- "*" Template: contains
+    CollaborationService "1" -- "*" Session: manages
+    Session "1" -- "*" Change: records
+    NotificationService "1" -- "*" Notification: manages
+    User "1" -- "*" Notification: receives
