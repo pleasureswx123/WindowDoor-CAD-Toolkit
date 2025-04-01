@@ -1,240 +1,296 @@
 <template>
-  <div class="row">
-    <!-- 输入区域 -->
-    <div class="col-lg-4 input-section pb-lg-5">
-      <div class="card mb-4">
-        <div class="card-body">
-          <h3 class="card-title mb-4">原料规格</h3>
-          <form @submit.prevent="calculateOptimization">
-            <!-- 原料清单 -->
-            <div class="mb-3">
-              <label class="form-label">原料清单</label>
-              <div v-for="(stock, index) in stockList" :key="index" class="mb-2">
-                <div class="input-group">
-                  <input type="number" class="form-control" v-model="stock.length" placeholder="长度(mm)" required min="0"
-                    step="1">
-                  <input type="number" class="form-control" v-model="stock.price" placeholder="单价" required min="0"
-                    step="0.01">
-                  <button type="button" class="btn btn-danger" @click="removeStockItem(index)"
-                    :disabled="stockList.length === 1">
-                    <i class="fas fa-times"></i>
-                  </button>
-                </div>
-              </div>
-              <button type="button" class="btn btn-success w-100 mb-3" @click="addStockItem">
-                <i class="fas fa-plus me-2"></i>添加原料规格
-              </button>
-            </div>
-
-            <!-- 切割清单 -->
-            <div class="mb-3">
-              <label class="form-label">切割清单</label>
-              <div v-for="(item, index) in cutList" :key="index" class="mb-2">
-                <div class="input-group">
-                  <input type="number" class="form-control" v-model="item.length" placeholder="长度(mm)" required min="0"
-                    step="1">
-                  <input type="number" class="form-control" v-model="item.quantity" placeholder="数量" required min="1"
-                    step="1">
-                  <button type="button" class="btn btn-danger" @click="removeCutItem(index)">
-                    <i class="fas fa-times"></i>
-                  </button>
-                </div>
-              </div>
-              <button type="button" class="btn btn-success w-100" @click="addCutItem">
-                <i class="fas fa-plus me-2"></i>添加切割项
-              </button>
-            </div>
-
-            <!-- 切割参数 -->
-            <div class="mb-3">
-              <label class="form-label">切割损耗 (mm)</label>
-              <input type="number" class="form-control" v-model="sawKerf" required min="0" step="0.1">
-            </div>
-
-            <button type="submit" class="btn btn-primary w-100">
-              <i class="fas fa-calculator me-2"></i>计算优化方案
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <!-- 导入导出 -->
-      <div class="card mb-4">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 class="card-title mb-0">数据导入导出</h3>
-            <a href="#" class="text-primary text-decoration-none" @click.prevent="downloadTemplate" title="下载Excel模板">
-              <i class="fas fa-file-download"></i>
-              <small class="ms-1">下载Excel模板</small>
-            </a>
-          </div>
-          <div class="d-flex justify-content-between">
-            <div class="btn-icon-with-label">
-              <button class="btn btn-icon" @click="importFromExcel" title="从Excel导入">
-                <i class="fas fa-file-import text-success"></i>
-              </button>
-              <span class="btn-label">从Excel导入</span>
-            </div>
-            <div class="btn-icon-with-label">
-              <button class="btn btn-icon" @click="exportToExcel" title="导出到Excel">
-                <i class="fas fa-file-export text-success"></i>
-              </button>
-              <span class="btn-label">导出到Excel</span>
-            </div>
-            <div class="btn-icon-with-label">
-              <button class="btn btn-icon" @click="exportToImage" title="导出到图片">
-                <i class="fas fa-images text-success"></i>
-              </button>
-              <span class="btn-label">导出到图片</span>
-            </div>
-          </div>
+  <div class="plastic-steel-view">
+    <!-- 顶部横幅 -->
+    <div class="hero-section">
+      <div class="hero-overlay"></div>
+      <div class="container">
+        <div class="hero-content">
+          <h1 class="hero-title">型材切割优化工具</h1>
+          <p class="hero-subtitle">高效下料方案，提升材料利用率，减少浪费</p>
         </div>
       </div>
     </div>
 
-    <!-- 结果展示区域 -->
-    <div class="col-lg-8">
-      <!-- 优化结果统计 -->
-      <div class="card mb-4">
-        <div class="card-body">
-          <h3 class="card-title mb-4">优化结果统计</h3>
-          <div class="row g-4">
-            <div class="col-md-3">
-              <div class="stats-item text-center">
-                <div class="stats-icon mb-2">
-                  <i class="fas fa-percentage"></i>
+    <div class="container">
+      <div class="row g-3">
+        <!-- 输入区域 -->
+        <div class="col-lg-4 input-section pb-lg-5">
+          <div class="steel-card mb-4">
+            <div class="card-body">
+              <h3 class="card-title mb-4">
+                <IconProfile class="me-2" />
+                原料规格
+              </h3>
+              <form @submit.prevent="calculateOptimization">
+                <!-- 原料清单 -->
+                <div class="mb-3">
+                  <label class="form-label">原料清单</label>
+                  <div v-for="(stock, index) in stockList" :key="index" class="mb-2">
+                    <div class="input-group">
+                      <input type="number" class="form-control" v-model="stock.length" placeholder="长度(mm)" required
+                        min="0" step="1">
+                      <input type="number" class="form-control" v-model="stock.price" placeholder="单价" required min="0"
+                        step="0.01">
+                      <button type="button" class="btn btn-delete" @click="removeStockItem(index)"
+                        :disabled="stockList.length === 1">
+                        <IconDelete />
+                      </button>
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn-add w-100 mb-3" @click="addStockItem">
+                    <IconAdd class="me-2" />添加原料规格
+                  </button>
                 </div>
-                <div class="stats-value">{{ utilization }}%</div>
-                <div class="stats-label">材料利用率</div>
-              </div>
+
+                <!-- 切割清单 -->
+                <div class="mb-3">
+                  <label class="form-label">切割清单</label>
+                  <div v-for="(item, index) in cutList" :key="index" class="mb-2">
+                    <div class="input-group">
+                      <input type="number" class="form-control" v-model="item.length" placeholder="长度(mm)" required
+                        min="0" step="1">
+                      <input type="number" class="form-control" v-model="item.quantity" placeholder="数量" required
+                        min="1" step="1">
+                      <button type="button" class="btn btn-delete" @click="removeCutItem(index)">
+                        <IconDelete />
+                      </button>
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn-add w-100" @click="addCutItem">
+                    <IconAdd class="me-2" />添加切割项
+                  </button>
+                </div>
+
+                <!-- 切割参数 -->
+                <div class="mb-3">
+                  <label class="form-label">切割损耗 (mm)</label>
+                  <input type="number" class="form-control" v-model="sawKerf" required min="0" step="0.1">
+                </div>
+
+                <button type="submit" class="btn btn-calculate w-100">
+                  <IconCalculate class="me-2" />计算优化方案
+                </button>
+              </form>
             </div>
-            <div class="col-md-3">
-              <div class="stats-item text-center">
-                <div class="stats-icon mb-2">
-                  <i class="fas fa-bars"></i>
-                </div>
-                <div class="stats-value">{{ totalBars }}</div>
-                <div class="stats-label">需要原料数</div>
+          </div>
+
+          <!-- 导入导出 -->
+          <div class="steel-card mb-4">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="card-title mb-0">
+                  <IconDataTransfer class="me-2" />
+                  数据导入导出
+                </h3>
+                <a href="#" class="text-primary text-decoration-none" @click.prevent="downloadTemplate"
+                  title="下载Excel模板">
+                  <IconDownload />
+                  <small class="ms-1">下载模板</small>
+                </a>
               </div>
-            </div>
-            <div class="col-md-3">
-              <div class="stats-item text-center">
-                <div class="stats-icon mb-2">
-                  <i class="fas fa-trash-alt"></i>
+              <div class="d-flex justify-content-between">
+                <div class="btn-icon-with-label">
+                  <button class="btn btn-action" @click="importFromExcel" title="从Excel导入">
+                    <IconImport />
+                  </button>
+                  <span class="btn-label">从Excel导入</span>
                 </div>
-                <div class="stats-value">{{ (wasteLength / 10).toFixed(2) }}cm</div>
-                <div class="stats-label">总废料长度</div>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="stats-item text-center">
-                <div class="stats-icon mb-2">
-                  <i class="fas fa-yen-sign"></i>
+                <div class="btn-icon-with-label">
+                  <button class="btn btn-action" @click="exportToExcel" title="导出到Excel">
+                    <IconExport />
+                  </button>
+                  <span class="btn-label">导出到Excel</span>
                 </div>
-                <div class="stats-value">¥{{ totalCost }}</div>
-                <div class="stats-label">总成本</div>
+                <div class="btn-icon-with-label">
+                  <button class="btn btn-action" @click="exportToImage" title="导出到图片">
+                    <IconImage />
+                  </button>
+                  <span class="btn-label">导出到图片</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- 原料使用统计 -->
-      <div class="card mb-4">
-        <div class="card-body">
-          <h3 class="card-title mb-4">原料使用统计</h3>
-          <div class="table-responsive">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>原料规格</th>
-                  <th>单价</th>
-                  <th>使用数量</th>
-                  <th>总价</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(stat, index) in materialUsageStats" :key="index">
-                  <td>{{ stat.spec }}mm</td>
-                  <td>¥{{ stat.price }}</td>
-                  <td>{{ stat.quantity }}根</td>
-                  <td>¥{{ stat.total }}</td>
-                </tr>
-                <tr class="table-info">
-                  <td colspan="2"><strong>合计</strong></td>
-                  <td><strong>{{ totalBars }}根</strong></td>
-                  <td><strong>¥{{ totalCost }}</strong></td>
-                </tr>
-              </tbody>
-            </table>
+        <!-- 结果展示区域 -->
+        <div class="col-lg-8">
+          <!-- 优化结果统计 -->
+          <div class="steel-card mb-4">
+            <div class="card-body">
+              <h3 class="card-title mb-4">
+                <IconStats class="me-2" />
+                优化结果统计
+              </h3>
+              <div class="row g-4">
+                <div class="col-md-3 col-6">
+                  <div class="stats-item text-center">
+                    <div class="stats-icon mb-2">
+                      <IconPercentage />
+                    </div>
+                    <div class="stats-value">{{ utilization }}%</div>
+                    <div class="stats-label">材料利用率</div>
+                  </div>
+                </div>
+                <div class="col-md-3 col-6">
+                  <div class="stats-item text-center">
+                    <div class="stats-icon mb-2">
+                      <IconBars />
+                    </div>
+                    <div class="stats-value">{{ totalBars }}</div>
+                    <div class="stats-label">需要原料数</div>
+                  </div>
+                </div>
+                <div class="col-md-3 col-6">
+                  <div class="stats-item text-center">
+                    <div class="stats-icon mb-2">
+                      <IconWaste />
+                    </div>
+                    <div class="stats-value">{{ (wasteLength / 10).toFixed(2) }}cm</div>
+                    <div class="stats-label">总废料长度</div>
+                  </div>
+                </div>
+                <div class="col-md-3 col-6">
+                  <div class="stats-item text-center">
+                    <div class="stats-icon mb-2">
+                      <IconCost />
+                    </div>
+                    <div class="stats-value">¥{{ totalCost }}</div>
+                    <div class="stats-label">总成本</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 原料使用统计 -->
+          <div class="steel-card mb-4">
+            <div class="card-body">
+              <h3 class="card-title mb-4">
+                <IconUsage class="me-2" />
+                原料使用统计
+              </h3>
+              <div class="table-responsive">
+                <table class="table custom-table">
+                  <thead>
+                    <tr>
+                      <th>原料规格</th>
+                      <th>单价</th>
+                      <th>使用数量</th>
+                      <th>总价</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(stat, index) in materialUsageStats" :key="index">
+                      <td>{{ stat.spec }}mm</td>
+                      <td>¥{{ stat.price }}</td>
+                      <td>{{ stat.quantity }}根</td>
+                      <td>¥{{ stat.total }}</td>
+                    </tr>
+                    <tr class="table-total">
+                      <td colspan="2"><strong>合计</strong></td>
+                      <td><strong>{{ totalBars }}根</strong></td>
+                      <td><strong>¥{{ totalCost }}</strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 详细切割方案 -->
+          <div class="steel-card mb-4">
+            <div class="card-body">
+              <h3 class="card-title mb-4">
+                <IconPlan class="me-2" />
+                详细切割方案
+              </h3>
+              <div class="table-responsive">
+                <table class="table custom-table">
+                  <thead>
+                    <tr>
+                      <th>原料编号</th>
+                      <th>原料规格</th>
+                      <th>切割明细</th>
+                      <th>剩余长度</th>
+                      <th>利用率</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template v-if="cuttingPlan.length">
+                      <tr v-for="(plan, index) in cuttingPlan" :key="index">
+                        <td>{{ plan.barIndex }}</td>
+                        <td>{{ plan.originalSpec }}</td>
+                        <td>{{ plan.cutDetails }}</td>
+                        <td>
+                          <span :class="{ 'text-danger': plan.isWaste }">
+                            {{ plan.remainingLength }}mm
+                          </span>
+                        </td>
+                        <td>
+                          <span class="utilization-badge" :class="{
+                            'bg-success': plan.utilization >= 90,
+                            'bg-warning': plan.utilization < 90 && plan.utilization >= 70,
+                            'bg-danger': plan.utilization < 70
+                          }">
+                            {{ plan.utilization }}%
+                          </span>
+                        </td>
+                      </tr>
+                    </template>
+                    <tr v-else>
+                      <td colspan="5" class="text-center empty-state">
+                        <IconEmpty class="mb-2" />
+                        <p>暂无切割方案</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 切割方案可视化 -->
+          <div class="steel-card mb-4">
+            <div class="card-body">
+              <h3 class="card-title mb-4">
+                <IconVisualize class="me-2" />
+                切割方案可视化
+              </h3>
+              <div class="cutting-visualization" ref="visualizationContainer"></div>
+            </div>
           </div>
         </div>
       </div>
-
-
-      <!-- 详细切割方案 -->
-      <div class="card">
-        <div class="card-body">
-          <h3 class="card-title mb-4">详细切割方案</h3>
-          <div class="table-responsive">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>原料编号</th>
-                  <th>原料规格</th>
-                  <th>切割明细</th>
-                  <th>剩余长度</th>
-                  <th>利用率</th>
-                </tr>
-              </thead>
-              <tbody>
-                <template v-if="cuttingPlan.length">
-                  <tr v-for="(plan, index) in cuttingPlan" :key="index">
-                    <td>{{ plan.barIndex }}</td>
-                    <td>{{ plan.originalSpec }}</td>
-                    <td>{{ plan.cutDetails }}</td>
-                    <td>
-                      <span :class="{ 'text-danger': plan.isWaste }">
-                        {{ plan.remainingLength }}mm
-                      </span>
-                    </td>
-                    <td>
-                      <span class="utilization-badge" :class="{
-                        'bg-success': plan.utilization >= 90,
-                        'bg-warning': plan.utilization < 90 && plan.utilization >= 70,
-                        'bg-danger': plan.utilization < 70
-                      }">
-                        {{ plan.utilization }}%
-                      </span>
-                    </td>
-                  </tr>
-                </template>
-                <tr v-else>
-                  <td colspan="5" class="text-center">暂无切割方案</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- 切割方案可视化 -->
-      <div class="card mb-4">
-        <div class="card-body">
-          <h3 class="card-title mb-4">切割方案可视化</h3>
-          <div class="cutting-visualization" ref="visualizationContainer"></div>
-        </div>
-      </div>
-
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, h } from 'vue'
 import * as d3 from 'd3'
 import ExcelJS from 'exceljs'
 import { ElMessage } from 'element-plus'
+import { Icon } from '@iconify/vue'
+
+// 图标组件定义
+const IconProfile = () => h(Icon, { icon: 'mdi:profile', width: '22', height: '22' })
+const IconAdd = () => h(Icon, { icon: 'mdi:plus', width: '20', height: '20' })
+const IconDelete = () => h(Icon, { icon: 'mdi:delete', width: '20', height: '20' })
+const IconCalculate = () => h(Icon, { icon: 'mdi:calculator', width: '20', height: '20' })
+const IconDataTransfer = () => h(Icon, { icon: 'mdi:data-transfer', width: '22', height: '22' })
+const IconDownload = () => h(Icon, { icon: 'mdi:download', width: '20', height: '20' })
+const IconImport = () => h(Icon, { icon: 'mdi:import', width: '20', height: '20' })
+const IconExport = () => h(Icon, { icon: 'mdi:export', width: '20', height: '20' })
+const IconImage = () => h(Icon, { icon: 'mdi:image', width: '20', height: '20' })
+const IconStats = () => h(Icon, { icon: 'mdi:chart-bar', width: '22', height: '22' })
+const IconPercentage = () => h(Icon, { icon: 'mdi:percent', width: '24', height: '24' })
+const IconBars = () => h(Icon, { icon: 'mdi:table-row', width: '24', height: '24' })
+const IconWaste = () => h(Icon, { icon: 'mdi:delete-empty', width: '24', height: '24' })
+const IconCost = () => h(Icon, { icon: 'mdi:currency-cny', width: '24', height: '24' })
+const IconUsage = () => h(Icon, { icon: 'mdi:chart-pie', width: '22', height: '22' })
+const IconPlan = () => h(Icon, { icon: 'mdi:format-list-checks', width: '22', height: '22' })
+const IconEmpty = () => h(Icon, { icon: 'mdi:folder-open-outline', width: '48', height: '48', class: 'd-block mx-auto text-muted' })
+const IconVisualize = () => h(Icon, { icon: 'mdi:chart-timeline-variant', width: '22', height: '22' })
 
 // 状态定义
 const stockList = ref([
@@ -855,7 +911,7 @@ const downloadTemplate = async () => {
   
   // 设置表头样式
   [stockSheet, cutSheet].forEach(sheet => {
-    sheet.getRow(1).font = { name: '微软雅黑', size: 11, bold: true };
+    sheet.getRow(1).font = { name: '微软雅黑', size: 11 };
     sheet.getRow(1).fill = {
       type: 'pattern',
       pattern: 'solid',
@@ -1156,87 +1212,21 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.cutting-visualization {
-  width: 100%;
-  overflow-x: auto;
-  min-height: 300px;
-}
-
-.stats-item {
-  padding: 1.5rem;
-  background: var(--light-bg);
-  border-radius: 12px;
-  transition: all 0.3s ease;
-}
-
-.stats-icon {
-  font-size: 2rem;
-  color: var(--secondary-color);
-}
-
-.stats-value {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: var(--primary-color);
-}
-
-.stats-label {
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.table th {
-  white-space: nowrap;
-}
-
-/* 新增固定定位样式 */
-.input-section {
-  /* 默认移动端样式 */
-  position: relative;
-  top: 0;
-  max-height: none;
-  overflow-y: visible;
-  z-index: 1;
-}
-
-/* 桌面端样式 */
-@media (min-width: 992px) {
-  .input-section {
-    position: sticky;
-    top: 50px;
-    max-height: calc(100vh - 40px);
-    overflow-y: auto;
-    z-index: 100;
-  }
-
-  /* 滚动条样式仅在桌面端生效 */
-  .input-section::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .input-section::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
-  }
-
-  .input-section::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 3px;
-  }
-
-  .input-section::-webkit-scrollbar-thumb:hover {
-    background: #999;
-  }
+.plastic-steel-view {
+  min-height: 100vh;
+  background-color: var(--dark-bg, #1e1e2f);
+  color: var(--text-color, #f8f9fa);
 }
 
 .hero-section {
   position: relative;
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-  padding: 80px 0;
+  background: linear-gradient(135deg, #1a237e 0%, #4a148c 100%);
   color: white;
   text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  padding: 2rem 0;
+  margin-bottom: 1rem;
   overflow: hidden;
-  margin-bottom: 2rem;
 }
 
 .hero-overlay {
@@ -1245,8 +1235,9 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: url('/pattern.png') repeat;
-  opacity: 0.1;
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+  background-size: 300px 300px;
+  opacity: 0.6;
 }
 
 .hero-content {
@@ -1256,75 +1247,361 @@ onMounted(() => {
 }
 
 .hero-title {
-  font-size: 3rem;
+  font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
-  background: linear-gradient(120deg, #ffd700, #fff);
+  background: linear-gradient(120deg, #ffe259, #ffa751);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 30px rgba(255, 226, 89, 0.4);
 }
 
 .hero-subtitle {
-  font-size: 1.8rem;
-  font-weight: 500;
-  margin-bottom: 3rem;
+  font-size: 1.4rem;
+  font-weight: 400;
   opacity: 0.9;
 }
 
-.hero-features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 2rem;
-  margin: 3rem auto;
-  max-width: 1200px;
-  padding: 0 1rem;
+/* 卡片样式 */
+.steel-card {
+  background: rgba(30, 30, 47, 0.6);
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
 }
 
-.feature-item {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 1.5rem;
-  backdrop-filter: blur(10px);
-  transition: transform 0.3s ease;
-}
-
-.feature-item:hover {
+.steel-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
 }
 
-.feature-item i {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-  color: #ffd700;
+.card-body {
+  padding: 1.5rem;
 }
 
-.feature-item p {
-  font-size: 1.1rem;
-  line-height: 1.5;
-  margin: 0;
-}
-
-.hero-cta {
-  margin-top: 3rem;
-}
-
-.hero-cta .btn {
-  padding: 1rem 2.5rem;
-  font-size: 1.2rem;
-  border-radius: 50px;
-  background: #ffd700;
-  border: none;
-  color: #1e3c72;
+.card-title {
+  color: #ffe259;
   font-weight: 600;
-  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+  display: flex;
+  align-items: center;
+}
+
+/* 表单样式 */
+.form-label {
+  font-weight: 500;
+  color: #ffa751;
+  margin-bottom: 0.5rem;
+}
+
+.form-control {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
   transition: all 0.3s ease;
 }
 
-.hero-cta .btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+.form-control:focus {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: #ffa751;
+  box-shadow: 0 0 0 0.2rem rgba(255, 167, 81, 0.25);
 }
 
+.input-group {
+  margin-bottom: 0.75rem;
+}
+
+/* 按钮样式 */
+.btn {
+  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-add {
+  background: linear-gradient(135deg, #43a047, #1de9b6);
+  border: none;
+  color: white;
+}
+
+.btn-add:hover {
+  background: linear-gradient(135deg, #2e7d32, #00bfa5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(29, 233, 182, 0.4);
+}
+
+.btn-delete {
+  background-color: rgba(244, 67, 54, 0.8);
+  border: none;
+  color: white;
+  width: 40px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.btn-delete:hover {
+  background-color: #d32f2f;
+}
+
+.btn-calculate {
+  background: linear-gradient(135deg, #ff9800, #ff5722);
+  border: none;
+  color: white;
+  padding: 0.8rem 1.5rem;
+  font-size: 1.1rem;
+}
+
+.btn-calculate:hover {
+  background: linear-gradient(135deg, #f57c00, #e64a19);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255, 87, 34, 0.4);
+}
+
+/* 统计卡片样式 */
+.stats-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 1.2rem;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  transition: all 0.3s ease;
+}
+
+.stats-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.stats-icon {
+  color: #ffa751;
+  margin-bottom: 0.8rem;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 167, 81, 0.15);
+}
+
+.stats-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+  color: #fff;
+}
+
+.stats-label {
+  font-size: 0.9rem;
+  color: #bbb;
+}
+
+/* 表格样式 */
+.custom-table {
+  width: 100%;
+  color: #ddd;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.custom-table thead th {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #ffa751;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1rem;
+}
+
+.custom-table tbody td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  vertical-align: middle;
+}
+
+.custom-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.table-total {
+  background-color: rgba(255, 167, 81, 0.1);
+}
+
+.table-total td {
+  color: #ffa751;
+}
+
+.utilization-badge {
+  display: inline-block;
+  padding: 0.35em 0.65em;
+  font-size: 0.75em;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 50rem;
+}
+
+.bg-success {
+  background-color: rgba(40, 167, 69, 0.8);
+}
+
+.bg-warning {
+  background-color: rgba(255, 193, 7, 0.8);
+  color: #212529;
+}
+
+.bg-danger {
+  background-color: rgba(220, 53, 69, 0.8);
+}
+
+.text-danger {
+  color: #f5706c !important;
+}
+
+.empty-state {
+  padding: 3rem 1rem;
+  color: #777;
+}
+
+/* 可视化区域 */
+.cutting-visualization {
+  width: 100%;
+  overflow-x: auto;
+  min-height: 300px;
+  padding: 1rem 0;
+}
+
+/* 导入导出按钮 */
+.btn-action {
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4a148c, #7b1fa2);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  color: white;
+}
+
+.btn-action:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(123, 31, 162, 0.5);
+  background: linear-gradient(135deg, #7b1fa2, #9c27b0);
+}
+
+.btn-icon-with-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.container {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 .8rem;
+}
+
+.btn-label {
+  font-size: 0.8rem;
+  color: #ddd;
+  margin-top: 0.5rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 991px) {
+  .hero-title {
+    font-size: 2rem;
+  }
+  
+  .hero-subtitle {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .hero-section {
+    padding: 40px 0;
+  }
+  
+  .stats-value {
+    font-size: 1.5rem;
+  }
+  
+  .stats-icon {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 576px) {
+  .hero-title {
+    font-size: 1.8rem;
+  }
+  
+  .btn-action {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .card-body {
+    padding: 1rem;
+  }
+  
+  .btn-label {
+    font-size: 0.7rem;
+  }
+}
+
+/* 输入区域固定定位 */
+.input-section {
+  position: relative;
+  top: 0;
+  max-height: none;
+  overflow-y: visible;
+  z-index: 1;
+}
+
+@media (min-width: 992px) {
+  .input-section {
+    position: sticky;
+    top: 10px;
+    max-height: calc(100vh - 80px);
+  }
+
+  .input-section::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .input-section::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+  }
+
+  .input-section::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+
+  .input-section::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* 动画 */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -1334,173 +1611,5 @@ onMounted(() => {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-@media (max-width: 768px) {
-  .hero-section {
-    padding: 60px 0;
-  }
-  
-  .hero-title {
-    font-size: 2.2rem;
-  }
-  
-  .hero-subtitle {
-    font-size: 1.4rem;
-  }
-  
-  .hero-features {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-}
-
-.materials-support {
-  padding: 40px 0;
-  background: linear-gradient(to bottom, #1e3c72, #2a5298);
-  text-align: center;
-}
-
-.section-title {
-  color: #FFD700;
-  font-size: 2rem;
-  margin-bottom: 40px;
-  font-weight: bold;
-}
-
-.materials-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-.material-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.material-item:hover {
-  transform: translateY(-5px);
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.material-icon {
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  margin-bottom: 10px;
-}
-
-.material-icon i {
-  font-size: 24px;
-  color: #FFD700;
-}
-
-.material-item span {
-  color: white;
-  font-size: 1rem;
-}
-
-@media (max-width: 1200px) {
-  .materials-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .materials-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 480px) {
-  .materials-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.btn-icon {
-  width: 56px;
-  height: 56px;
-  padding: 0;
-  border-radius: 50%;
-  background: #2ecc71 !important;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-icon:hover {
-  background: #27ae60 !important;
-  transform: translateY(-2px);
-  box-shadow: 0 3px 8px rgba(40, 167, 69, 0.2);
-}
-
-.btn-icon i {
-  font-size: 1.8rem;
-}
-
-.text-success {
-  color: #fff !important;
-}
-
-.btn-icon-with-label {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.btn-label {
-  font-size: 13px;
-  color: #333;
-  margin-top: 2px;
-  font-weight: 500;
-}
-
-.visualization-tabs {
-  width: 100%;
-}
-
-.nav-tabs {
-  border-bottom: 2px solid #e9ecef;
-}
-
-.nav-tabs .nav-link {
-  border: none;
-  color: #666;
-  padding: 0.75rem 1.5rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.nav-tabs .nav-link:hover {
-  color: #2196F3;
-  border: none;
-}
-
-.nav-tabs .nav-link.active {
-  color: #2196F3;
-  border: none;
-  border-bottom: 2px solid #2196F3;
-  background: transparent;
-}
-
-.tab-content {
-  padding: 1rem 0;
 }
 </style> 

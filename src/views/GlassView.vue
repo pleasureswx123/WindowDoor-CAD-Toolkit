@@ -11,10 +11,10 @@
       </div>
     </div>
 
-    <div class="container main-content">
-      <div class="row g-4">
+    <div class="container">
+      <div class="row g-3">
         <!-- 输入区域 -->
-        <div class="col-lg-4 input-section">
+        <div class="col-lg-4 input-section pb-lg-5">
           <!-- 原料规格卡片 -->
           <div class="card input-card glass-card mb-4">
             <div class="card-body">
@@ -1123,8 +1123,8 @@ const scrollToCalculator = () => {
 .hero-section {
   position: relative;
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-  padding: 3rem 0;
-  margin-bottom: 2rem;
+  padding: 2rem 0;
+  margin-bottom: 1rem;
   overflow: hidden;
 }
 
@@ -1141,7 +1141,7 @@ const scrollToCalculator = () => {
 
 .hero-content {
   position: relative;
-  z-index: 2;
+  z-index: 1;
   text-align: center;
 }
 
@@ -1156,17 +1156,15 @@ const scrollToCalculator = () => {
 }
 
 .hero-subtitle {
-  font-size: 1.2rem;
-  max-width: 800px;
-  margin: 0 auto;
+  font-size: 1.4rem;
+  font-weight: 400;
   opacity: 0.8;
 }
 
 .container {
   width: 100%;
-  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 .8rem;
 }
 
 .main-content {
@@ -1225,31 +1223,39 @@ const scrollToCalculator = () => {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-/* 输入区域 */
+/* 输入区域固定定位 */
 .input-section {
-  position: sticky;
-  top: 60px;
-  height: calc(100vh - 60px);
-  overflow-y: auto;
-  padding-right: 1rem;
+  position: relative;
+  top: 0;
+  max-height: none;
+  overflow-y: visible;
+  z-index: 1;
 }
 
-.input-section::-webkit-scrollbar {
-  width: 6px;
-}
+@media (min-width: 992px) {
+  .input-section {
+    position: sticky;
+    top: 10px;
+    max-height: calc(100vh - 80px);
+  }
 
-.input-section::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 3px;
-}
+  .input-section::-webkit-scrollbar {
+    width: 6px;
+  }
 
-.input-section::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-}
+  .input-section::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+  }
 
-.input-section::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  .input-section::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+
+  .input-section::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
 }
 
 .input-card {
