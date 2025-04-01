@@ -24,7 +24,10 @@
     "uuid": "^11.1.0",
     "vue": "^3.5.13",
     "vue-konva": "^3.2.0",
-    "vue-router": "^4.5.0"
+    "vue-router": "^4.5.0",
+    "bootstrap": "^5.3.3",
+    "d3": "^7.9.0",
+    "exceljs": "^4.4.0"
   },
   "devDependencies": {
     "@iconify-json/ant-design": "^1.2.5",
