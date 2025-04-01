@@ -3,7 +3,7 @@
     <!-- 顶部横幅 -->
     <div class="hero-section">
       <div class="hero-overlay"></div>
-      <div class="container">
+      <div class="container-box">
         <div class="hero-content">
           <h1 class="hero-title">型材切割优化工具</h1>
           <p class="hero-subtitle">高效下料方案，提升材料利用率，减少浪费</p>
@@ -11,7 +11,7 @@
       </div>
     </div>
 
-    <div class="container">
+    <div class="container-box">
       <div class="row g-3">
         <!-- 输入区域 -->
         <div class="col-lg-4 input-section pb-lg-5">
@@ -1509,7 +1509,7 @@ onMounted(() => {
   align-items: center;
 }
 
-.container {
+.container-box {
   width: 100%;
   margin: 0 auto;
   padding: 0 .8rem;
@@ -1579,7 +1579,8 @@ onMounted(() => {
   .input-section {
     position: sticky;
     top: 10px;
-    max-height: calc(100vh - 80px);
+    height: 100vh;
+    overflow-y: auto;
   }
 
   .input-section::-webkit-scrollbar {

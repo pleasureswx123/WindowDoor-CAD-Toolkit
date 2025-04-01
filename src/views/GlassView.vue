@@ -3,7 +3,7 @@
     <!-- 顶部横幅 -->
     <div class="hero-section">
       <div class="hero-overlay"></div>
-      <div class="container">
+      <div class="container-box">
         <div class="hero-content">
           <h1 class="hero-title">玻璃切割优化</h1>
           <p class="hero-subtitle">智能优化切割方案，最大化材料利用率，降低成本</p>
@@ -11,7 +11,7 @@
       </div>
     </div>
 
-    <div class="container">
+    <div class="container-box">
       <div class="row g-3">
         <!-- 输入区域 -->
         <div class="col-lg-4 input-section pb-lg-5">
@@ -19,7 +19,9 @@
           <div class="card input-card glass-card mb-4">
             <div class="card-body">
               <h3 class="card-title">
-                <i class="icon-wrapper"><el-icon><IconSheet /></el-icon></i>
+                <i class="icon-wrapper"><el-icon>
+                    <IconSheet />
+                  </el-icon></i>
                 原料规格
               </h3>
               <form @submit.prevent="calculateOptimization">
@@ -35,21 +37,27 @@
                           min="0" step="1">
                         <button type="button" class="btn btn-outline-secondary swap-btn" @click="swapDimensions(stock)"
                           title="交换宽高">
-                          <el-icon><IconSwap /></el-icon>
+                          <el-icon>
+                            <IconSwap />
+                          </el-icon>
                         </button>
                         <input type="number" class="form-control" v-model="stock.height" placeholder="高度(mm)" required
                           min="0" step="1">
-                        <input type="number" class="form-control" v-model="stock.price" placeholder="单价" required min="0"
-                          step="0.01">
+                        <input type="number" class="form-control" v-model="stock.price" placeholder="单价" required
+                          min="0" step="0.01">
                       </div>
                       <button type="button" class="btn btn-danger ms-2 d-flex align-items-center delete-btn"
                         @click="removeStockItem(index)" :disabled="stockList.length === 1">
-                        <el-icon><IconDelete /></el-icon>
+                        <el-icon>
+                          <IconDelete />
+                        </el-icon>
                       </button>
                     </div>
                   </div>
                   <button type="button" class="btn btn-add w-100 mb-3" @click="addStockItem">
-                    <el-icon><IconPlus /></el-icon>添加原料规格
+                    <el-icon>
+                      <IconPlus />
+                    </el-icon>添加原料规格
                   </button>
                 </div>
 
@@ -61,30 +69,38 @@
                   <div v-for="(item, index) in cutList" :key="index" class="mb-2">
                     <div class="d-flex cut-item">
                       <div class="flex-grow-1 d-flex">
-                        <input type="number" class="form-control" v-model="item.width" placeholder="宽度(mm)" required min="0"
-                          step="1">
+                        <input type="number" class="form-control" v-model="item.width" placeholder="宽度(mm)" required
+                          min="0" step="1">
                         <button type="button" class="btn btn-outline-secondary swap-btn" @click="swapDimensions(item)"
                           title="交换宽高">
-                          <el-icon><IconSwap /></el-icon>
+                          <el-icon>
+                            <IconSwap />
+                          </el-icon>
                         </button>
                         <input type="number" class="form-control" v-model="item.height" placeholder="高度(mm)" required
                           min="0" step="1">
-                        <input type="number" class="form-control" v-model="item.quantity" placeholder="数量" required min="1"
-                          step="1">
+                        <input type="number" class="form-control" v-model="item.quantity" placeholder="数量" required
+                          min="1" step="1">
                       </div>
                       <button type="button" class="btn btn-danger ms-2 d-flex align-items-center delete-btn"
                         @click="removeCutItem(index)">
-                        <el-icon><IconDelete /></el-icon>
+                        <el-icon>
+                          <IconDelete />
+                        </el-icon>
                       </button>
                     </div>
                   </div>
                   <button type="button" class="btn btn-add w-100" @click="addCutItem">
-                    <el-icon><IconPlus /></el-icon>添加切割项
+                    <el-icon>
+                      <IconPlus />
+                    </el-icon>添加切割项
                   </button>
                 </div>
 
                 <button type="submit" class="btn btn-primary w-100 mb-3 calculate-btn">
-                  <el-icon><IconCalculator /></el-icon>计算优化方案
+                  <el-icon>
+                    <IconCalculator />
+                  </el-icon>计算优化方案
                 </button>
               </form>
             </div>
@@ -95,30 +111,41 @@
             <div class="card-body">
               <div class="d-flex justify-content-between align-items-center mb-3">
                 <h3 class="card-title mb-0">
-                  <i class="icon-wrapper"><el-icon><IconImport /></el-icon></i>
+                  <i class="icon-wrapper"><el-icon>
+                      <IconImport />
+                    </el-icon></i>
                   数据导入导出
                 </h3>
-                <a href="#" class="text-primary text-decoration-none" @click.prevent="downloadTemplate" title="下载Excel模板">
-                  <el-icon><IconDownload /></el-icon>
+                <a href="#" class="text-primary text-decoration-none" @click.prevent="downloadTemplate"
+                  title="下载Excel模板">
+                  <el-icon>
+                    <IconDownload />
+                  </el-icon>
                   <small class="ms-1">下载模板</small>
                 </a>
               </div>
               <div class="import-export-buttons">
                 <div class="btn-item">
                   <button class="action-button" @click="importFromExcel" title="从Excel导入">
-                    <el-icon><IconExcel /></el-icon>
+                    <el-icon>
+                      <IconExcel />
+                    </el-icon>
                   </button>
                   <span class="btn-label">从Excel导入</span>
                 </div>
                 <div class="btn-item">
                   <button class="action-button" @click="exportToExcel" title="导出到Excel">
-                    <el-icon><IconExcelExport /></el-icon>
+                    <el-icon>
+                      <IconExcelExport />
+                    </el-icon>
                   </button>
                   <span class="btn-label">导出到Excel</span>
                 </div>
                 <div class="btn-item">
                   <button class="action-button" @click="exportToImage" title="导出到图片">
-                    <el-icon><IconPicture /></el-icon>
+                    <el-icon>
+                      <IconPicture />
+                    </el-icon>
                   </button>
                   <span class="btn-label">导出到图片</span>
                 </div>
@@ -133,14 +160,18 @@
           <div class="card result-card glass-card mb-4">
             <div class="card-body">
               <h3 class="card-title">
-                <i class="icon-wrapper"><el-icon><IconChartPie /></el-icon></i>
+                <i class="icon-wrapper"><el-icon>
+                    <IconChartPie />
+                  </el-icon></i>
                 优化结果统计
               </h3>
               <div class="row g-4">
                 <div class="col-md-3 col-6">
                   <div class="stats-item">
                     <div class="stats-icon">
-                      <el-icon><IconPercentage /></el-icon>
+                      <el-icon>
+                        <IconPercentage />
+                      </el-icon>
                     </div>
                     <div class="stats-value">{{ utilization.toFixed(2) }}%</div>
                     <div class="stats-label">材料利用率</div>
@@ -149,7 +180,9 @@
                 <div class="col-md-3 col-6">
                   <div class="stats-item">
                     <div class="stats-icon">
-                      <el-icon><IconLayers /></el-icon>
+                      <el-icon>
+                        <IconLayers />
+                      </el-icon>
                     </div>
                     <div class="stats-value">{{ totalSheets }}</div>
                     <div class="stats-label">需要原料数</div>
@@ -158,7 +191,9 @@
                 <div class="col-md-3 col-6">
                   <div class="stats-item">
                     <div class="stats-icon">
-                      <el-icon><IconWaste /></el-icon>
+                      <el-icon>
+                        <IconWaste />
+                      </el-icon>
                     </div>
                     <div class="stats-value">{{ (wasteArea / 1000000).toFixed(2) }}m²</div>
                     <div class="stats-label">总废料面积</div>
@@ -167,7 +202,9 @@
                 <div class="col-md-3 col-6">
                   <div class="stats-item">
                     <div class="stats-icon">
-                      <el-icon><IconMoney /></el-icon>
+                      <el-icon>
+                        <IconMoney />
+                      </el-icon>
                     </div>
                     <div class="stats-value">¥{{ totalCost }}</div>
                     <div class="stats-label">总成本</div>
@@ -181,7 +218,9 @@
           <div class="card result-card glass-card mb-4">
             <div class="card-body">
               <h3 class="card-title">
-                <i class="icon-wrapper"><el-icon><IconStatistics /></el-icon></i>
+                <i class="icon-wrapper"><el-icon>
+                    <IconStatistics />
+                  </el-icon></i>
                 原料使用统计
               </h3>
               <div class="table-responsive">
@@ -216,22 +255,29 @@
           <div class="card result-card glass-card mb-4">
             <div class="card-body">
               <h3 class="card-title">
-                <i class="icon-wrapper"><el-icon><IconCut /></el-icon></i>
+                <i class="icon-wrapper"><el-icon>
+                    <IconCut />
+                  </el-icon></i>
                 详细切割方案
               </h3>
               <div v-if="cuttingPlan.length">
-                <div v-for="(group, groupIndex) in groupedCuttingPlans" :key="groupIndex" class="cutting-plan-group mb-4">
+                <div v-for="(group, groupIndex) in groupedCuttingPlans" :key="groupIndex"
+                  class="cutting-plan-group mb-4">
                   <!-- 原料规格标题栏 -->
                   <div class="stock-header">
                     <div class="stock-info">
                       <div class="d-flex align-items-center justify-content-between w-100">
                         <h4 class="stock-title">
-                          <el-icon><IconStock /></el-icon>
+                          <el-icon>
+                            <IconStock />
+                          </el-icon>
                           <span>板材</span>
                           <span class="stock-dimensions">({{ group.spec }})</span>
                         </h4>
                         <div class="utilization-display" :class="getUtilizationClass(group.utilization)">
-                          <el-icon><IconPercentage /></el-icon>
+                          <el-icon>
+                            <IconPercentage />
+                          </el-icon>
                           <span>利用率: {{ group.utilization.toFixed(2) }}%</span>
                         </div>
                       </div>
@@ -263,13 +309,17 @@
                             <div class="cut-header-left">
                               <span class="cut-dimensions">{{ placement.width }}×{{ placement.height }}mm</span>
                               <span v-if="placement.rotated" class="cut-rotated" title="已旋转">
-                                <el-icon><IconRotate /></el-icon>
+                                <el-icon>
+                                  <IconRotate />
+                                </el-icon>
                               </span>
                             </div>
                           </div>
                           <div class="cut-details">
                             <div class="position-item">
-                              <el-icon><IconPosition /></el-icon>
+                              <el-icon>
+                                <IconPosition />
+                              </el-icon>
                               <span>位置: ({{ placement.x }},{{ placement.y }})</span>
                             </div>
                           </div>
@@ -279,11 +329,14 @@
                       <!-- 余料信息 -->
                       <div v-if="sheet.remainingSpaces && sheet.remainingSpaces.length > 0" class="waste-spaces">
                         <div class="waste-area">
-                          <el-icon><IconWastePiece /></el-icon>
+                          <el-icon>
+                            <IconWastePiece />
+                          </el-icon>
                           <span>余料: {{ (sheet.wasteArea / 1000000).toFixed(2) }}m²</span>
                         </div>
                         <div class="remaining-spaces">
-                          <div v-for="(space, spaceIndex) in sheet.remainingSpaces" :key="spaceIndex" class="space-item">
+                          <div v-for="(space, spaceIndex) in sheet.remainingSpaces" :key="spaceIndex"
+                            class="space-item">
                             <span class="space-dimensions">{{ space.width }}×{{ space.height }}mm</span>
                             <span class="space-position">({{ space.x }},{{ space.y }})</span>
                           </div>
@@ -294,7 +347,9 @@
                 </div>
               </div>
               <div v-else class="empty-state">
-                <el-icon><IconEmpty /></el-icon>
+                <el-icon>
+                  <IconEmpty />
+                </el-icon>
                 <p>暂无切割方案</p>
               </div>
             </div>
@@ -304,7 +359,9 @@
           <div class="card result-card glass-card mb-4">
             <div class="card-body">
               <h3 class="card-title">
-                <i class="icon-wrapper"><el-icon><IconVisualization /></el-icon></i>
+                <i class="icon-wrapper"><el-icon>
+                    <IconVisualization />
+                  </el-icon></i>
                 切割方案可视化
               </h3>
               <div class="cutting-visualization" ref="visualizationContainer"></div>
@@ -1161,7 +1218,7 @@ const scrollToCalculator = () => {
   opacity: 0.8;
 }
 
-.container {
+.container-box {
   width: 100%;
   margin: 0 auto;
   padding: 0 .8rem;
@@ -1236,7 +1293,8 @@ const scrollToCalculator = () => {
   .input-section {
     position: sticky;
     top: 10px;
-    max-height: calc(100vh - 80px);
+    height: 100vh;
+    overflow-y: auto;
   }
 
   .input-section::-webkit-scrollbar {
