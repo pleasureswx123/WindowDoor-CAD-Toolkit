@@ -7,7 +7,12 @@ export function login(data: {
   code: string
   uuid: string
 }) {
-  return post('/login', data)
+  return post('/login', data, {
+    headers: {
+      isToken: false,
+      repeatSubmit: false
+    }
+  })
 }
 
 // 注册接口
@@ -18,7 +23,11 @@ export function register(data: {
   code: string
   uuid: string
 }) {
-  return post('/register', data)
+  return post('/register', data, {
+    headers: {
+      isToken: false
+    }
+  })
 }
 
 // 退出登录
@@ -28,7 +37,12 @@ export function logout() {
 
 // 获取验证码
 export function getCaptcha() {
-  return get('/captchaImage')
+  return get('/captchaImage', {
+    headers: {
+      isToken: false
+    },
+    timeout: 20000
+  })
 }
 
 // 获取用户信息

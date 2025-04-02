@@ -7,81 +7,52 @@
           已有账号？ <router-link to="/login">立即登录</router-link>
         </div>
       </div>
-      
-      <el-form
-        ref="registerFormRef"
-        :model="registerForm"
-        :rules="registerRules"
-        class="register-form"
-        label-position="top"
-      >
+
+      <el-form ref="registerFormRef" :model="registerForm" :rules="registerRules" class="register-form"
+        label-position="top">
         <el-form-item prop="username" label="用户名">
-          <el-input
-            v-model="registerForm.username"
-            placeholder="请输入用户名"
-            prefix-icon="User"
-            clearable
-          />
+          <el-input v-model="registerForm.username" placeholder="请输入手机号" prefix-icon="User" clearable />
         </el-form-item>
-        
+
         <el-form-item prop="password" label="密码">
-          <el-input
-            v-model="registerForm.password"
-            type="password"
-            placeholder="请输入密码"
-            prefix-icon="Lock"
-            show-password
-            clearable
-          />
+          <el-input v-model="registerForm.password" type="password" placeholder="请输入密码" prefix-icon="Lock" show-password
+            clearable />
         </el-form-item>
-        
+
         <el-form-item prop="confirmPassword" label="确认密码">
-          <el-input
-            v-model="registerForm.confirmPassword"
-            type="password"
-            placeholder="请再次输入密码"
-            prefix-icon="Lock"
-            show-password
-            clearable
-          />
+          <el-input v-model="registerForm.confirmPassword" type="password" placeholder="请再次输入密码" prefix-icon="Lock"
+            show-password clearable />
         </el-form-item>
-        
+
         <el-form-item prop="code" label="验证码">
           <div class="captcha-container">
-            <el-input
-              v-model="registerForm.code"
-              placeholder="请输入验证码"
-              prefix-icon="Key"
-              clearable
-              @keyup.enter="handleRegister"
-            />
+            <el-input v-model="registerForm.code" placeholder="请输入验证码" prefix-icon="Key" clearable
+              @keyup.enter="handleRegister" />
             <div class="captcha-img" @click="refreshCaptcha">
               <img :src="captcha.captchaUrl" alt="验证码" v-if="captcha.captchaUrl">
               <div class="captcha-loading" v-else>
-                <el-icon><Loading /></el-icon>
+                <el-icon>
+                  <Loading />
+                </el-icon>
               </div>
             </div>
           </div>
         </el-form-item>
-        
+
         <el-form-item>
           <el-checkbox v-model="agreement" @change="validateAgreement">
-            我已阅读并同意 <a href="javascript:void(0)" @click="showAgreement">《用户协议》</a> 和 <a href="javascript:void(0)" @click="showPrivacy">《隐私政策》</a>
+            我已阅读并同意 <a href="javascript:void(0)" @click="showAgreement">《用户协议》</a> 和 <a href="javascript:void(0)"
+              @click="showPrivacy">《隐私政策》</a>
           </el-checkbox>
         </el-form-item>
-        
+
         <el-form-item>
-          <el-button
-            type="primary"
-            :loading="loading"
-            class="register-button"
-            @click="handleRegister"
-          >
+          <el-button type="primary" :loading="loading" class="register-button" @click="handleRegister">
             注册
           </el-button>
         </el-form-item>
       </el-form>
-      
+
       <div class="register-footer">
         <div class="other-login">
           <span>第三方账号注册：</span>
@@ -137,8 +108,8 @@ const validatePass = (rule: any, value: string, callback: any) => {
 // 验证规则
 const registerRules = {
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度在3到20个字符之间', trigger: 'blur' }
+    { required: true, message: '请输入手机号', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' },
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
@@ -148,8 +119,7 @@ const registerRules = {
     { required: true, validator: validatePass, trigger: 'blur' }
   ],
   code: [
-    { required: true, message: '请输入验证码', trigger: 'blur' },
-    { min: 4, max: 6, message: '验证码长度在4到6个字符之间', trigger: 'blur' }
+    { required: true, message: '请输入验证码', trigger: 'blur' }
   ]
 };
 
@@ -178,7 +148,7 @@ const captcha = reactive({
 async function getCaptcha() {
   try {
     const res = await userStore.getCaptcha();
-    captcha.captchaUrl = res.captchaUrl;
+    captcha.captchaUrl = 'data:image/png;base64,' + res.img;
     captcha.uuid = res.uuid;
     registerForm.uuid = res.uuid;
   } catch (error) {
