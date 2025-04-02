@@ -13,12 +13,13 @@
         :model="loginForm"
         :rules="loginRules"
         class="login-form"
-        label-position="top"
+        label-position="left"
+        label-width="70px"
       >
-        <el-form-item prop="username" label="用户名">
+        <el-form-item prop="username" label="手机号">
           <el-input
             v-model="loginForm.username"
-            placeholder="请输入用户名"
+            placeholder="请输入手机号"
             prefix-icon="User"
             clearable
             @keyup.enter="handleLogin"
@@ -70,23 +71,6 @@
           </el-button>
         </el-form-item>
       </el-form>
-      
-      <div class="login-footer">
-        <div class="other-login">
-          <span>其他登录方式：</span>
-          <div class="social-icons">
-            <el-tooltip content="微信登录" placement="top">
-              <Icon icon="ri:wechat-fill" class="social-icon" />
-            </el-tooltip>
-            <el-tooltip content="QQ登录" placement="top">
-              <Icon icon="ri:qq-fill" class="social-icon" />
-            </el-tooltip>
-            <el-tooltip content="钉钉登录" placement="top">
-              <Icon icon="ri:dingding-fill" class="social-icon" />
-            </el-tooltip>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -115,8 +99,8 @@ const loginForm = reactive({
 // 验证规则
 const loginRules = {
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度在3到20个字符之间', trigger: 'blur' }
+    { required: true, message: '请输入手机号', trigger: 'blur' },
+    { min: 3, max: 20, message: '手机号长度在3到20个字符之间', trigger: 'blur' }
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },

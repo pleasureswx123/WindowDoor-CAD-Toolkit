@@ -9,8 +9,8 @@
       </div>
 
       <el-form ref="registerFormRef" :model="registerForm" :rules="registerRules" class="register-form"
-        label-position="top">
-        <el-form-item prop="username" label="用户名">
+        label-position="left" label-width="80px">
+        <el-form-item prop="username" label="手机号">
           <el-input v-model="registerForm.username" placeholder="请输入手机号" prefix-icon="User" clearable />
         </el-form-item>
 
@@ -52,23 +52,6 @@
           </el-button>
         </el-form-item>
       </el-form>
-
-      <div class="register-footer">
-        <div class="other-login">
-          <span>第三方账号注册：</span>
-          <div class="social-icons">
-            <el-tooltip content="微信注册" placement="top">
-              <Icon icon="ri:wechat-fill" class="social-icon" />
-            </el-tooltip>
-            <el-tooltip content="QQ注册" placement="top">
-              <Icon icon="ri:qq-fill" class="social-icon" />
-            </el-tooltip>
-            <el-tooltip content="钉钉注册" placement="top">
-              <Icon icon="ri:dingding-fill" class="social-icon" />
-            </el-tooltip>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
