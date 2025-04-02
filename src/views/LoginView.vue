@@ -123,8 +123,7 @@ const loginRules = {
     { min: 6, max: 20, message: '密码长度在6到20个字符之间', trigger: 'blur' }
   ],
   code: [
-    { required: true, message: '请输入验证码', trigger: 'blur' },
-    { min: 4, max: 6, message: '验证码长度在4到6个字符之间', trigger: 'blur' }
+    { required: true, message: '请输入验证码', trigger: 'blur' }
   ]
 };
 
@@ -144,7 +143,7 @@ const captcha = reactive({
 async function getCaptcha() {
   try {
     const res = await userStore.getCaptcha();
-    captcha.captchaUrl = res.captchaUrl;
+    captcha.captchaUrl = 'data:image/png;base64,' + res.img;
     captcha.uuid = res.uuid;
     loginForm.uuid = res.uuid;
   } catch (error) {
