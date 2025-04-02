@@ -158,6 +158,7 @@
 import { ref, h, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Icon } from '@iconify/vue';
+import { checkLoginAndRedirect } from '../utils/auth';
 
 const router = useRouter();
 const featuresSection = ref<HTMLElement | null>(null);
@@ -172,9 +173,11 @@ const IconVisualization = () => h(Icon, { icon: 'tabler:eye', width: '28', heigh
 const Icon3D = () => h(Icon, { icon: 'tabler:cube', width: '28', height: '28' });
 const IconOptimization = () => h(Icon, { icon: 'tabler:chart-pie', width: '28', height: '28' });
 
-// 导航到指定路由
+// 导航到指定路由（添加登录检查）
 const navigateTo = (path: string) => {
-  router.push(path);
+  checkLoginAndRedirect(router, () => {
+    router.push(path);
+  });
 };
 
 // 滚动到功能区域
