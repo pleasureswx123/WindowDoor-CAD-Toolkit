@@ -19,12 +19,18 @@
             <div class="card-body">
               <h3 class="card-title mb-4">
                 <IconProfile class="me-2" />
-                原料规格
+                原料清单
               </h3>
               <form @submit.prevent="calculateOptimization">
                 <!-- 原料清单 -->
                 <div class="mb-3">
-                  <label class="form-label">原料清单</label>
+                  <!-- label 长度 价钱 -->
+                  <div class="d-flex justify-content-around align-items-center mb-2">
+                    <div class="">长度（毫米）</div>
+                    <div></div>
+                    <div class="">价钱（元）</div>
+                    <div></div>
+                  </div>
                   <div v-for="(stock, index) in stockList" :key="index" class="mb-2">
                     <div class="input-group">
                       <input type="number" class="form-control" v-model="stock.length" placeholder="长度(mm)" required
@@ -45,6 +51,13 @@
                 <!-- 切割清单 -->
                 <div class="mb-3">
                   <label class="form-label">切割清单</label>
+                  <!-- label 长度 数量 -->
+                  <div class="d-flex justify-content-around align-items-center mb-2">
+                    <div class="">长度（毫米）</div>
+                    <div></div>
+                    <div class="">数量（根数）</div>
+                    <div></div>
+                  </div>
                   <div v-for="(item, index) in cutList" :key="index" class="mb-2">
                     <div class="input-group">
                       <input type="number" class="form-control" v-model="item.length" placeholder="长度(mm)" required

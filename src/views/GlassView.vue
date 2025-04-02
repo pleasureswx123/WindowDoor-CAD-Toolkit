@@ -22,13 +22,19 @@
                 <i class="icon-wrapper"><el-icon>
                     <IconSheet />
                   </el-icon></i>
-                原料规格
+                原料清单
               </h3>
               <form @submit.prevent="calculateOptimization">
                 <!-- 原料清单 -->
                 <div class="mb-3">
-                  <div class="input-list-header">
-                    <label class="form-label">原料清单</label>
+                  <!-- label 宽度 高度 价钱 -->
+                  <div class="d-flex justify-content-around align-items-center mb-2">
+                    <div class="">宽度（毫米）</div>
+                    <div></div>
+                    <div class="">高度（毫米）</div>
+                    <div></div>
+                    <div class="">价钱（元）</div>
+                    <div></div>
                   </div>
                   <div v-for="(stock, index) in stockList" :key="index" class="mb-2">
                     <div class="d-flex stock-item">
@@ -65,6 +71,15 @@
                 <div class="mb-3">
                   <div class="input-list-header">
                     <label class="form-label">切割清单</label>
+                  </div>
+                  <!-- label 宽度 高度 价钱 -->
+                  <div class="d-flex justify-content-around align-items-center mb-2">
+                    <div class="">宽度（毫米）</div>
+                    <div></div>
+                    <div class="">高度（毫米）</div>
+                    <div></div>
+                    <div class="">数量（根数）</div>
+                    <div></div>
                   </div>
                   <div v-for="(item, index) in cutList" :key="index" class="mb-2">
                     <div class="d-flex cut-item">
