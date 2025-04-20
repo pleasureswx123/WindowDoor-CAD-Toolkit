@@ -1,31 +1,21 @@
 <template>
   <div class="material-stats-container">
     <h3 class="stats-title">窗户材料用量统计</h3>
-    
+
     <!-- 过滤器和操作区域 -->
     <div class="filter-area">
       <el-select v-model="filter" placeholder="按类别筛选" clearable>
-        <el-option
-          v-for="item in categoryOptions"
-          :key="item.value"
-          :label="item.label"
-          :value="item.value"
-        />
+        <el-option v-for="item in categoryOptions" :key="item.value" :label="item.label" :value="item.value" />
       </el-select>
       <el-button type="primary" @click="calculateMaterials">刷新统计</el-button>
       <el-button @click="exportToExcel">导出所有数据</el-button>
+      <el-button @click="exportFrameData">导出窗户外框、中挺、窗扇窗框数据</el-button>
+      <el-button @click="exportGlassData">导出窗扇玻璃数据</el-button>
     </div>
-    
+
     <!-- 统计表格 -->
-    <el-table
-      :data="filteredMaterialStats"
-      border
-      stripe
-      style="width: 100%"
-      max-height="400px"
-      :summary-method="getSummaries"
-      show-summary
-    >
+    <el-table :data="filteredMaterialStats" border stripe style="width: 100%" max-height="400px"
+      :summary-method="getSummaries" show-summary>
       <el-table-column prop="category" label="类别" width="150" />
       <el-table-column prop="size" label="尺寸" />
       <el-table-column prop="quantity" label="数量" width="100" />
@@ -473,6 +463,227 @@ async function exportToExcel() {
     
     // 显示成功提示
     ElMessage.success('导出成功');
+    
+  } catch (error) {
+    console.error('导出Excel时发生错误:', error);
+    ElMessage.error('导出失败，请稍后再试');
+  }
+}
+
+// 导出窗扇玻璃数据到Excel
+async function exportGlassData() {
+  try {
+    // 过滤出窗扇玻璃数据
+    const glassData = materialStats.value.filter(item => item.category === '窗扇玻璃');
+    
+    if (glassData.length === 0) {
+      ElMessage.warning('没有找到窗扇玻璃数据');
+      return;
+    }
+
+    // 创建工作簿
+    const workbook = new ExcelJS.Workbook();
+    
+    // 创建原料清单工作表
+    const stockSheet = workbook.addWorksheet('原料清单');
+    stockSheet.columns = [
+      { header: '序号', width: 10 },
+      { header: '宽度(mm)', width: 15 },
+      { header: '高度(mm)', width: 15 },
+      { header: '单价(元)', width: 15 }
+    ];
+    // 添加原料数据（固定数据）
+    stockSheet.addRow([1, 2440, 1200, 1000]);
+    
+    // 创建切割清单工作表
+    const cutSheet = workbook.addWorksheet('切割清单');
+    cutSheet.columns = [
+      { header: '序号', width: 10 },
+      { header: '宽度(mm)', width: 15 },
+      { header: '高度(mm)', width: 15 },
+      { header: '数量(件)', width: 15 }
+    ];
+    
+    // 从尺寸字符串提取宽度和高度，然后添加到切割清单
+    glassData.forEach((item, index) => {
+      // 从尺寸字符串中提取宽度和高度
+      // 格式例如："1000mm × 800mm"
+      const dimensions = item.size.match(/(\d+)mm\s*×\s*(\d+)mm/);
+      if (dimensions && dimensions.length >= 3) {
+        const width = parseInt(dimensions[1]);
+        const height = parseInt(dimensions[2]);
+        cutSheet.addRow([index + 1, width, height, item.quantity]);
+      }
+    });
+    
+    // 设置表头样式
+    [stockSheet, cutSheet].forEach(sheet => {
+      sheet.getRow(2).font = { name: '微软雅黑', size: 11, bold: true };
+      sheet.getRow(2).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFDDEBF7' }
+      };
+
+      // 添加说明行
+      sheet.insertRow(1, ['请按照以下格式填写数据']);
+      sheet.getRow(1).font = { name: '微软雅黑', size: 12, bold: true, color: { argb: 'FF0000FF' } };
+      sheet.mergeCells('A1:D1');
+      sheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      
+      // 添加边框
+      for (let i = 1; i <= sheet.rowCount; i++) {
+        sheet.getRow(i).eachCell({ includeEmpty: true }, (cell) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        });
+      }
+    });
+    
+    // 添加页脚信息
+    const footerRow = cutSheet.addRow(['本表格由窗户设计系统自动生成']);
+    cutSheet.mergeCells(`A${footerRow.number}:D${footerRow.number}`);
+    footerRow.font = { italic: true, color: { argb: 'FF808080' } };
+    footerRow.alignment = { horizontal: 'center' };
+    
+    // 生成二进制数据并创建Blob
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    
+    // 创建下载链接并触发下载
+    const fileName = `窗扇玻璃加工清单_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // 显示成功提示
+    ElMessage.success('窗扇玻璃数据导出成功');
+    
+  } catch (error) {
+    console.error('导出Excel时发生错误:', error);
+    ElMessage.error('导出失败，请稍后再试');
+  }
+}
+
+// 导出窗户外框、中挺、窗扇窗框数据
+async function exportFrameData() {
+  try {
+    // 过滤出窗户外框、中挺、窗扇窗框数据
+    const frameData = materialStats.value.filter(item => 
+      item.category === '窗户外框' || 
+      item.category === '中挺' || 
+      item.category === '窗扇窗框'
+    );
+    
+    if (frameData.length === 0) {
+      ElMessage.warning('没有找到窗户框架相关数据');
+      return;
+    }
+    
+    // 创建工作簿
+    const workbook = new ExcelJS.Workbook();
+    
+    // 创建原料清单工作表
+    const stockSheet = workbook.addWorksheet('原料清单');
+    stockSheet.columns = [
+      { header: '序号', width: 10 },
+      { header: '长度(mm)', width: 15 },
+      { header: '单价(元)', width: 15 }
+    ];
+    
+    // 添加原料数据（固定数据）
+    stockSheet.addRow([1, 6000, 100]);
+    
+    // 创建切割清单工作表
+    const cutSheet = workbook.addWorksheet('切割清单');
+    cutSheet.columns = [
+      { header: '序号', width: 10 },
+      { header: '长度(mm)', width: 15 },
+      { header: '数量(根)', width: 15 }
+    ];
+    
+    // 对数据进行排序：按长度排序
+    const sortedData = [...frameData].sort((a, b) => {
+      // 从尺寸字符串中提取长度值
+      const getLengthFromSize = (sizeStr: string): number => {
+        const match = sizeStr.match(/(\d+)mm\s*×\s*(\d+)mm/);
+        return match ? Math.max(parseInt(match[1]), parseInt(match[2])) : 0;
+      };
+      
+      const lengthA = getLengthFromSize(a.size);
+      const lengthB = getLengthFromSize(b.size);
+      
+      return lengthB - lengthA; // 降序排列
+    });
+    
+    // 添加切割清单数据
+    sortedData.forEach((item, index) => {
+      // 从尺寸字符串中提取长度
+      // 格式例如："60mm × 1000mm" 或 "60mm × 800mm (水平)"
+      const dimensions = item.size.match(/(\d+)mm\s*×\s*(\d+)mm/);
+      if (dimensions && dimensions.length >= 3) {
+        // 取两个数中较大的作为长度
+        const length = Math.max(parseInt(dimensions[1]), parseInt(dimensions[2]));
+        cutSheet.addRow([index + 1, length, item.quantity]);
+      }
+    });
+    
+    // 设置表头样式
+    [stockSheet, cutSheet].forEach(sheet => {
+      sheet.getRow(2).font = { name: '微软雅黑', size: 11 };
+      sheet.getRow(2).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFDDEBF7' }
+      };
+
+      // 添加说明行
+      sheet.insertRow(1, ['请按照以下格式填写数据']);
+      sheet.getRow(1).font = { name: '微软雅黑', size: 12, bold: true, color: { argb: 'FF0000FF' } };
+      sheet.mergeCells('A1:C1');
+      sheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      
+      // 添加边框
+      for (let i = 1; i <= sheet.rowCount; i++) {
+        sheet.getRow(i).eachCell({ includeEmpty: true }, (cell) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        });
+      }
+    });
+    
+    // 添加页脚信息
+    const footerRow = cutSheet.addRow(['本表格由窗户设计系统自动生成']);
+    cutSheet.mergeCells(`A${footerRow.number}:C${footerRow.number}`);
+    footerRow.font = { italic: true, color: { argb: 'FF808080' } };
+    footerRow.alignment = { horizontal: 'center' };
+    
+    // 生成二进制数据并创建Blob
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    
+    // 创建下载链接并触发下载
+    const fileName = `窗户框架加工清单_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // 显示成功提示
+    ElMessage.success('窗户框架数据导出成功');
     
   } catch (error) {
     console.error('导出Excel时发生错误:', error);
