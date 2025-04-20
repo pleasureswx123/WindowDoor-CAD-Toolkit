@@ -80,58 +80,34 @@ onMounted(() => {
     <!-- 顶部标题和折叠按钮 -->
     <div class="sidebar-header">
       <div class="sidebar-title" v-if="!isCollapsed">门窗设计工具</div>
-      <el-button 
-        class="collapse-btn" 
-        circle 
-        @click="toggleCollapse" 
-      >
+      <el-button class="collapse-btn" circle @click="toggleCollapse">
         <Icon icon="tabler:menu-2" />
       </el-button>
     </div>
-    
+
     <!-- 导航菜单 -->
-    <el-menu
-      :default-active="activeIndex"
-      class="sidebar-menu"
-      :collapse="isCollapsed"
-      :collapse-transition="false"
-      @select="navigateTo"
-    >
-      <el-menu-item 
-        v-for="item in menuItems" 
-        :key="item.path" 
-        :index="item.path"
-        @click="navigateTo(item.path)"
-      >
-        <el-icon><component :is="item.icon" /></el-icon>
+    <el-menu :default-active="activeIndex" class="sidebar-menu" :collapse="isCollapsed" :collapse-transition="false"
+      @select="navigateTo">
+      <el-menu-item v-for="item in menuItems" :key="item.path" :index="item.path" @click="navigateTo(item.path)">
+        <el-icon>
+          <component :is="item.icon" />
+        </el-icon>
         <template #title>{{ item.title }}</template>
       </el-menu-item>
     </el-menu>
-    
+
     <!-- 底部设置按钮 -->
     <div class="sidebar-footer">
-      <el-tooltip 
-        :content="isCollapsed ? '设置' : ''" 
-        placement="right" 
-        :disabled="!isCollapsed"
-      >
-        <el-button 
-          class="setting-btn" 
-          circle 
-          @click="navigateTo('/settings')" 
-        >
-          <Icon icon="tabler:settings" />
+      <el-tooltip :content="isCollapsed ? '反馈' : ''" placement="right" :disabled="!isCollapsed">
+        <el-button class="feedback-btn" circle @click="navigateTo('/feedback')">
+          <Icon icon="tabler:brand-feedly" />
         </el-button>
       </el-tooltip>
       <div class="version" v-if="!isCollapsed">Version 1.0</div>
     </div>
-    
+
     <!-- 移动端遮罩层 -->
-    <div 
-      v-if="isMobile && !isCollapsed" 
-      class="sidebar-overlay" 
-      @click="toggleCollapse"
-    ></div>
+    <div v-if="isMobile && !isCollapsed" class="sidebar-overlay" @click="toggleCollapse"></div>
   </div>
 </template>
 
@@ -212,7 +188,7 @@ onMounted(() => {
   color: #8c8c8c;
 }
 
-.setting-btn {
+.feedback-btn {
   padding: 6px;
   color: #e0e0e0;
   background-color: transparent;

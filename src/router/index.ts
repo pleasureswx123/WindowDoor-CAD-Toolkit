@@ -55,6 +55,15 @@ const router = createRouter({
         title: '塑钢型材切割优化',
         requiresAuth: true
       }
+    },
+    {
+      path: '/feedback',
+      name: 'Feedback',
+      component: () => import('../views/FeedbacklView.vue'),
+      meta: {
+        title: '反馈问题',
+        requiresAuth: true
+      }
     }
   ],
   scrollBehavior(to, from, savedPosition) {
