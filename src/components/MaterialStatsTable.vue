@@ -13,7 +13,7 @@
         />
       </el-select>
       <el-button type="primary" @click="calculateMaterials">刷新统计</el-button>
-      <el-button @click="exportToExcel">导出数据</el-button>
+      <el-button @click="exportToExcel">导出所有数据</el-button>
     </div>
     
     <!-- 统计表格 -->
@@ -39,6 +39,8 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRootWindowStore } from '@/stores/rootWindowStore';
 import { WindowStructure, WindowFrame, WindowEmptyArea, WindowMuntin, WindowSash, WindowSashFrame, WindowSashGlass } from '@/utils/RootWindow';
+import * as ExcelJS from 'exceljs';
+import { ElMessage } from 'element-plus';
 
 // 定义材料统计项数据结构
 interface MaterialItem {
@@ -61,8 +63,8 @@ const categoryOptions = [
 
 // 材料统计数据
 const materialStats = ref<MaterialItem[]>([]);
-const showLength = ref(false);
-const showArea = ref(false);
+const showLength = ref(true);
+const showArea = ref(true);
 
 // 过滤后的材料统计数据
 const filteredMaterialStats = computed(() => {
@@ -278,9 +280,204 @@ function getSummaries(param: any) {
 }
 
 // 导出数据到Excel
-function exportToExcel() {
-  alert('导出功能开发中...');
-  // TODO: 实现导出功能
+async function exportToExcel() {
+  try {
+    // 创建工作簿和工作表
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('窗户材料统计');
+    
+    // 设置列宽
+    worksheet.columns = [
+      { header: '类别', key: 'category', width: 15 },
+      { header: '尺寸', key: 'size', width: 30 },
+      { header: '数量', key: 'quantity', width: 10 },
+      { header: '总长度(mm)', key: 'length', width: 15 },
+      { header: '面积(m²)', key: 'area', width: 15 },
+    ];
+    
+    // 添加大标题
+    worksheet.insertRow(1, []);
+    worksheet.insertRow(1, []);
+    const titleRow = worksheet.getRow(1);
+    titleRow.getCell(1).value = '窗户材料用量统计表';
+    titleRow.height = 30;
+    worksheet.mergeCells('A1:E1');
+    titleRow.font = { bold: true, size: 16 };
+    titleRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    titleRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF92CDDC' }
+    };
+    
+    // 添加副标题（导出时间）
+    const dateRow = worksheet.getRow(2);
+    dateRow.getCell(1).value = `导出时间：${new Date().toLocaleString()}`;
+    worksheet.mergeCells('A2:E2');
+    dateRow.font = { size: 11 };
+    dateRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    dateRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFDAEEF3' }
+    };
+    
+    // 设置表头样式 (现在是第3行)
+    const headerRow = worksheet.getRow(3);
+    headerRow.font = { bold: true };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' }
+    };
+    
+    // 按类别分组数据
+    const categories = [...new Set(materialStats.value.map(item => item.category))];
+    let currentRow = 4; // 从第4行开始（前3行是标题和表头）
+    let totalQuantity = 0;
+    let totalLength = 0;
+    let totalArea = 0;
+    
+    // 类别颜色映射
+    const categoryColors: Record<string, string> = {
+      '窗户外框': 'FFF2F2F2',
+      '中挺': 'FFEAF8FF',
+      '窗扇窗框': 'FFFFF8E6',
+      '窗扇玻璃': 'FFF5F5F5'
+    };
+    
+    // 为每个类别添加数据
+    categories.forEach((category, index) => {
+      // 添加类别标题行
+      const categoryHeaderRow = worksheet.addRow({
+        category: `【${category}】`
+      });
+      currentRow++;
+      
+      // 设置类别标题样式
+      categoryHeaderRow.font = { bold: true, size: 12 };
+      categoryHeaderRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFD0D0D0' }
+      };
+      
+      // 添加类别数据
+      const categoryItems = materialStats.value.filter(item => item.category === category);
+      
+      // 统计当前类别的小计
+      const categoryQuantity = categoryItems.reduce((sum, item) => sum + item.quantity, 0);
+      const categoryLength = categoryItems.reduce((sum, item) => sum + (item.length || 0), 0);
+      const categoryArea = categoryItems.reduce((sum, item) => sum + (item.area || 0), 0);
+      
+      // 累加总计
+      totalQuantity += categoryQuantity;
+      totalLength += categoryLength;
+      totalArea += categoryArea;
+      
+      // 添加每个类别的数据行
+      categoryItems.forEach(item => {
+        const row = worksheet.addRow({
+          category: item.category,
+          size: item.size,
+          quantity: item.quantity,
+          length: item.length || 0,
+          area: item.area || 0
+        });
+        currentRow++;
+        
+        // 设置数据行背景色
+        row.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: categoryColors[category] || 'FFFFFFFF' }
+        };
+      });
+      
+      // 添加类别小计行
+      const subtotalRow = worksheet.addRow({
+        category: `${category}小计`,
+        quantity: categoryQuantity,
+        length: categoryLength,
+        area: categoryArea.toFixed(2)
+      });
+      currentRow++;
+      
+      // 设置小计行样式
+      subtotalRow.font = { bold: true };
+      subtotalRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFDFEAFF' }
+      };
+      
+      // 如果不是最后一个类别，添加空行
+      if (index < categories.length - 1) {
+        worksheet.addRow({});
+        currentRow++;
+      }
+    });
+    
+    // 添加总计行
+    const totalRow = worksheet.addRow({
+      category: '总计',
+      quantity: totalQuantity,
+      length: totalLength,
+      area: totalArea.toFixed(2)
+    });
+    
+    // 设置总计行样式
+    totalRow.font = { bold: true, size: 12 };
+    totalRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFB8CCE4' }
+    };
+    
+    // 添加页脚信息
+    worksheet.addRow({});
+    const footerRow = worksheet.addRow(['本表格由窗户设计系统自动生成']);
+    worksheet.mergeCells(`A${footerRow.number}:E${footerRow.number}`);
+    footerRow.font = { italic: true, color: { argb: 'FF808080' } };
+    footerRow.alignment = { horizontal: 'center' };
+    
+    // 设置数字格式
+    worksheet.getColumn('length').numFmt = '0.00';
+    worksheet.getColumn('area').numFmt = '0.00';
+    
+    // 添加边框
+    for (let i = 1; i <= worksheet.rowCount; i++) {
+      const row = worksheet.getRow(i);
+      row.eachCell({ includeEmpty: true }, (cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+    }
+    
+    // 生成二进制数据并创建Blob
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    
+    // 创建下载链接并触发下载
+    const fileName = `窗户材料统计_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // 显示成功提示
+    ElMessage.success('导出成功');
+    
+  } catch (error) {
+    console.error('导出Excel时发生错误:', error);
+    ElMessage.error('导出失败，请稍后再试');
+  }
 }
 
 // 监听窗户结构变化，自动更新统计
