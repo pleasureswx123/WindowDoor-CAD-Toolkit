@@ -47,6 +47,7 @@ declare module 'vue' {
     ElMenu: typeof import('element-plus/es')['ElMenu']
     ElMenuItem: typeof import('element-plus/es')['ElMenuItem']
     ElOption: typeof import('element-plus/es')['ElOption']
+    ElPagination: typeof import('element-plus/es')['ElPagination']
     ElRadio: typeof import('element-plus/es')['ElRadio']
     ElRadioButton: typeof import('element-plus/es')['ElRadioButton']
     ElRadioGroup: typeof import('element-plus/es')['ElRadioGroup']
@@ -61,6 +62,7 @@ declare module 'vue' {
     ElTabs: typeof import('element-plus/es')['ElTabs']
     ElTag: typeof import('element-plus/es')['ElTag']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
+    ElUpload: typeof import('element-plus/es')['ElUpload']
     FrameSizeControl: typeof import('./components/WindowDoor/utils/FrameSizeControl.vue')['default']
     Glass: typeof import('./components/WindowDoor/Glass.vue')['default']
     Handle: typeof import('./components/WindowDoor/Handle.vue')['default']
@@ -121,5 +123,8 @@ declare module 'vue' {
     WindowCanvas: typeof import('./components/WindowCanvas.vue')['default']
     WindowDoorApp: typeof import('./components/WindowDoor/WindowDoorApp.vue')['default']
     ZoomControls: typeof import('./components/WindowDoor/ZoomControls.vue')['default']
+  }
+  export interface ComponentCustomProperties {
+    vLoading: typeof import('element-plus/es')['ElLoadingDirective']
   }
 }
