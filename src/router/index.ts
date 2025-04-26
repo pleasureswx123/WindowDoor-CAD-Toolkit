@@ -79,6 +79,9 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
   
+  // 每次路由导航前检查token是否过期
+  userStore.checkLogin()
+  
   // 检查该路由是否需要登录
   if (to.matched.some(record => record.meta.requiresAuth)) {
     // 如果需要登录但用户未登录，重定向到登录页面

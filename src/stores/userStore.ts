@@ -17,19 +17,37 @@ interface RegisterData {
   uuid: string
 }
 
+// 定义返回数据接口
+interface LoginResponse {
+  token: string
+  [key: string]: any
+}
+
 export const useUserStore = defineStore('user', () => {
   // 状态
   const token = ref<string>(localStorage.getItem('token') || '')
+  const tokenExpireTime = ref<number>(Number(localStorage.getItem('tokenExpireTime')) || 0)
   const userInfo = ref<any>(JSON.parse(localStorage.getItem('userInfo') || '{}'))
   
   // 计算属性
-  const isLoggedIn = computed(() => !!token.value)
+  const isLoggedIn = computed(() => {
+    return !!token.value && !isTokenExpired()
+  })
   const username = computed(() => userInfo.value.username)
   
-  // 动作
+  // 检查token是否过期
+  function isTokenExpired(): boolean {
+    return Date.now() > tokenExpireTime.value
+  }
+  
+  // 设置token和过期时间（1天后过期）
   function setToken(newToken: string) {
     token.value = newToken
+    // 设置token过期时间为当前时间 + 24小时（86400000毫秒）
+    const expireTime = Date.now() + 86400000 
+    tokenExpireTime.value = expireTime
     localStorage.setItem('token', newToken)
+    localStorage.setItem('tokenExpireTime', expireTime.toString())
   }
   
   function setUserInfo(info: any) {
@@ -39,10 +57,10 @@ export const useUserStore = defineStore('user', () => {
   
   async function login(loginData: LoginData) {
     try {
-      const res = await apiLogin(loginData)
-      setToken(res.token)
+      const response = await apiLogin(loginData) as unknown as LoginResponse
+      setToken(response.token)
       await getInfo() // 登录后获取用户信息
-      return Promise.resolve(res)
+      return Promise.resolve(response)
     } catch (error) {
       return Promise.reject(error)
     }
@@ -90,13 +108,33 @@ export const useUserStore = defineStore('user', () => {
   // 重置状态
   function resetState() {
     token.value = ''
+    tokenExpireTime.value = 0
     userInfo.value = {}
     localStorage.removeItem('token')
+    localStorage.removeItem('tokenExpireTime')
     localStorage.removeItem('userInfo')
   }
   
+  // 检查登录状态，包括token是否过期
   function checkLogin() {
+    if (isTokenExpired() && token.value) {
+      // 如果token已过期但存在，执行登出操作
+      resetState()
+      return false
+    }
     return isLoggedIn.value
+  }
+  
+  // 仅用于测试：设置token即将过期
+  function setTokenToExpireSoon() {
+    if (token.value) {
+      // 设置token将在10秒后过期
+      const expireTime = Date.now() + 10000
+      tokenExpireTime.value = expireTime
+      localStorage.setItem('tokenExpireTime', expireTime.toString())
+      return true
+    }
+    return false
   }
   
   return {
@@ -109,6 +147,8 @@ export const useUserStore = defineStore('user', () => {
     getCaptcha,
     getInfo,
     logout,
-    checkLogin
+    checkLogin,
+    isTokenExpired,
+    setTokenToExpireSoon
   }
 }) 

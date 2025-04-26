@@ -1,5 +1,30 @@
 <template>
   <div class="home-container">
+    <!-- Token状态悬浮组件 -->
+    <!-- <div v-if="userStore.isLoggedIn" class="token-status-card">
+      <h3>登录状态</h3>
+      <div class="token-info">
+        <p>
+          <strong>用户名:</strong> {{ userStore.username }}
+        </p>
+        <p>
+          <strong>状态:</strong> 
+          <el-tag type="success" v-if="userStore.isLoggedIn">已登录</el-tag>
+          <el-tag type="danger" v-else>未登录</el-tag>
+        </p>
+        <p>
+          <strong>过期时间:</strong> {{ tokenExpireTimeFormatted }}
+        </p>
+        <p>
+          <strong>剩余时间:</strong> {{ remainingTimeFormatted }}
+        </p>
+        
+        <el-button type="warning" size="small" @click="testExpiration">
+          测试: 10秒后过期
+        </el-button>
+      </div>
+    </div> -->
+
     <!-- 几何形状背景的顶部横幅 -->
     <div class="hero-section">
       <div class="hero-geometric-shapes">
@@ -159,9 +184,13 @@ import { ref, h, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Icon } from '@iconify/vue';
 import { checkLoginAndRedirect } from '../utils/auth';
+import { useUserStore } from '../stores/userStore'
+import { computed } from 'vue'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter();
 const featuresSection = ref<HTMLElement | null>(null);
+const userStore = useUserStore()
 
 // 图标组件
 const IconWindow = () => h(Icon, { icon: 'tabler:window', width: '24', height: '24' });
@@ -175,9 +204,12 @@ const IconOptimization = () => h(Icon, { icon: 'tabler:chart-pie', width: '28', 
 
 // 导航到指定路由（添加登录检查）
 const navigateTo = (path: string) => {
-  checkLoginAndRedirect(router, () => {
-    router.push(path);
-  });
+  if (userStore.isLoggedIn || path === '/login') {
+    router.push(path)
+  } else {
+    ElMessage.warning('请先登录')
+    router.push('/login')
+  }
 };
 
 // 滚动到功能区域
@@ -199,6 +231,37 @@ onMounted(() => {
     observer.observe(el);
   });
 });
+
+// 格式化过期时间
+const tokenExpireTimeFormatted = computed(() => {
+  const expireTime = localStorage.getItem('tokenExpireTime')
+  if (!expireTime) return '无'
+  
+  return new Date(parseInt(expireTime)).toLocaleString()
+})
+
+// 计算剩余有效时间
+const remainingTimeFormatted = computed(() => {
+  const expireTime = localStorage.getItem('tokenExpireTime')
+  if (!expireTime) return '无'
+  
+  const remaining = parseInt(expireTime) - Date.now()
+  if (remaining <= 0) return '已过期'
+  
+  // 转换为小时和分钟
+  const hours = Math.floor(remaining / (1000 * 60 * 60))
+  const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((remaining % (1000 * 60)) / 1000)
+  
+  return `${hours}小时${minutes}分钟${seconds}秒`
+})
+
+// 测试token过期功能
+const testExpiration = () => {
+  if (userStore.setTokenToExpireSoon()) {
+    ElMessage.success('Token将在10秒后过期，请留意登录状态变化')
+  }
+}
 </script>
 
 <style scoped>
@@ -738,5 +801,38 @@ onMounted(() => {
     transform-origin: center;
     transform: scale(0.5);
   }
+}
+
+/* Token状态卡片样式 */
+.token-status-card {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: rgba(30, 30, 30, 0.9);
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 15px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  width: 260px;
+  color: #e0e0e0;
+}
+
+.token-status-card h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 16px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 8px;
+}
+
+.token-info p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.token-status-card .el-button {
+  margin-top: 10px;
+  width: 100%;
 }
 </style>
