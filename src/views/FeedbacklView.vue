@@ -34,7 +34,7 @@
           </el-select>
         </el-form-item>
         
-        <el-form-item label="问题截图">
+        <!-- <el-form-item label="问题截图">
           <el-upload
             class="feedback-upload"
             action="#"
@@ -54,7 +54,7 @@
               </div>
             </template>
           </el-upload>
-        </el-form-item>
+        </el-form-item> -->
         
         <el-form-item label="联系方式" prop="contact">
           <el-input
