@@ -281,18 +281,8 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRootWindowStore } from '@/stores/rootWindowStore';
 import { Icon } from '@iconify/vue';
-import { ArrowDown } from '@element-plus/icons-vue';
+import { ArrowDown, ArrowRight, ZoomIn, ZoomOut } from '@element-plus/icons-vue';
 import { loadIcon } from '@iconify/vue';
-import { 
-  ArrowDownBold, 
-  ArrowRightBold, 
-  Pointer, 
-  ZoomIn, 
-  ZoomOut, 
-  View, 
-  DataAnalysis,
-  ThreeDRotation
-} from '@element-plus/icons-vue';
 
 const props = defineProps({
   isCompact: {
@@ -321,10 +311,6 @@ const exportQuality = ref(0.9);
 const exportPixelRatio = ref('2');
 const exportWithBackground = ref(true);
 const exportPreviewUrl = ref('');
-
-// 定义DOM引用
-// const splitToolRef = ref<HTMLElement | null>(null);
-// const sashToolRef = ref<HTMLElement | null>(null);
 
 // 计算属性监听活动工具变化
 watch(activeTool, (newTool) => {

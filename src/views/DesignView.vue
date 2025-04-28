@@ -200,10 +200,11 @@
       :fullscreen="true" destroy-on-close>
       <div class="three-js-container">
         <ThreeJsWindow 
+          v-if="threeJsWindowStructure"
           ref="threeJsWindowRef" 
           :width="threeJsWidth" 
           :height="threeJsHeight" 
-          :window-structure="windowStore.windowStructure || undefined"
+          :window-structure="threeJsWindowStructure"
           :window-config="windowStore.windowConfig" />
       </div>
       <template #footer>
@@ -294,6 +295,21 @@ const isWindowOpen = ref(false);
 const threeJsWidth = ref(800);
 const threeJsHeight = ref(600);
 const isMobile = ref(false);
+
+// 窗户结构的计算属性，确保类型兼容性
+const threeJsWindowStructure = computed(() => {
+  if (!windowStore.windowStructure) return undefined;
+
+  // 深拷贝对象以避免直接修改 store 中的数据
+  const structure = JSON.parse(JSON.stringify(windowStore.windowStructure));
+  
+  // 处理 mainArea.sash 为 null 的情况
+  if (structure.mainArea && structure.mainArea.sash === null) {
+    structure.mainArea.sash = undefined; // 将 null 转换为 undefined
+  }
+  
+  return structure;
+});
 
 // 判断选中的元素类型
 const selectedElementInfo = computed(() => {

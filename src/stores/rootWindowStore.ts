@@ -106,6 +106,26 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
     console.log('历史记录长度:', history.value.length, '当前步骤:', historyStep.value);
   }
   
+  // 撤销操作
+  function undo() {
+    if (historyStep.value > 0) {
+      historyStep.value--;
+      restoreState(historyStep.value);
+    } else {
+      console.log('已经是最早的历史记录');
+    }
+  }
+  
+  // 重做操作
+  function redo() {
+    if (historyStep.value < history.value.length - 1) {
+      historyStep.value++;
+      restoreState(historyStep.value);
+    } else {
+      console.log('已经是最新的历史记录');
+    }
+  }
+  
   // 从历史记录中恢复状态
   function restoreState(step: number) {
     isUndoRedoAction.value = true;
@@ -569,6 +589,9 @@ export const useRootWindowStore = defineStore('rootWindowStore', () => {
     updateSettings,
     deleteSelectedElement,
     clearDesign,
+    // 添加撤销和重做功能
+    undo,
+    redo,
     // 暴露历史相关状态用于调试
     history,
     historyStep,

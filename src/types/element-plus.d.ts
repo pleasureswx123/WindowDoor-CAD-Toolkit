@@ -35,5 +35,12 @@ declare module '@element-plus/icons-vue' {
   export const FullScreen: IconComponent;
   export const Download: IconComponent;
   export const Upload: IconComponent;
+  // 添加原先代码中使用但类型声明中缺少的图标
+  export const Pointer: IconComponent;
+  export const View: IconComponent;
+  export const DataAnalysis: IconComponent;
+  export const ThreeDRotation: IconComponent;
+  export const ArrowDownBold: IconComponent;
+  export const ArrowRightBold: IconComponent;
   // 可以在此处添加更多图标组件
 } 

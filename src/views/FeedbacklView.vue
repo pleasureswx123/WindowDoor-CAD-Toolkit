@@ -193,8 +193,32 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { listFeedback, addFeedback, getFeedback, uploadImage } from '@/api/feedback'
 
+// 定义反馈项目接口
+interface FeedbackItem {
+  id: string | number;
+  feedbackType: string;
+  description: string;
+  priority: string;
+  contact: string;
+  imageUrl?: string;
+  createTime: string;
+  status: string;
+  replyContent?: string;
+}
+
 // 表单引用
 const feedbackFormRef = ref()
+
+// 当前查看的反馈
+const currentFeedback = ref<FeedbackItem>({
+  id: '',
+  feedbackType: '',
+  description: '',
+  priority: '',
+  contact: '',
+  createTime: '',
+  status: ''
+})
 
 // 表单数据
 const feedbackForm = reactive({
@@ -246,25 +270,25 @@ const getPriorityName = (priority: string) => {
 }
 
 // 获取紧急程度标签类型
-const getPriorityTagType = (priority: string) => {
-  const typeMap: Record<string, string> = {
+const getPriorityTagType = (priority: string): 'danger' | 'warning' | 'info' | 'success' | 'primary' => {
+  const typeMap: Record<string, 'danger' | 'warning' | 'info'> = {
     '1': 'danger',
     '2': 'warning',
     '3': 'info'
   }
-  return typeMap[priority] || ''
+  return typeMap[priority] || 'info'
 }
 
 // 上传图片请求
 const uploadImageRequest = async (options: any) => {
   try {
     const res = await uploadImage(options.file)
-    if (res.code === 200) {
+    if (res && res.code === 200) {
       feedbackForm.imageUrl = res.data || res.url
       feedbackForm.file = options.file
       ElMessage.success('图片上传成功')
     } else {
-      ElMessage.error(res.msg || '图片上传失败')
+      ElMessage.error(res?.msg || '图片上传失败')
     }
   } catch (error: any) {
     console.error('上传图片出错', error)
@@ -317,12 +341,12 @@ const submitForm = () => {
           status: '0' // 默认状态为待处理
         })
         
-        if (res.code === 200) {
+        if (res && res.code === 200) {
           ElMessage.success('反馈提交成功，感谢您的反馈！')
           resetForm()
           getList() // 刷新列表
         } else {
-          ElMessage.error(res.msg || '提交失败，请稍后重试')
+          ElMessage.error(res?.msg || '提交失败，请稍后重试')
         }
       } catch (error: any) {
         console.error('提交反馈出错', error)
@@ -343,7 +367,7 @@ const resetForm = () => {
 
 // 列表数据
 const loading = ref(false)
-const feedbackList = ref([])
+const feedbackList = ref<FeedbackItem[]>([])
 const total = ref(0)
 const queryParams = reactive({
   pageNum: 1,
@@ -358,8 +382,8 @@ const getList = async () => {
   try {
     const res = await listFeedback(queryParams)
     if (res.code === 200) {
-      feedbackList.value = res.rows
-      total.value = res.total
+      feedbackList.value = res.rows || []
+      total.value = res.total || 0
     } else {
       ElMessage.error(res.msg || '获取反馈列表失败')
     }
@@ -390,7 +414,6 @@ const handleCurrentChange = (page: number) => {
 
 // 查看详情数据
 const dialogVisible = ref(false)
-const currentFeedback = ref(null)
 
 // 查看详情
 const viewFeedbackDetail = async (row: any) => {

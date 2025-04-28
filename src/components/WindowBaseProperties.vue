@@ -122,7 +122,7 @@ defineProps({
   col: {
     type: [String, Number],
     default: '1',
-    validator: (value) => ['1', '2', '3', '4', '5', 1, 2, 3, 4, 5].includes(value)
+    validator: (value: string | number) => ['1', '2', '3', '4', '5', 1, 2, 3, 4, 5].includes(value as any)
   }
 });
 

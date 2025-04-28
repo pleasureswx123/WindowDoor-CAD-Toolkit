@@ -1,8 +1,10 @@
 import axios from 'axios'
 import { useUserStore } from '../stores/userStore'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
-import cache from './cache.js' // 需要实现类似的缓存插件
-import { tansParams, blobValidate } from "./ruoyi.js";
+// @ts-expect-error: 已在 types/cache.d.ts 提供类型声明
+import cache from './cache.js'
+// @ts-expect-error: 已在 types/ruoyi.d.ts 提供类型声明
+import { tansParams, blobValidate } from './ruoyi.js'
 
 // 是否显示重新登录
 export let isRelogin = { show: false }

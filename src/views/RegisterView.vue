@@ -61,7 +61,6 @@ import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useUserStore } from '../stores/userStore';
-import { User, Lock, Key, Loading } from '@element-plus/icons-vue';
 import { Icon } from '@iconify/vue';
 
 const userStore = useUserStore();
@@ -131,9 +130,9 @@ const captcha = reactive({
 async function getCaptcha() {
   try {
     const res = await userStore.getCaptcha();
-    captcha.captchaUrl = 'data:image/png;base64,' + res.img;
-    captcha.uuid = res.uuid;
-    registerForm.uuid = res.uuid;
+    captcha.captchaUrl = 'data:image/png;base64,' + (res.img ?? '');
+    captcha.uuid = res.uuid ?? '';
+    registerForm.uuid = res.uuid ?? '';
   } catch (error) {
     ElMessage.error('获取验证码失败');
   }

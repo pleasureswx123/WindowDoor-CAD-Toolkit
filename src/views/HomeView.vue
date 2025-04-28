@@ -1,5 +1,31 @@
 <template>
   <div class="home-container">
+    <!-- 视频展示区域 -->
+    <div class="video-showcase">
+      <div class="video-container">
+        <div class="video-aspect-ratio">
+          <video ref="videoElement" class="demo-video" controls preload="metadata"
+            poster="https://static-origin.yanlingxinrui.com/window-door-assets/video-poster.png"
+            @play="isVideoPlaying = true" @pause="isVideoPlaying = false" @ended="isVideoPlaying = false">
+            <source src="https://static-origin.yanlingxinrui.com/window-door-assets/Google%20Chrome.mp4"
+              type="video/mp4">
+            您的浏览器不支持视频播放
+          </video>
+          <div class="video-overlay" :class="{ 'hidden': isVideoPlaying }">
+            <div class="play-button" @click="playVideo">
+              <el-icon><icon-play /></el-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="video-description">
+        <h2>专业门窗设计工具演示</h2>
+        <p>观看演示视频，了解如何使用我们的门窗设计工具进行高效设计与优化</p>
+      </div>
+    </div>
+
+    <!-- 在这个地方增加演示视频区域 https://static-origin.yanlingxinrui.com/window-door-assets/Google%20Chrome.mp4 16:9 -->
+
     <!-- Token状态悬浮组件 -->
     <!-- <div v-if="userStore.isLoggedIn" class="token-status-card">
       <h3>登录状态</h3>
@@ -41,25 +67,29 @@
           <div class="badge-circle"></div>
           <span>优质门窗解决方案</span>
         </div>
-        
+
         <h1 class="animate-fade-in">
           <span class="title-gradient">门窗设计与优化</span>
           <br />
           <span class="title-highlight">解决方案</span>
         </h1>
-        
+
         <p class="animate-fade-in">一站式门窗设计、玻璃切割和型材优化工具，提升效率，降低成本</p>
-        
+
         <div class="hero-buttons animate-fade-in">
           <el-button type="primary" size="large" class="primary-btn" @click="navigateTo('/design')">
-            <el-icon><IconWindow /></el-icon>开始设计
+            <el-icon>
+              <IconWindow />
+            </el-icon>开始设计
           </el-button>
           <el-button size="large" class="secondary-btn" @click="scrollToFeatures">
-            <el-icon><IconArrowDown /></el-icon>了解更多
+            <el-icon>
+              <IconArrowDown />
+            </el-icon>了解更多
           </el-button>
         </div>
       </div>
-      
+
       <!-- 渐变叠加层 -->
       <div class="gradient-overlay"></div>
     </div>
@@ -76,7 +106,7 @@
           <p>可视化设计门窗结构，支持各种类型的窗户样式和开启方式</p>
           <el-button type="primary" class="feature-btn">立即设计</el-button>
         </div>
-        
+
         <div class="feature-card animate-on-scroll" @click="navigateTo('/glass')">
           <div class="feature-icon">
             <IconGlass />
@@ -85,7 +115,7 @@
           <p>智能计算最佳玻璃切割方案，提高材料利用率，降低成本</p>
           <el-button type="primary" class="feature-btn">开始优化</el-button>
         </div>
-        
+
         <div class="feature-card animate-on-scroll" @click="navigateTo('/plastic-steel')">
           <div class="feature-icon">
             <IconRuler />
@@ -103,37 +133,45 @@
       <div class="advantages-grid">
         <div class="advantage-item animate-on-scroll">
           <div class="advantage-icon">
-            <el-icon><IconPrecision /></el-icon>
+            <el-icon>
+              <IconPrecision />
+            </el-icon>
           </div>
           <div class="advantage-content">
             <h3>高精度计算</h3>
             <p>精确计算材料用量和切割方案，误差控制在毫米级</p>
           </div>
         </div>
-        
+
         <div class="advantage-item animate-on-scroll">
           <div class="advantage-icon">
-            <el-icon><IconVisualization /></el-icon>
+            <el-icon>
+              <IconVisualization />
+            </el-icon>
           </div>
           <div class="advantage-content">
             <h3>可视化设计</h3>
             <p>所见即所得的设计界面，直观呈现设计效果</p>
           </div>
         </div>
-        
+
         <div class="advantage-item animate-on-scroll">
           <div class="advantage-icon">
-            <el-icon><Icon3D /></el-icon>
+            <el-icon>
+              <Icon3D />
+            </el-icon>
           </div>
           <div class="advantage-content">
             <h3>3D预览</h3>
             <p>支持3D模式预览窗户效果，更直观理解设计</p>
           </div>
         </div>
-        
+
         <div class="advantage-item animate-on-scroll">
           <div class="advantage-icon">
-            <el-icon><IconOptimization /></el-icon>
+            <el-icon>
+              <IconOptimization />
+            </el-icon>
           </div>
           <div class="advantage-content">
             <h3>智能优化</h3>
@@ -191,6 +229,8 @@ import { ElMessage } from 'element-plus'
 const router = useRouter();
 const featuresSection = ref<HTMLElement | null>(null);
 const userStore = useUserStore()
+const videoElement = ref<HTMLVideoElement | null>(null);
+const isVideoPlaying = ref(false);
 
 // 图标组件
 const IconWindow = () => h(Icon, { icon: 'tabler:window', width: '24', height: '24' });
@@ -201,6 +241,29 @@ const IconPrecision = () => h(Icon, { icon: 'tabler:ruler-measure', width: '28',
 const IconVisualization = () => h(Icon, { icon: 'tabler:eye', width: '28', height: '28' });
 const Icon3D = () => h(Icon, { icon: 'tabler:cube', width: '28', height: '28' });
 const IconOptimization = () => h(Icon, { icon: 'tabler:chart-pie', width: '28', height: '28' });
+const IconPlay = () => h(Icon, { icon: 'tabler:player-play-filled', width: '48', height: '48' });
+
+// 播放视频
+const playVideo = () => {
+  if (videoElement.value) {
+    videoElement.value.play();
+  }
+};
+
+// 监听视频播放状态
+onMounted(() => {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in-view');
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.animate-on-scroll').forEach(el => {
+    observer.observe(el);
+  });
+});
 
 // 导航到指定路由（添加登录检查）
 const navigateTo = (path: string) => {
@@ -216,21 +279,6 @@ const navigateTo = (path: string) => {
 const scrollToFeatures = () => {
   featuresSection.value?.scrollIntoView({ behavior: 'smooth' });
 };
-
-// 页面加载时添加滚动监听，实现动画效果
-onMounted(() => {
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('in-view');
-      }
-    });
-  }, { threshold: 0.1 });
-
-  document.querySelectorAll('.animate-on-scroll').forEach(el => {
-    observer.observe(el);
-  });
-});
 
 // 格式化过期时间
 const tokenExpireTimeFormatted = computed(() => {
@@ -270,6 +318,132 @@ const testExpiration = () => {
   background-color: #1e1e1e;
   color: #e0e0e0;
   overflow-x: hidden;
+}
+
+/* 视频展示区域 */
+.video-showcase {
+  max-width: 1200px;
+  margin: 3rem auto;
+  padding: 0 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.video-container {
+  width: 100%;
+  max-width: 1000px;
+  background-color: #252525;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.video-container:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(79, 172, 254, 0.2);
+}
+
+.video-aspect-ratio {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 比例 */
+  overflow: hidden;
+}
+
+.demo-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background-color: #000;
+}
+
+.video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+/* 使用v-show根据isVideoPlaying状态控制覆盖层显示 */
+.video-overlay.hidden {
+  opacity: 0;
+}
+
+.play-button {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(3px);
+  transition: all 0.3s ease;
+  pointer-events: auto;
+}
+
+.play-button:hover {
+  transform: scale(1.1);
+  background: rgba(79, 172, 254, 0.8);
+}
+
+.video-description {
+  text-align: center;
+  max-width: 700px;
+}
+
+.video-description h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(to right, #ffffff, #b3f0ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.video-description p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .video-showcase {
+    margin: 2rem auto;
+    padding: 0 1rem;
+  }
+  
+  .video-description h2 {
+    font-size: 1.5rem;
+  }
+  
+  .video-description p {
+    font-size: 1rem;
+  }
+  
+  .play-button {
+    width: 60px;
+    height: 60px;
+  }
 }
 
 /* 几何形状的Hero部分 */
