@@ -1,0 +1,49 @@
+{
+  "title": "专业门窗设计系统 - 引领行业新标准",
+  "subtitle": "让设计更简单，让选择更精准",
+  "features": [
+    {
+      "title": "专业的门窗设计界面",
+      "description": "提供直观易用的设计界面，让您轻松设计各种门窗方案",
+      "icon": "design"
+    },
+    {
+      "title": "精确的尺寸标注系统",
+      "description": "自动计算并提供精确的尺寸标注，确保设计符合实际需求",
+      "icon": "ruler"
+    },
+    {
+      "title": "智能吸附对齐",
+      "description": "自动吸附对齐功能，让设计更加精准、专业",
+      "icon": "align"
+    },
+    {
+      "title": "实时预览",
+      "description": "实时3D预览设计效果，所见即所得",
+      "icon": "preview"
+    },
+    {
+      "title": "材料统计",
+      "description": "自动统计所需材料，提供准确的成本估算",
+      "icon": "calculator"
+    },
+    {
+      "title": "设计方案保存与加载",
+      "description": "随时保存设计方案，方便后续修改和使用",
+      "icon": "save"
+    }
+  ],
+  "cta": {
+    "title": "立即注册，开启专业设计之旅",
+    "subtitle": "新用户专享7天免费试用，体验全部高级功能",
+    "buttonText": "免费注册",
+    "url": "https://cut.d.yanlingxinrui.com/register"
+  },
+  "benefits": [
+    "节省80%设计时间",
+    "提高设计精准度",
+    "减少返工概率",
+    "提升客户满意度",
+    "降低设计成本"
+  ]
+}

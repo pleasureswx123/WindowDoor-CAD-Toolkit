@@ -44,6 +44,7 @@ declare module 'vue' {
     ElTabs: typeof import('element-plus/es')['ElTabs']
     ElTag: typeof import('element-plus/es')['ElTag']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
+    LandscapeNotice: typeof import('./components/LandscapeNotice.vue')['default']
     MaterialStatsTable: typeof import('./components/MaterialStatsTable.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']

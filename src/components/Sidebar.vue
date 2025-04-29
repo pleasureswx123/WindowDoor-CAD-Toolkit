@@ -3,16 +3,31 @@ import { ref, computed, onMounted, h, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { Icon } from '@iconify/vue';
 
+const props = defineProps({
+  isMobile: {
+    type: Boolean,
+    default: false
+  }
+});
+
 const router = useRouter();
 const route = useRoute();
 const emit = defineEmits(['collapse-change']);
 
-const isMobile = ref(false);
+const isMobile = ref(props.isMobile);
 const isCollapsed = ref(false);
 
 // 监听折叠状态变化并发射事件
 watch(isCollapsed, (value) => {
   emit('collapse-change', value);
+});
+
+// 监听props中的isMobile变化
+watch(() => props.isMobile, (newVal) => {
+  isMobile.value = newVal;
+  if (newVal && !isCollapsed.value) {
+    isCollapsed.value = true;
+  }
 });
 
 // 响应式计算当前路由
@@ -55,23 +70,29 @@ const navigateTo = (path: string) => {
   }
 };
 
-// 监听窗口大小变化
+// 只在组件内部检测屏幕大小变化，如果外部没有提供isMobile值
 onMounted(() => {
-  const checkScreenSize = () => {
-    isMobile.value = window.innerWidth < 768;
+  // 如果父组件已经处理了移动端检测，则不需要在这里再次检测
+  if (!props.isMobile) {
+    const checkScreenSize = () => {
+      isMobile.value = window.innerWidth < 768;
+      isCollapsed.value = isMobile.value;
+    };
+    
+    // 初始检查
+    checkScreenSize();
+    
+    // 监听窗口大小变化
+    window.addEventListener('resize', checkScreenSize);
+    
+    // 组件卸载时移除事件监听
+    return () => {
+      window.removeEventListener('resize', checkScreenSize);
+    };
+  } else {
+    // 使用父组件传入的值初始化
     isCollapsed.value = isMobile.value;
-  };
-  
-  // 初始检查
-  checkScreenSize();
-  
-  // 监听窗口大小变化
-  window.addEventListener('resize', checkScreenSize);
-  
-  // 组件卸载时移除事件监听
-  return () => {
-    window.removeEventListener('resize', checkScreenSize);
-  };
+  }
 });
 </script>
 

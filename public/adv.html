@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>专业门窗设计系统 - 引领行业新标准</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-top: 30px;
+        }
+        
+        .header h1 {
+            font-size: 36px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            font-size: 18px;
+            color: #7f8c8d;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        /* 轮播区域样式 */
+        .banner-container {
+            position: relative;
+            width: 100%;
+            margin: 0 auto 50px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            height: 560px;
+        }
+        
+        .banner-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .banner-slide.active {
+            opacity: 1;
+        }
+        
+        .banner-dots {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+        
+        .banner-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .banner-dot.active {
+            background-color: #fff;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 50px;
+        }
+        
+        .feature-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feature-card h3 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        .feature-card p {
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+        
+        .cta-section {
+            background-color: #3498db;
+            color: white;
+            padding: 60px 40px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .cta-section h2 {
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+        
+        .cta-section p {
+            font-size: 18px;
+            margin-bottom: 30px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background-color: white;
+            color: #3498db;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 50px;
+            text-decoration: none;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .benefits {
+            background-color: white;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 50px;
+        }
+        
+        .benefits h3 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        .benefits-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+        
+        .benefit-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 25px;
+            background-color: #f8f9fa;
+            border-radius: 50px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .benefit-icon {
+            color: #2ecc71;
+            margin-right: 10px;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 30px 0;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .footer a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 28px;
+            }
+            
+            .header p {
+                font-size: 16px;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+            }
+            
+            .cta-section {
+                padding: 40px 20px;
+            }
+            
+            .cta-section h2 {
+                font-size: 26px;
+            }
+            
+            .cta-section p {
+                font-size: 16px;
+            }
+            
+            .benefit-item {
+                width: 100%;
+            }
+            
+            .banner-container {
+                height: 300px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_3159629_zslhz4gsp5.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>免费专业门窗设计系统 - 引领行业新标准</h1>
+            <p>让设计更简单，让选择更精准</p>
+        </header>
+        
+        <!-- 轮播Banner区域 -->
+        <div class="banner-container">
+            <div class="banner-slide active" style="background-image: url('./imgs/adv1.png');"></div>
+            <div class="banner-slide" style="background-image: url('./imgs/banner1.png');"></div>
+            <div class="banner-slide" style="background-image: url('./imgs/banner2.png');"></div>
+            <div class="banner-slide" style="background-image: url('./imgs/banner3.png');"></div>
+            <div class="banner-dots">
+                <div class="banner-dot active"></div>
+                <div class="banner-dot"></div>
+                <div class="banner-dot"></div>
+                <div class="banner-dot"></div>
+            </div>
+        </div>
+        
+        <section class="features">
+            <div class="feature-card">
+                <h3>专业的门窗设计界面</h3>
+                <p>提供直观易用的设计界面，让您轻松设计各种门窗方案</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>精确的尺寸标注系统</h3>
+                <p>自动计算并提供精确的尺寸标注，确保设计符合实际需求</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>智能吸附对齐</h3>
+                <p>自动吸附对齐功能，让设计更加精准、专业</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>实时预览</h3>
+                <p>实时3D预览设计效果，所见即所得</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>材料统计</h3>
+                <p>自动统计所需材料，提供准确的成本估算</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>设计方案保存与加载</h3>
+                <p>随时保存设计方案，方便后续修改和使用</p>
+            </div>
+        </section>
+        
+        <section class="cta-section">
+            <h2>立即注册，开启专业设计之旅</h2>
+            <!-- <p>新用户专享7天免费试用，体验全部高级功能</p> -->
+            <a href="https://cut.d.yanlingxinrui.com/" class="cta-button">免费注册</a>
+        </section>
+        
+        <section class="benefits">
+            <h3>为什么选择我们</h3>
+            <div class="benefits-list">
+                <div class="benefit-item">
+                    <span class="benefit-icon">✓</span>
+                    节省80%设计时间
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">✓</span>
+                    提高设计精准度
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">✓</span>
+                    减少返工概率
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">✓</span>
+                    提升客户满意度
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">✓</span>
+                    降低设计成本
+                </div>
+            </div>
+        </section>
+        
+        <footer class="footer">
+            <p>© 2025 专业门窗设计系统 | <a href="https://cut.d.yanlingxinrui.com" target="_blank">访问官网</a></p>
+        </footer>
+    </div>
+    
+    <script>
+        // 读取本地JSON数据
+        fetch('./adv_txt/adv1.json')
+            .then(response => response.json())
+            .then(data => {
+                // 更新页面内容
+                document.querySelector('.header h1').textContent = data.title;
+                document.querySelector('.header p').textContent = data.subtitle;
+                
+                // 更新CTA部分
+                document.querySelector('.cta-section h2').textContent = data.cta.title;
+                document.querySelector('.cta-section p').textContent = data.cta.subtitle;
+                document.querySelector('.cta-button').textContent = data.cta.buttonText;
+                document.querySelector('.cta-button').href = data.cta.url;
+                
+                // 可以根据需要更新其他部分
+            })
+            .catch(error => console.error('Error loading JSON data:', error));
+            
+        // 轮播功能
+        const slides = document.querySelectorAll('.banner-slide');
+        const dots = document.querySelectorAll('.banner-dot');
+        let currentSlide = 0;
+        
+        function showSlide(index) {
+            // 隐藏所有幻灯片
+            slides.forEach(slide => {
+                slide.classList.remove('active');
+            });
+            
+            // 更新所有圆点状态
+            dots.forEach(dot => {
+                dot.classList.remove('active');
+            });
+            
+            // 显示当前幻灯片和圆点
+            slides[index].classList.add('active');
+            dots[index].classList.add('active');
+            currentSlide = index;
+        }
+        
+        // 为圆点添加点击事件
+        dots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                showSlide(index);
+            });
+        });
+        
+        // 自动轮播
+        function autoSlide() {
+            let nextSlide = (currentSlide + 1) % slides.length;
+            showSlide(nextSlide);
+        }
+        
+        // 每4秒切换一次幻灯片
+        setInterval(autoSlide, 4000);
+    </script>
+</body>
+</html>
