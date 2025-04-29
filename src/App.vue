@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import Sidebar from './components/Sidebar.vue';
-import LandscapeNotice from './components/LandscapeNotice.vue';
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useUserStore } from './stores/userStore';
 import { Icon } from '@iconify/vue';
@@ -24,25 +23,6 @@ const checkScreenWidth = () => {
   }
 };
 
-// 锁定屏幕方向为横屏（如果设备支持）
-const lockLandscapeOrientation = () => {
-  // 仅在移动设备上尝试锁定方向
-  if (isMobile.value) {
-    try {
-      // 使用更安全的类型检查方式
-      const screenOrientation = window.screen?.orientation as any;
-      if (screenOrientation && typeof screenOrientation.lock === 'function') {
-        // 现代浏览器 Screen Orientation API
-        screenOrientation.lock('landscape').catch((e: Error) => {
-          console.log('无法锁定屏幕方向，使用备用提示', e);
-        });
-      }
-    } catch (error) {
-      console.log('锁定屏幕方向失败', error);
-    }
-  }
-};
-
 // 检查token状态
 const checkTokenStatus = () => {
   userStore.checkLogin();
@@ -53,7 +33,6 @@ onMounted(() => {
   // 初始检查
   checkTokenStatus();
   checkScreenWidth();
-  lockLandscapeOrientation();
   
   // 设置定时器，每30秒检查一次token状态
   tokenCheckTimer = window.setInterval(checkTokenStatus, 30000);
@@ -75,9 +54,6 @@ onUnmounted(() => {
 
 <template>
   <div class="app-container">
-    <!-- 横屏提示组件 -->
-    <LandscapeNotice />
-    
     <Sidebar 
       v-show="!isMobile || !sidebarCollapsed" 
       @collapse-change="handleCollapseChange" 
